@@ -78,8 +78,22 @@ export function LoginPage() {
   return (
     <AuthShell title="Entrar no StudentOS" subtitle="Tarefas, avaliações e médias num só sítio.">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <TextField label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
-        <TextField label="Palavra-passe" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} error={errors.password} />
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={errors.email}
+        />
+        <TextField
+          label="Palavra-passe"
+          type="password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={errors.password}
+        />
         <FormError message={formError} />
         <Button type="submit" loading={submitting} className="w-full">
           Entrar
@@ -118,8 +132,21 @@ export function RegisterPage() {
   return (
     <AuthShell title="Criar conta" subtitle="Organiza o teu semestre em poucos minutos.">
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
-        <TextField label="Nome" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} />
-        <TextField label="Email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} error={errors.email} />
+        <TextField
+          label="Nome"
+          autoComplete="name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={errors.name}
+        />
+        <TextField
+          label="Email"
+          type="email"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={errors.email}
+        />
         <TextField
           label="Palavra-passe"
           type="password"

@@ -109,7 +109,8 @@ export function AccountPage() {
         <Card title="Eliminar conta" className="border-red-200">
           <form onSubmit={deleteAccount} className="space-y-3">
             <p className="text-sm text-stone-600">
-              Esta ação apaga permanentemente a conta, as disciplinas, as avaliações e as tarefas. Não pode ser desfeita.
+              Esta ação apaga permanentemente a conta, as disciplinas, as avaliações e as tarefas. Não pode ser
+              desfeita.
             </p>
             <TextField
               label={`Escreve ${user.email} para confirmar`}
@@ -120,7 +121,12 @@ export function AccountPage() {
               className="max-w-sm"
             />
             <FormError message={deleteError} />
-            <Button type="submit" variant="danger" disabled={confirmEmail.trim().toLowerCase() !== user.email} loading={busy === 'delete'}>
+            <Button
+              type="submit"
+              variant="danger"
+              disabled={confirmEmail.trim().toLowerCase() !== user.email}
+              loading={busy === 'delete'}
+            >
               Eliminar conta permanentemente
             </Button>
           </form>

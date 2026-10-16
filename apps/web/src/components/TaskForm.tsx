@@ -74,10 +74,21 @@ export function TaskForm({ disciplines, initial, submitLabel = 'Adicionar', onSu
           maxLength={200}
           autoFocus={Boolean(initial)}
         />
-        <TextField label="Prazo" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.dueDate} />
+        <TextField
+          label="Prazo"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          error={errors.dueDate}
+        />
       </div>
       <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
-        <SelectField label="Disciplina" value={disciplineId} onChange={(e) => setDisciplineId(e.target.value)} error={errors.disciplineId}>
+        <SelectField
+          label="Disciplina"
+          value={disciplineId}
+          onChange={(e) => setDisciplineId(e.target.value)}
+          error={errors.disciplineId}
+        >
           <option value="">Sem disciplina</option>
           {disciplines.map((d) => (
             <option key={d.id} value={d.id}>

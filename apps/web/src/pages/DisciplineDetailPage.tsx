@@ -43,9 +43,7 @@ export function DisciplineDetailPage() {
 
   async function handleDelete() {
     if (!d) return;
-    const ok = window.confirm(
-      `Eliminar "${d.name}"? As avaliações são eliminadas; as tarefas ficam sem disciplina.`,
-    );
+    const ok = window.confirm(`Eliminar "${d.name}"? As avaliações são eliminadas; as tarefas ficam sem disciplina.`);
     if (!ok) return;
     await remove.mutateAsync(d.id);
     navigate('/disciplinas', { replace: true });
@@ -72,7 +70,11 @@ export function DisciplineDetailPage() {
       ) : (
         <header className="flex flex-wrap items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <span aria-hidden="true" className="mt-1 h-10 w-1.5 rounded-full" style={{ backgroundColor: d.color ?? '#a8a29e' }} />
+            <span
+              aria-hidden="true"
+              className="mt-1 h-10 w-1.5 rounded-full"
+              style={{ backgroundColor: d.color ?? '#a8a29e' }}
+            />
             <div>
               <p className="text-xs font-semibold tracking-wide text-stone-500">
                 {d.code}
@@ -98,7 +100,9 @@ export function DisciplineDetailPage() {
       <dl className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border border-stone-200 bg-white px-4 py-3">
           <dt className="text-xs text-stone-500">Média atual</dt>
-          <dd className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">{formatGrade(g.currentAverage, 1)}</dd>
+          <dd className="mt-1 text-2xl font-semibold tabular-nums text-stone-900">
+            {formatGrade(g.currentAverage, 1)}
+          </dd>
         </div>
         <div className="rounded-xl border border-stone-200 bg-white px-4 py-3">
           <dt className="text-xs text-stone-500">Nota final</dt>

@@ -11,7 +11,11 @@ let aliceDisciplineId: number;
 
 beforeEach(async () => {
   await resetDb();
-  ({ cookie: alice, user: { id: aliceId }, disciplineId: aliceDisciplineId } = await createUserAndLogin('alice'));
+  ({
+    cookie: alice,
+    user: { id: aliceId },
+    disciplineId: aliceDisciplineId,
+  } = await createUserAndLogin('alice'));
   ({ cookie: bob } = await createUserAndLogin('bob'));
 });
 

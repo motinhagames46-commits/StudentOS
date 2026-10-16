@@ -15,7 +15,14 @@ interface TaskListProps {
   compact?: boolean;
 }
 
-export function TaskList({ tasks, onToggle, onEdit, onDelete, emptyMessage = 'Sem tarefas pendentes', compact = false }: TaskListProps) {
+export function TaskList({
+  tasks,
+  onToggle,
+  onEdit,
+  onDelete,
+  emptyMessage = 'Sem tarefas pendentes',
+  compact = false,
+}: TaskListProps) {
   if (tasks.length === 0) return <EmptyState message={emptyMessage} />;
 
   return (
@@ -69,7 +76,9 @@ function TaskItem({
               {overdue ? `Em atraso · ${relativeDay(task.dueDate)}` : relativeDay(task.dueDate)}
             </span>
           )}
-          {!compact && task.priority === 'HIGH' && !done && <Badge tone="amber">Prioridade {priorityLabels.HIGH.toLowerCase()}</Badge>}
+          {!compact && task.priority === 'HIGH' && !done && (
+            <Badge tone="amber">Prioridade {priorityLabels.HIGH.toLowerCase()}</Badge>
+          )}
         </div>
       </div>
 
@@ -81,7 +90,11 @@ function TaskItem({
             </IconButton>
           )}
           {onDelete && (
-            <IconButton label={`Eliminar "${task.title}"`} onClick={() => onDelete(task.id)} className="hover:text-red-700">
+            <IconButton
+              label={`Eliminar "${task.title}"`}
+              onClick={() => onDelete(task.id)}
+              className="hover:text-red-700"
+            >
               <Trash2 aria-hidden="true" className="size-4" />
             </IconButton>
           )}

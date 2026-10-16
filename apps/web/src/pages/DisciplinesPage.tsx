@@ -99,7 +99,9 @@ export function DisciplinesPage() {
                     <p className="text-2xl font-semibold tabular-nums text-stone-900">
                       {formatGrade(d.grades.finalGrade ?? d.grades.currentAverage, 1)}
                     </p>
-                    <p className="text-xs text-stone-500">{d.grades.finalGrade !== null ? 'nota final' : 'média atual'}</p>
+                    <p className="text-xs text-stone-500">
+                      {d.grades.finalGrade !== null ? 'nota final' : 'média atual'}
+                    </p>
                   </div>
                 </div>
               </Link>

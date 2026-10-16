@@ -42,7 +42,14 @@ async function main() {
   await prisma.assessment.createMany({
     data: [
       { disciplineId: pw.id, name: 'Teste 1', type: 'TEST', weight: 30, score: 12, date: inDays(-30, 10, 0) },
-      { disciplineId: pw.id, name: 'Trabalho prático', type: 'PROJECT', weight: 30, score: 15, date: inDays(-10, 23, 59) },
+      {
+        disciplineId: pw.id,
+        name: 'Trabalho prático',
+        type: 'PROJECT',
+        weight: 30,
+        score: 15,
+        date: inDays(-10, 23, 59),
+      },
       { disciplineId: pw.id, name: 'Exame', type: 'EXAM', weight: 40, minScore: 8, date: inDays(12, 9, 30) },
       { disciplineId: bd.id, name: 'Mini-teste', type: 'TEST', weight: 20, score: 16.5, date: inDays(-20, 14, 0) },
       { disciplineId: bd.id, name: 'Projeto', type: 'PROJECT', weight: 40, date: inDays(5, 23, 59) },
@@ -56,11 +63,29 @@ async function main() {
 
   await prisma.task.createMany({
     data: [
-      { userId: user.id, disciplineId: pw.id, title: 'Rever capítulo de React hooks', dueDate: inDays(1), priority: 'MEDIUM' },
+      {
+        userId: user.id,
+        disciplineId: pw.id,
+        title: 'Rever capítulo de React hooks',
+        dueDate: inDays(1),
+        priority: 'MEDIUM',
+      },
       { userId: user.id, disciplineId: bd.id, title: 'Modelo ER do projeto', dueDate: inDays(3), priority: 'HIGH' },
       { userId: user.id, disciplineId: mat.id, title: 'Exercícios da ficha 4', dueDate: inDays(2), priority: 'HIGH' },
-      { userId: user.id, disciplineId: es.id, title: 'Preparar retrospetiva do sprint', dueDate: inDays(10), priority: 'LOW' },
-      { userId: user.id, disciplineId: pw.id, title: 'Entregar exercício de formulários', dueDate: inDays(-1), priority: 'HIGH' },
+      {
+        userId: user.id,
+        disciplineId: es.id,
+        title: 'Preparar retrospetiva do sprint',
+        dueDate: inDays(10),
+        priority: 'LOW',
+      },
+      {
+        userId: user.id,
+        disciplineId: pw.id,
+        title: 'Entregar exercício de formulários',
+        dueDate: inDays(-1),
+        priority: 'HIGH',
+      },
       { userId: user.id, title: 'Renovar cartão de estudante', priority: 'LOW' },
       {
         userId: user.id,
@@ -70,6 +95,27 @@ async function main() {
         completedAt: inDays(-5, 18, 0),
         dueDate: inDays(-4),
       },
+    ],
+  });
+
+  // Sessões de estudo dos últimos 12 dias (alimentam as estatísticas, RF14)
+  const session = (daysAgo: number, hour: number, minutes: number, disciplineId: number | null) => {
+    const startedAt = inDays(-daysAgo, hour, 0);
+    return { userId: user.id, disciplineId, startedAt, endedAt: new Date(startedAt.getTime() + minutes * 60000) };
+  };
+  await prisma.studySession.createMany({
+    data: [
+      session(0, 9, 50, bd.id),
+      session(1, 14, 90, pw.id),
+      session(1, 21, 25, mat.id),
+      session(2, 10, 45, mat.id),
+      session(3, 18, 120, bd.id),
+      session(4, 16, 35, null),
+      session(5, 11, 60, pw.id),
+      session(6, 15, 40, es.id),
+      session(8, 10, 75, pw.id),
+      session(9, 20, 30, mat.id),
+      session(11, 14, 55, bd.id),
     ],
   });
 

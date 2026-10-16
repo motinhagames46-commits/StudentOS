@@ -11,6 +11,7 @@ import { assessmentsRouter } from './routes/assessments.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { disciplinesRouter } from './routes/disciplines.js';
+import { insightsRouter } from './routes/insights.js';
 import { meRouter } from './routes/me.js';
 import { semestersRouter } from './routes/semesters.js';
 import { studySessionsRouter } from './routes/study-sessions.js';
@@ -61,6 +62,8 @@ export function createApp() {
   api.use('/tasks', requireAuth, tasksRouter);
   api.use('/dashboard', requireAuth, dashboardRouter);
   api.use('/study-sessions', requireAuth, studySessionsRouter);
+  api.use(['/stats', '/calendar', '/alerts'], requireAuth);
+  api.use(insightsRouter);
   api.use(apiNotFound);
 
   app.use('/api', api);

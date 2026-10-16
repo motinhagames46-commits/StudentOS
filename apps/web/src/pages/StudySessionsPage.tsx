@@ -1,7 +1,25 @@
 import { Play, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { Badge, Button, Card, DisciplineChip, EmptyState, ErrorState, FormError, LoadingList, PageHeader, SelectField } from '../components/ui';
-import { useDisciplines, useStartStudySession, useStopStudySession, useStudySessions } from '../hooks/queries';
+import { StudyByDayChart } from '../components/charts';
+import {
+  Badge,
+  Button,
+  Card,
+  DisciplineChip,
+  EmptyState,
+  ErrorState,
+  FormError,
+  LoadingList,
+  PageHeader,
+  SelectField,
+} from '../components/ui';
+import {
+  useDisciplines,
+  useStartStudySession,
+  useStats,
+  useStopStudySession,
+  useStudySessions,
+} from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
 import { formatClock, formatDateTime, formatDuration } from '../lib/format';
@@ -10,9 +28,12 @@ import type { StudySession } from '../lib/types';
 const DAY = 24 * 60 * 60 * 1000;
 
 const formatTime = (iso: string) =>
-  new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' }).format(new Date(iso));
+  new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' }).format(
+    new Date(iso),
+  );
 
-const durationMs = (s: StudySession) => (s.endedAt ? new Date(s.endedAt).getTime() - new Date(s.startedAt).getTime() : 0);
+const durationMs = (s: StudySession) =>
+  s.endedAt ? new Date(s.endedAt).getTime() - new Date(s.startedAt).getTime() : 0;
 
 /** Sessões de estudo: temporizador iniciar/parar e histórico dos últimos 30 dias (RF13 / RN11). */
 export function StudySessionsPage() {
@@ -25,6 +46,7 @@ export function StudySessionsPage() {
   const disciplines = useDisciplines(me?.activeSemester?.id);
   const start = useStartStudySession();
   const stop = useStopStudySession();
+  const stats = useStats(14);
   const [disciplineId, setDisciplineId] = useState('');
 
   const running = sessions.data?.find((s) => s.endedAt === null);
@@ -47,7 +69,11 @@ export function StudySessionsPage() {
                 <RunningClock startedAt={running.startedAt} />
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
                   Desde as {formatTime(running.startedAt)}
-                  {running.discipline ? <DisciplineChip discipline={running.discipline} /> : <span>· sem disciplina</span>}
+                  {running.discipline ? (
+                    <DisciplineChip discipline={running.discipline} />
+                  ) : (
+                    <span>· sem disciplina</span>
+                  )}
                 </p>
               </div>
               <Button variant="danger" onClick={() => stop.mutate(running.id)} loading={stop.isPending}>
@@ -97,6 +123,16 @@ export function StudySessionsPage() {
         </Card>
       </div>
 
+      <Card title="Tempo de estudo por dia (últimas 2 semanas)" className="mb-4">
+        {stats.isPending ? (
+          <LoadingList rows={3} />
+        ) : stats.error ? (
+          <ErrorState message={errorMessage(stats.error)} onRetry={() => stats.refetch()} />
+        ) : (
+          <StudyByDayChart days={stats.data.studyByDay} />
+        )}
+      </Card>
+
       <Card title="Histórico (últimos 30 dias)">
         {sessions.error ? (
           <ErrorState message={errorMessage(sessions.error)} onRetry={() => sessions.refetch()} />
@@ -138,7 +174,11 @@ function RunningClock({ startedAt }: { startedAt: string }) {
     return () => window.clearInterval(id);
   }, []);
   return (
-    <p role="timer" aria-label="Tempo decorrido" className="text-4xl font-semibold tabular-nums tracking-tight text-stone-900">
+    <p
+      role="timer"
+      aria-label="Tempo decorrido"
+      className="text-4xl font-semibold tabular-nums tracking-tight text-stone-900"
+    >
       {formatClock(now - new Date(startedAt).getTime())}
     </p>
   );

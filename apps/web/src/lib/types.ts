@@ -81,3 +81,23 @@ export interface StudySession {
   disciplineId: number | null;
   discipline: DisciplineRef | null;
 }
+
+export interface Stats {
+  range: { from: string; to: string; days: number };
+  studyByDiscipline: { discipline: DisciplineRef | null; minutes: number }[];
+  studyByDay: { date: string; minutes: number }[];
+  totalMinutes: number;
+  tasks: { todo: number; done: number; overdue: number; completedInRange: number };
+}
+
+export interface CalendarData {
+  tasks: Task[];
+  assessments: (Assessment & { discipline: DisciplineRef })[];
+}
+
+export interface Alerts {
+  tasks: Task[];
+  assessments: (Assessment & { discipline: DisciplineRef })[];
+  overdue: number;
+  count: number;
+}

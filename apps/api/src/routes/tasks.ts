@@ -25,9 +25,7 @@ tasksRouter.get('/', async (req, res) => {
       userId: req.userId,
       ...(q.status ? { status: q.status } : {}),
       ...(q.disciplineId ? { disciplineId: q.disciplineId } : {}),
-      ...(q.from || q.to
-        ? { dueDate: { ...(q.from ? { gte: q.from } : {}), ...(q.to ? { lte: q.to } : {}) } }
-        : {}),
+      ...(q.from || q.to ? { dueDate: { ...(q.from ? { gte: q.from } : {}), ...(q.to ? { lte: q.to } : {}) } } : {}),
     },
     include: { discipline: disciplineSelect },
     orderBy,

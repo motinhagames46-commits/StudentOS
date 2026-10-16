@@ -14,28 +14,37 @@ import type {
   TaskUpdateInput,
 } from '@studentos/shared';
 import { api } from '../lib/api';
-import type { Assessment, Dashboard, Discipline, Semester, StudySession, Task } from '../lib/types';
+import type {
+  Alerts,
+  Assessment,
+  CalendarData,
+  Dashboard,
+  Discipline,
+  Semester,
+  Stats,
+  StudySession,
+  Task,
+} from '../lib/types';
 
 function toQueryString(params: Record<string, string | number | undefined>): string {
-  const entries = Object.entries(params).filter((e): e is [string, string | number] => e[1] !== undefined && e[1] !== '');
+  const entries = Object.entries(params).filter(
+    (e): e is [string, string | number] => e[1] !== undefined && e[1] !== '',
+  );
   return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : '';
 }
 
-const dataKeys = ['dashboard', 'tasks', 'disciplines', 'discipline', 'study-sessions'];
+const dataKeys = ['dashboard', 'tasks', 'disciplines', 'discipline', 'study-sessions', 'stats', 'calendar', 'alerts'];
 
 function useInvalidateAll(extraKeys: string[] = []) {
   const queryClient = useQueryClient();
   return () =>
-    Promise.all(
-      [...dataKeys, ...extraKeys].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
-    );
+    Promise.all([...dataKeys, ...extraKeys].map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
 }
 
 /** O semestre ativo aparece no /me (barra lateral) e filtra o painel e as disciplinas. */
 const useInvalidateSemesters = () => useInvalidateAll(['me', 'semesters']);
 
-export const useDashboard = () =>
-  useQuery({ queryKey: ['dashboard'], queryFn: () => api<Dashboard>('/dashboard') });
+export const useDashboard = () => useQuery({ queryKey: ['dashboard'], queryFn: () => api<Dashboard>('/dashboard') });
 
 export const useTasks = (filters: TaskQuery = {}) =>
   useQuery({
@@ -133,8 +142,7 @@ export function useDeleteAssessment() {
 }
 
 // RF03 — semestres. Mudar o semestre ativo altera o painel, as disciplinas e o /me.
-export const useSemesters = () =>
-  useQuery({ queryKey: ['semesters'], queryFn: () => api<Semester[]>('/semesters') });
+export const useSemesters = () => useQuery({ queryKey: ['semesters'], queryFn: () => api<Semester[]>('/semesters') });
 
 export function useCreateSemester() {
   const invalidate = useInvalidateSemesters();
@@ -173,7 +181,8 @@ export function useStartStudySession() {
   return useMutation({
     mutationFn: (input: StudySessionStartInput) =>
       api<StudySession>('/study-sessions/start', { method: 'POST', body: input }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['study-sessions'] }),
+    onSettled: () =>
+      Promise.all(['study-sessions', 'stats'].map((key) => queryClient.invalidateQueries({ queryKey: [key] }))),
   });
 }
 
@@ -181,6 +190,23 @@ export function useStopStudySession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => api<StudySession>(`/study-sessions/${id}/stop`, { method: 'POST', body: {} }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['study-sessions'] }),
+    onSettled: () =>
+      Promise.all(['study-sessions', 'stats'].map((key) => queryClient.invalidateQueries({ queryKey: [key] }))),
   });
 }
+
+// RF14 — estatísticas dos últimos `days` dias
+export const useStats = (days = 7) =>
+  useQuery({ queryKey: ['stats', days], queryFn: () => api<Stats>(`/stats?days=${days}`) });
+
+// RF15 — calendário
+export const useCalendar = (from: string, to: string) =>
+  useQuery({
+    queryKey: ['calendar', from, to],
+    queryFn: () => api<CalendarData>(`/calendar${toQueryString({ from, to })}`),
+    placeholderData: (previous) => previous,
+  });
+
+// RF17 — alertas das próximas 48 h (atualiza a cada 5 minutos)
+export const useAlerts = () =>
+  useQuery({ queryKey: ['alerts'], queryFn: () => api<Alerts>('/alerts'), refetchInterval: 5 * 60 * 1000 });

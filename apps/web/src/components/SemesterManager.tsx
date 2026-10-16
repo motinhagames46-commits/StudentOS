@@ -5,7 +5,18 @@ import { useCreateSemester, useDeleteSemester, useSemesters, useUpdateSemester }
 import { ApiError, errorMessage } from '../lib/api';
 import { dateOnlyToIso, formatDate, isoToDateOnly } from '../lib/format';
 import type { Semester } from '../lib/types';
-import { Badge, Button, Card, EmptyState, ErrorState, FormError, IconButton, LoadingList, SelectField, TextField } from './ui';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ErrorState,
+  FormError,
+  IconButton,
+  LoadingList,
+  SelectField,
+  TextField,
+} from './ui';
 
 /** Seletor do semestre ativo (RF03). As disciplinas novas vão para o semestre ativo. */
 export function ActiveSemesterSelect({ className }: { className?: string }) {
@@ -207,8 +218,20 @@ function SemesterForm({ initial, submitLabel, showActiveToggle = false, onSubmit
         autoFocus
       />
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField label="Início" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} error={errors.startDate} />
-        <TextField label="Fim" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} error={errors.endDate} />
+        <TextField
+          label="Início"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          error={errors.startDate}
+        />
+        <TextField
+          label="Fim"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          error={errors.endDate}
+        />
       </div>
       {showActiveToggle && (
         <label className="flex items-center gap-2 text-sm text-stone-700">

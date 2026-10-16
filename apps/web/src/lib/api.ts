@@ -43,8 +43,7 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
   const data: unknown = await res.json().catch(() => null);
 
   if (!res.ok) {
-    const error = (data as { error?: { code?: string; message?: string; details?: ApiErrorDetail[] } } | null)
-      ?.error;
+    const error = (data as { error?: { code?: string; message?: string; details?: ApiErrorDetail[] } } | null)?.error;
     throw new ApiError(
       res.status,
       error?.code ?? 'UNKNOWN',

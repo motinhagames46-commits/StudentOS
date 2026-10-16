@@ -60,10 +60,7 @@ export function exceedsWeightLimit(currentSum: number, newWeight: number): boole
   return currentSum + newWeight > 100 + EPS;
 }
 
-export function computeGrades(
-  items: readonly GradeItem[],
-  passingGrade: number = DEFAULT_PASSING_GRADE,
-): GradeSummary {
+export function computeGrades(items: readonly GradeItem[], passingGrade: number = DEFAULT_PASSING_GRADE): GradeSummary {
   const total = weightSum(items);
   const graded = items.filter(isGraded);
   const gradedWeight = round2(graded.reduce((s, a) => s + a.weight, 0));

@@ -64,7 +64,9 @@ describe('login e sessão (RF02)', () => {
 
   it('mensagem genérica para email inexistente ou palavra-passe errada', async () => {
     await registerUser('rui');
-    const wrong = await request(app).post('/api/auth/login').send({ email: 'rui@exemplo.pt', password: 'errada-errada' });
+    const wrong = await request(app)
+      .post('/api/auth/login')
+      .send({ email: 'rui@exemplo.pt', password: 'errada-errada' });
     const missing = await request(app).post('/api/auth/login').send({ email: 'nao@exemplo.pt', password: PASSWORD });
     expect(wrong.status).toBe(401);
     expect(missing.status).toBe(401);

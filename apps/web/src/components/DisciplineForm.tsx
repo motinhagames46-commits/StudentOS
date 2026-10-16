@@ -41,7 +41,8 @@ export function DisciplineForm({ initial, submitLabel = 'Criar disciplina', onSu
     try {
       await onSubmit(parsed.data);
     } catch (err) {
-      if (err instanceof ApiError && err.status === 409) setErrors({ code: 'Já existe uma disciplina com esta sigla neste semestre' });
+      if (err instanceof ApiError && err.status === 409)
+        setErrors({ code: 'Já existe uma disciplina com esta sigla neste semestre' });
       else if (err instanceof ApiError && err.details.length) setErrors(err.fieldErrors());
       else setFormError(errorMessage(err));
     } finally {
@@ -52,19 +53,60 @@ export function DisciplineForm({ initial, submitLabel = 'Criar disciplina', onSu
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-[1fr_8rem]">
-        <TextField label="Nome" placeholder="Ex.: Programação Web" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} autoFocus />
-        <TextField label="Sigla" placeholder="PW" value={code} onChange={(e) => setCode(e.target.value)} error={errors.code} maxLength={12} />
+        <TextField
+          label="Nome"
+          placeholder="Ex.: Programação Web"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={errors.name}
+          autoFocus
+        />
+        <TextField
+          label="Sigla"
+          placeholder="PW"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          error={errors.code}
+          maxLength={12}
+        />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField label="ECTS" type="number" inputMode="numeric" min={1} max={60} value={ects} onChange={(e) => setEcts(e.target.value)} error={errors.ects} hint="Opcional — usado na média global" />
-        <TextField label="Nota mínima de aprovação" type="number" inputMode="decimal" min={0} max={20} step={0.5} value={passingGrade} onChange={(e) => setPassingGrade(e.target.value)} error={errors.passingGrade} />
+        <TextField
+          label="ECTS"
+          type="number"
+          inputMode="numeric"
+          min={1}
+          max={60}
+          value={ects}
+          onChange={(e) => setEcts(e.target.value)}
+          error={errors.ects}
+          hint="Opcional — usado na média global"
+        />
+        <TextField
+          label="Nota mínima de aprovação"
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={20}
+          step={0.5}
+          value={passingGrade}
+          onChange={(e) => setPassingGrade(e.target.value)}
+          error={errors.passingGrade}
+        />
       </div>
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-stone-700">Cor</legend>
         <div className="flex flex-wrap gap-2">
           {disciplineColors.map((c) => (
             <label key={c} className="cursor-pointer">
-              <input type="radio" name="color" value={c} checked={color === c} onChange={() => setColor(c)} className="peer sr-only" />
+              <input
+                type="radio"
+                name="color"
+                value={c}
+                checked={color === c}
+                onChange={() => setColor(c)}
+                className="peer sr-only"
+              />
               <span
                 aria-hidden="true"
                 className="block size-8 rounded-full ring-offset-2 peer-checked:ring-2 peer-checked:ring-stone-800 peer-focus-visible:outline-2 peer-focus-visible:outline-accent"

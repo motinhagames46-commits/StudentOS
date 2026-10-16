@@ -19,8 +19,7 @@ export class HttpError extends Error {
   }
 }
 
-export const notFound = (code = 'NOT_FOUND', message = 'Recurso não encontrado') =>
-  new HttpError(404, code, message);
+export const notFound = (code = 'NOT_FOUND', message = 'Recurso não encontrado') => new HttpError(404, code, message);
 
 export const unauthorized = () => new HttpError(401, 'UNAUTHORIZED', 'Sessão inválida ou expirada');
 
@@ -31,9 +30,7 @@ export const validationError = (details: ErrorDetail[]) =>
 export function parse<T extends z.ZodType>(schema: T, data: unknown): z.output<T> {
   const result = schema.safeParse(data);
   if (!result.success) {
-    throw validationError(
-      result.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-    );
+    throw validationError(result.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })));
   }
   return result.data;
 }

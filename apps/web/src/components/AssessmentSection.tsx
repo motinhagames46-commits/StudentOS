@@ -23,7 +23,8 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm text-stone-600">
           Pesos configurados:{' '}
-          <strong className={weightSum === 100 ? 'text-green-700' : 'text-amber-800'}>{formatGrade(weightSum)}%</strong> de 100%
+          <strong className={weightSum === 100 ? 'text-green-700' : 'text-amber-800'}>{formatGrade(weightSum)}%</strong>{' '}
+          de 100%
         </p>
         {!adding && (
           <Button variant="secondary" onClick={() => setAdding(true)} disabled={weightSum >= 100}>
@@ -83,7 +84,11 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
                 <IconButton label={`Editar "${a.name}"`} onClick={() => setEditingId(a.id)}>
                   <Pencil aria-hidden="true" className="size-4" />
                 </IconButton>
-                <IconButton label={`Eliminar "${a.name}"`} onClick={() => handleDelete(a)} className="hover:text-red-700">
+                <IconButton
+                  label={`Eliminar "${a.name}"`}
+                  onClick={() => handleDelete(a)}
+                  className="hover:text-red-700"
+                >
                   <Trash2 aria-hidden="true" className="size-4" />
                 </IconButton>
               </li>
@@ -101,7 +106,15 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
   );
 }
 
-function AssessmentForm({ disciplineId, initial, onDone }: { disciplineId: number; initial?: Assessment; onDone: () => void }) {
+function AssessmentForm({
+  disciplineId,
+  initial,
+  onDone,
+}: {
+  disciplineId: number;
+  initial?: Assessment;
+  onDone: () => void;
+}) {
   const create = useCreateAssessment(disciplineId);
   const update = useUpdateAssessment();
   const [name, setName] = useState(initial?.name ?? '');
@@ -144,7 +157,14 @@ function AssessmentForm({ disciplineId, initial, onDone }: { disciplineId: numbe
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-3">
       <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
-        <TextField label="Nome" placeholder="Ex.: Teste 1" value={name} onChange={(e) => setName(e.target.value)} error={errors.name} autoFocus />
+        <TextField
+          label="Nome"
+          placeholder="Ex.: Teste 1"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={errors.name}
+          autoFocus
+        />
         <SelectField label="Tipo" value={type} onChange={(e) => setType(e.target.value as AssessmentType)}>
           {assessmentTypes.map((t) => (
             <option key={t} value={t}>
@@ -154,10 +174,47 @@ function AssessmentForm({ disciplineId, initial, onDone }: { disciplineId: numbe
         </SelectField>
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <TextField label="Peso (%)" type="number" inputMode="decimal" min={0} max={100} value={weight} onChange={(e) => setWeight(e.target.value)} error={errors.weight} />
-        <TextField label="Data" type="date" value={date} onChange={(e) => setDate(e.target.value)} error={errors.date} />
-        <TextField label="Nota" type="number" inputMode="decimal" min={0} max={20} step={0.1} placeholder="Pendente" value={score} onChange={(e) => setScore(e.target.value)} error={errors.score} />
-        <TextField label="Nota mínima" type="number" inputMode="decimal" min={0} max={20} step={0.5} placeholder="—" value={minScore} onChange={(e) => setMinScore(e.target.value)} error={errors.minScore} />
+        <TextField
+          label="Peso (%)"
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={100}
+          value={weight}
+          onChange={(e) => setWeight(e.target.value)}
+          error={errors.weight}
+        />
+        <TextField
+          label="Data"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          error={errors.date}
+        />
+        <TextField
+          label="Nota"
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={20}
+          step={0.1}
+          placeholder="Pendente"
+          value={score}
+          onChange={(e) => setScore(e.target.value)}
+          error={errors.score}
+        />
+        <TextField
+          label="Nota mínima"
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={20}
+          step={0.5}
+          placeholder="—"
+          value={minScore}
+          onChange={(e) => setMinScore(e.target.value)}
+          error={errors.minScore}
+        />
       </div>
       <FormError message={formError} />
       <div className="flex justify-end gap-2">

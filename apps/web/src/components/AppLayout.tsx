@@ -1,6 +1,7 @@
 import { BookOpen, CheckSquare, LayoutDashboard, LogOut, Timer, UserRound } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 import { useLogout, useMe } from '../hooks/useAuth';
+import { AlertsBell } from './AlertsBell';
 
 const nav = [
   { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
@@ -34,8 +35,9 @@ export function AppLayout() {
 
       {/* Barra lateral — desktop */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-stone-200 bg-white md:flex md:sticky md:top-0 md:h-dvh">
-        <div className="px-5 py-5">
+        <div className="flex items-center justify-between py-4 pr-3 pl-5">
           <Logo />
+          <AlertsBell />
         </div>
         <nav aria-label="Navegação principal" className="flex-1 space-y-1 px-3">
           {nav.map(({ to, label, icon: Icon, end }) => (
@@ -71,14 +73,17 @@ export function AppLayout() {
       {/* Barra superior — mobile */}
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 md:hidden">
         <Logo />
-        <button
-          type="button"
-          onClick={() => logout.mutate()}
-          aria-label="Terminar sessão"
-          className="inline-flex size-9 items-center justify-center rounded-lg text-stone-500 hover:bg-stone-100"
-        >
-          <LogOut aria-hidden="true" className="size-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <AlertsBell align="right" />
+          <button
+            type="button"
+            onClick={() => logout.mutate()}
+            aria-label="Terminar sessão"
+            className="inline-flex size-9 items-center justify-center rounded-lg text-stone-500 hover:bg-stone-100"
+          >
+            <LogOut aria-hidden="true" className="size-4" />
+          </button>
+        </div>
       </header>
 
       <main id="conteudo" className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-10 md:pb-10">

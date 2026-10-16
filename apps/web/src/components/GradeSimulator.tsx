@@ -46,17 +46,17 @@ export function GradeSimulator({ assessments, passingGrade }: GradeSimulatorProp
         </div>
       </div>
       <p aria-live="polite" className="rounded-lg bg-stone-50 px-4 py-3 text-sm text-stone-800">
-        {validTarget ? <SimulatorMessage assessments={assessments} target={parsed} passingGrade={passingGrade} /> : 'Indica uma nota entre 0 e 20.'}
+        {validTarget ? (
+          <SimulatorMessage assessments={assessments} target={parsed} passingGrade={passingGrade} />
+        ) : (
+          'Indica uma nota entre 0 e 20.'
+        )}
       </p>
     </div>
   );
 }
 
-function SimulatorMessage({
-  assessments,
-  target,
-  passingGrade,
-}: GradeSimulatorProps & { target: number }) {
+function SimulatorMessage({ assessments, target, passingGrade }: GradeSimulatorProps & { target: number }) {
   const result = requiredScore(assessments, target);
   const goal = target === passingGrade ? 'Para passar' : `Para teres ${formatGrade(target)}`;
 

@@ -71,7 +71,16 @@ export const gradeStatusLabels: Record<GradeStatus, string> = {
   failed: 'Reprovado',
 };
 
-export const disciplineColors = ['#2563EB', '#16A34A', '#9333EA', '#EA580C', '#0891B2', '#DB2777', '#CA8A04', '#57534E'];
+export const disciplineColors = [
+  '#2563EB',
+  '#16A34A',
+  '#9333EA',
+  '#EA580C',
+  '#0891B2',
+  '#DB2777',
+  '#A16207',
+  '#4F46E5',
+];
 
 /** Duração legível: "0 min", "45 s", "12 min", "1 h 05 min". */
 export function formatDuration(ms: number): string {

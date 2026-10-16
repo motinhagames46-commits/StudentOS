@@ -1,15 +1,22 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
+import { StudyByDisciplineChart, TaskProgress } from '../components/charts';
 import { TaskList } from '../components/TaskList';
 import { Badge, Card, DisciplineChip, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
-import { useDashboard, useUpdateTask } from '../hooks/queries';
+import { useDashboard, useStats, useUpdateTask } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
-import { formatDate, formatGrade, gradeStatusLabels, relativeDay } from '../lib/format';
+import { formatDate, formatDuration, formatGrade, gradeStatusLabels, relativeDay } from '../lib/format';
 import type { Dashboard, GradeSummaryDto } from '../lib/types';
 
 export function gradeTone(status: GradeSummaryDto['status']) {
-  return status === 'approved' ? 'green' : status === 'failed' ? 'red' : status === 'incomplete-config' ? 'amber' : 'neutral';
+  return status === 'approved'
+    ? 'green'
+    : status === 'failed'
+      ? 'red'
+      : status === 'incomplete-config'
+        ? 'amber'
+        : 'neutral';
 }
 
 /** Painel inicial — responde às três perguntas da secção 1.1 (RF10 / HU04). */
@@ -17,11 +24,15 @@ export function DashboardPage() {
   const { data: me } = useMe();
   const { data, isPending, error, refetch } = useDashboard();
   const updateTask = useUpdateTask();
+  const stats = useStats(7);
   const firstName = me?.user.name.split(' ')[0];
 
   return (
     <>
-      <PageHeader title={`Olá, ${firstName ?? ''}`} subtitle={data?.activeSemester?.label ?? me?.activeSemester?.label} />
+      <PageHeader
+        title={`Olá, ${firstName ?? ''}`}
+        subtitle={data?.activeSemester?.label ?? me?.activeSemester?.label}
+      />
 
       {error ? (
         <ErrorState message={errorMessage(error)} onRetry={() => refetch()} />
@@ -64,10 +75,16 @@ export function DashboardPage() {
                 <ul className="divide-y divide-stone-100">
                   {data.upcomingAssessments.map((a) => (
                     <li key={a.id} className="flex items-center gap-3 py-2.5">
-                      <div className="w-20 shrink-0 text-xs text-stone-500" title={a.date ? formatDate(a.date) : undefined}>
+                      <div
+                        className="w-20 shrink-0 text-xs text-stone-500"
+                        title={a.date ? formatDate(a.date) : undefined}
+                      >
                         {a.date ? relativeDay(a.date) : '—'}
                       </div>
-                      <Link to={`/disciplinas/${a.discipline.id}`} className="min-w-0 flex-1 text-sm text-stone-900 hover:underline">
+                      <Link
+                        to={`/disciplinas/${a.discipline.id}`}
+                        className="min-w-0 flex-1 text-sm text-stone-900 hover:underline"
+                      >
                         {a.name}
                       </Link>
                       <DisciplineChip discipline={a.discipline} />
@@ -78,6 +95,48 @@ export function DashboardPage() {
               )}
             </Card>
           </div>
+
+          <Card
+            title="Estudo nos últimos 7 dias"
+            action={
+              <Link to="/sessoes" className="text-sm text-accent hover:underline">
+                Sessões
+              </Link>
+            }
+          >
+            {stats.isPending ? (
+              <Skeleton className="h-24" />
+            ) : stats.error ? (
+              <ErrorState message={errorMessage(stats.error)} onRetry={() => stats.refetch()} />
+            ) : (
+              <div className="grid gap-6 md:grid-cols-[1fr_16rem]">
+                <div>
+                  <p className="mb-3 text-sm text-stone-600">
+                    Total: <strong className="text-stone-900">{formatDuration(stats.data.totalMinutes * 60000)}</strong>
+                  </p>
+                  {stats.data.studyByDiscipline.length ? (
+                    <StudyByDisciplineChart rows={stats.data.studyByDiscipline} />
+                  ) : (
+                    <EmptyState
+                      message="Ainda não registaste estudo esta semana."
+                      action={
+                        <Link to="/sessoes" className="text-sm font-medium text-accent hover:underline">
+                          Iniciar uma sessão
+                        </Link>
+                      }
+                    />
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <TaskProgress done={stats.data.tasks.done} todo={stats.data.tasks.todo} />
+                  <p className="text-xs text-stone-500">
+                    {stats.data.tasks.completedInRange}{' '}
+                    {stats.data.tasks.completedInRange === 1 ? 'concluída' : 'concluídas'} nos últimos 7 dias
+                  </p>
+                </div>
+              </div>
+            )}
+          </Card>
 
           <Card
             title="Médias por disciplina"
@@ -101,7 +160,11 @@ export function DashboardPage() {
                 {data.disciplines.map((d) => (
                   <li key={d.id}>
                     <Link to={`/disciplinas/${d.id}`} className="group flex items-center gap-3 py-3">
-                      <span aria-hidden="true" className="h-8 w-1 rounded-full" style={{ backgroundColor: d.color ?? '#a8a29e' }} />
+                      <span
+                        aria-hidden="true"
+                        className="h-8 w-1 rounded-full"
+                        style={{ backgroundColor: d.color ?? '#a8a29e' }}
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-stone-900 group-hover:underline">{d.name}</p>
                         <RequiredHint grades={d.grades} />
@@ -134,7 +197,8 @@ function RequiredHint({ grades }: { grades: GradeSummaryDto }) {
     );
   }
   if (r.status === 'secured') return <p className="text-xs text-green-700">Aprovação garantida (cumprindo mínimos)</p>;
-  if (r.status === 'impossible') return <p className="text-xs font-medium text-red-700">Já não é possível passar nesta época</p>;
+  if (r.status === 'impossible')
+    return <p className="text-xs font-medium text-red-700">Já não é possível passar nesta época</p>;
   return null;
 }
 
@@ -154,11 +218,12 @@ function Stats({ data }: { data: Dashboard }) {
       {stats.map((s) => (
         <div key={s.label} className="rounded-xl border border-stone-200 bg-white px-4 py-3">
           <dt className="text-xs text-stone-500">{s.label}</dt>
-          <dd className={`mt-1 text-2xl font-semibold tabular-nums ${s.alert ? 'text-red-700' : 'text-stone-900'}`}>{s.value}</dd>
+          <dd className={`mt-1 text-2xl font-semibold tabular-nums ${s.alert ? 'text-red-700' : 'text-stone-900'}`}>
+            {s.value}
+          </dd>
           {s.hint && <dd className="mt-0.5 hidden text-xs text-stone-500 sm:block">{s.hint}</dd>}
         </div>
       ))}
     </dl>
   );
 }
-

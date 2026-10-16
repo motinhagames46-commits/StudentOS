@@ -1,10 +1,7 @@
 // Utilitários de datas partilhados.
 
 /** RN09: uma tarefa está em atraso se o prazo já passou e não está concluída. */
-export function isOverdue(
-  task: { status: string; dueDate: string | Date | null },
-  now: Date = new Date(),
-): boolean {
+export function isOverdue(task: { status: string; dueDate: string | Date | null }, now: Date = new Date()): boolean {
   if (task.status === 'DONE' || task.dueDate === null) return false;
   return new Date(task.dueDate).getTime() < now.getTime();
 }

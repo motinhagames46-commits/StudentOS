@@ -15,11 +15,7 @@ const grade = z.number('Indica um número').min(0, 'A nota mínima é 0').max(20
 const isoDate = z.iso.datetime({ error: 'Data inválida' });
 const positiveId = z.number().int().positive();
 
-export const emailSchema = z
-  .string('Indica o email')
-  .trim()
-  .toLowerCase()
-  .pipe(z.email('Email inválido').max(254));
+export const emailSchema = z.string('Indica o email').trim().toLowerCase().pipe(z.email('Email inválido').max(254));
 
 export const registerSchema = z.strictObject({
   name: z.string('Indica o nome').trim().min(2, 'O nome deve ter pelo menos 2 caracteres').max(80),
@@ -73,10 +69,7 @@ export const disciplineUpdateSchema = disciplineCreateSchema.partial();
 export const assessmentCreateSchema = z.strictObject({
   name: z.string('Indica o nome').trim().min(1, 'Indica o nome').max(100),
   type: z.enum(assessmentTypes).optional(),
-  weight: z
-    .number('Indica o peso')
-    .gt(0, 'O peso tem de ser maior que 0')
-    .max(100, 'O peso não pode exceder 100%'),
+  weight: z.number('Indica o peso').gt(0, 'O peso tem de ser maior que 0').max(100, 'O peso não pode exceder 100%'),
   date: isoDate.nullable().optional(),
   score: grade.nullable().optional(),
   minScore: grade.nullable().optional(),
@@ -121,6 +114,21 @@ export const studySessionQuerySchema = z
     path: ['to'],
   });
 
+// RF14 — estatísticas dos últimos N dias
+export const statsQuerySchema = z.object({
+  days: z.coerce.number().int().min(1).max(90).optional(),
+});
+
+// RF15 — calendário: intervalo obrigatório, no máximo 62 dias (um mês com margem)
+const MAX_CALENDAR_SPAN = 62 * 24 * 60 * 60 * 1000;
+export const calendarQuerySchema = z
+  .object({ from: isoDate, to: isoDate })
+  .refine((q) => q.to > q.from, { message: 'A data de fim tem de ser posterior à de início', path: ['to'] })
+  .refine((q) => new Date(q.to).getTime() - new Date(q.from).getTime() <= MAX_CALENDAR_SPAN, {
+    message: 'O intervalo não pode exceder 62 dias',
+    path: ['to'],
+  });
+
 export const gradesQuerySchema = z.object({
   target: z.coerce.number().min(0).max(20).optional(),
 });
@@ -141,3 +149,5 @@ export type SemesterUpdateInput = z.infer<typeof semesterUpdateSchema>;
 export type StudySessionStartInput = z.infer<typeof studySessionStartSchema>;
 export type StudySessionStopInput = z.infer<typeof studySessionStopSchema>;
 export type StudySessionQuery = z.infer<typeof studySessionQuerySchema>;
+export type StatsQuery = z.infer<typeof statsQuerySchema>;
+export type CalendarQuery = z.infer<typeof calendarQuerySchema>;

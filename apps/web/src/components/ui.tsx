@@ -136,7 +136,17 @@ export function SelectField({
   );
 }
 
-export function Card({ title, action, children, className }: { title?: string; action?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({
+  title,
+  action,
+  children,
+  className,
+}: {
+  title?: string;
+  action?: ReactNode;
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <section className={cx('rounded-xl border border-stone-200 bg-white', className)}>
       {title && (
@@ -173,7 +183,10 @@ export function EmptyState({ message, action }: { message: string; action?: Reac
 
 export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-center">
+    <div
+      role="alert"
+      className="flex flex-col items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-center"
+    >
       <p className="flex items-center gap-2 text-sm text-red-800">
         <AlertCircle aria-hidden="true" className="size-4" />
         {message}
@@ -211,7 +224,13 @@ export function LoadingList({ rows = 3 }: { rows?: number }) {
   );
 }
 
-export function Badge({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'green' | 'red' | 'amber' | 'blue' }) {
+export function Badge({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode;
+  tone?: 'neutral' | 'green' | 'red' | 'amber' | 'blue';
+}) {
   const tones = {
     neutral: 'bg-stone-100 text-stone-700',
     green: 'bg-green-50 text-green-800',
@@ -220,7 +239,12 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
     blue: 'bg-accent-soft text-blue-800',
   };
   return (
-    <span className={cx('inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap', tones[tone])}>
+    <span
+      className={cx(
+        'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap',
+        tones[tone],
+      )}
+    >
       {children}
     </span>
   );
@@ -232,7 +256,11 @@ export function DisciplineChip({ discipline }: { discipline: { code: string; col
       className="inline-flex items-center gap-1.5 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700"
       title={discipline.name}
     >
-      <span aria-hidden="true" className="size-2 rounded-full" style={{ backgroundColor: discipline.color ?? '#a8a29e' }} />
+      <span
+        aria-hidden="true"
+        className="size-2 rounded-full"
+        style={{ backgroundColor: discipline.color ?? '#a8a29e' }}
+      />
       {discipline.code}
     </span>
   );

@@ -23,10 +23,7 @@ describe('disciplinas (RF04)', () => {
   });
 
   it('recusa sigla repetida no mesmo semestre (409)', async () => {
-    const res = await request(app)
-      .post('/api/disciplines')
-      .set('Cookie', cookie)
-      .send({ name: 'Outra', code: 'pw' });
+    const res = await request(app).post('/api/disciplines').set('Cookie', cookie).send({ name: 'Outra', code: 'pw' });
     expect(res.status).toBe(409);
   });
 });
