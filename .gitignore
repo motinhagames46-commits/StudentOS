@@ -21,3 +21,7 @@ apps/api/src/generated/
 # Sistema
 *.log
 .DS_Store
+
+# Playwright (testes E2E)
+test-results/
+playwright-report/

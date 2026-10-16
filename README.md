@@ -14,7 +14,7 @@ A especificação completa está em [`StudentOS-Especificacao-v2.md`](StudentOS-
 | Backend | Node.js 24 LTS, Express 5, Zod 4 |
 | Base de dados | PostgreSQL 17, Prisma ORM 7 (`@prisma/adapter-pg`) |
 | Autenticação | JWT em cookie `httpOnly`, bcrypt (custo 12) |
-| Testes | Vitest 5, Supertest, Testing Library |
+| Testes | Vitest 5, Supertest, Testing Library, Playwright + axe-core (E2E) |
 
 ## Estrutura
 
@@ -22,6 +22,7 @@ A especificação completa está em [`StudentOS-Especificacao-v2.md`](StudentOS-
 packages/shared   motor de cálculo de médias (RN03–RN08) e esquemas Zod, usados pela API e pelo frontend
 apps/api          API REST (Express + Prisma); em produção serve também o frontend
 apps/web          SPA React
+e2e               testes end-to-end (Playwright) contra o build de produção
 scripts/db.mjs    PostgreSQL 17 local, sem Docker
 ```
 
@@ -57,6 +58,7 @@ Abre <http://localhost:5173>. Conta de demonstração do seed: `demo@studentos.t
 |---|---|
 | `npm run dev` | Base de dados + API + frontend em modo de desenvolvimento |
 | `npm test` | Todos os testes (motor de médias, API com BD de teste, componentes) |
+| `npm run test:e2e` | Build de produção + testes end-to-end com Playwright (fluxo principal e axe) |
 | `npm run typecheck` | TypeScript em modo `strict` em todos os pacotes |
 | `npm run lint` | ESLint |
 | `npm run build` | Build de produção (`shared` → `web` → `api`) |
@@ -64,6 +66,12 @@ Abre <http://localhost:5173>. Conta de demonstração do seed: `demo@studentos.t
 | `npm run db:migrate` | Nova migração após alterar `apps/api/prisma/schema.prisma` |
 
 Os testes da API usam a base de dados `studentos_test`, que o `npm run db` cria automaticamente. Com Docker, `docker compose up -d` é uma alternativa ao `npm run db` (usa a mesma porta).
+
+Os testes E2E (`e2e/`) fazem o build, arrancam o `npm start` na porta 4100 com a base de dados `studentos_test` e correm no Chromium: o fluxo principal (registo → disciplina → avaliações do exemplo 4.1 → «Para passar precisas de 8,0» → tarefa concluída) e a verificação axe do painel, das tarefas e do detalhe da disciplina (falham com violações sérias ou críticas). Se o PostgreSQL local não estiver a correr, o Playwright arranca o `npm run db`. Na primeira vez é preciso descarregar o browser:
+
+```bash
+npx playwright install chromium
+```
 
 ## Estado do MVP
 
@@ -80,7 +88,7 @@ Os testes da API usam a base de dados `studentos_test`, que o `npm run db` cria 
 | RF14 Estatísticas (estudo por disciplina e por dia, progresso das tarefas) | ✅ |
 | RF15 Calendário mensal de prazos e avaliações | ✅ |
 | RF17 Alertas na aplicação (próximas 48 h) | ✅ |
-| Testes E2E (Playwright) | ⏳ Por fazer |
+| Testes E2E (Playwright): fluxo principal e acessibilidade com axe | ✅ |
 
 ## Deploy
 

@@ -6,3 +6,5 @@ coverage
 apps/api/src/generated
 apps/api/prisma/migrations
 package-lock.json
+test-results
+playwright-report
