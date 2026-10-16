@@ -1,0 +1,42 @@
+{
+  "name": "studentos",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "db": "node scripts/db.mjs",
+    "dev": "concurrently -k -n db,api,web -c blue,green,magenta \"npm run db\" \"npm run dev -w @studentos/api\" \"npm run dev -w @studentos/web\"",
+    "build": "npm run build -w @studentos/shared && npm run build -w @studentos/web && npm run build -w @studentos/api",
+    "start": "npm run start -w @studentos/api",
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "db:migrate": "npm run db:migrate -w @studentos/api",
+    "db:seed": "npm run db:seed -w @studentos/api"
+  },
+  "allowScripts": {
+    "@prisma/engines@7.10.1": true,
+    "prisma@7.10.1": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true,
+    "@embedded-postgres/darwin-arm64@17.10.0-beta.17": true
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "concurrently": "10.0.6",
+    "embedded-postgres": "17.10.0-beta.17",
+    "eslint": "10.12.0",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "prettier": "3.9.10",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.2"
+  }
+}

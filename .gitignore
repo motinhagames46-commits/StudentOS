@@ -1,0 +1,23 @@
+# Dependências e builds
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.vite/
+
+# Ferramentas e dados locais
+.tools/
+.pgdata/
+apps/api/src/generated/
+
+# Segredos (só o .env.example vai para o Git)
+.env
+.env.*
+!.env.example
+
+# Configuração local do Claude Code
+.claude/settings.local.json
+
+# Sistema
+*.log
+.DS_Store

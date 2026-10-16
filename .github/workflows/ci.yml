@@ -1,0 +1,37 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: studentos
+          POSTGRES_PASSWORD: studentos
+          POSTGRES_DB: studentos_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U studentos"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://studentos:studentos@localhost:5432/studentos_test
+      TEST_DATABASE_URL: postgresql://studentos:studentos@localhost:5432/studentos_test
+      JWT_SECRET: ci-only-secret-not-used-in-production-000000
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build -w @studentos/shared
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm audit --audit-level=high

@@ -1,0 +1,84 @@
+# StudentOS
+
+Organizador académico pessoal para estudantes de TPSI (IPVC): disciplinas, tarefas, avaliações com pesos, cálculo de médias e simulador de "quanto preciso no exame?".
+
+A especificação completa está em [`StudentOS-Especificacao-v2.md`](StudentOS-Especificacao-v2.md).
+
+## Stack
+
+| Camada | Tecnologia |
+|---|---|
+| Frontend | React 19, React Router 8, TanStack Query 5, Tailwind CSS 4, Vite 8 |
+| Backend | Node.js 24 LTS, Express 5, Zod 4 |
+| Base de dados | PostgreSQL 17, Prisma ORM 7 (`@prisma/adapter-pg`) |
+| Autenticação | JWT em cookie `httpOnly`, bcrypt (custo 12) |
+| Testes | Vitest 5, Supertest, Testing Library |
+
+## Estrutura
+
+```
+packages/shared   motor de cálculo de médias (RN03–RN08) e esquemas Zod, usados pela API e pelo frontend
+apps/api          API REST (Express + Prisma); em produção serve também o frontend
+apps/web          SPA React
+scripts/db.mjs    PostgreSQL 17 local, sem Docker
+```
+
+## Arranque rápido
+
+O Node.js 24 está instalado de forma portátil em `.tools/node` (esta pasta não vai para o Git). Em cada terminal novo:
+
+```bash
+export PATH="$PWD/.tools/node/bin:$PATH"
+```
+
+Primeira vez:
+
+```bash
+npm install
+cp apps/api/.env.example apps/api/.env   # depois gera um JWT_SECRET (ver o comentário no ficheiro)
+npm run db                                # num terminal à parte: PostgreSQL em localhost:54329
+npm run db:migrate                        # cria as tabelas
+npm run db:seed                           # dados de demonstração
+```
+
+Desenvolvimento (base de dados, API em `:4000` e frontend em `:5173`, tudo junto):
+
+```bash
+npm run dev
+```
+
+Abre <http://localhost:5173>. Conta de demonstração do seed: `demo@studentos.test` / `demo-studentos-2026`.
+
+## Comandos
+
+| Comando | O que faz |
+|---|---|
+| `npm run dev` | Base de dados + API + frontend em modo de desenvolvimento |
+| `npm test` | Todos os testes (motor de médias, API com BD de teste, componentes) |
+| `npm run typecheck` | TypeScript em modo `strict` em todos os pacotes |
+| `npm run lint` | ESLint |
+| `npm run build` | Build de produção (`shared` → `web` → `api`) |
+| `npm start` | Servidor de produção: API em `/api` + frontend, na mesma origem |
+| `npm run db:migrate` | Nova migração após alterar `apps/api/prisma/schema.prisma` |
+
+Os testes da API usam a base de dados `studentos_test`, que o `npm run db` cria automaticamente. Com Docker, `docker compose up -d` é uma alternativa ao `npm run db` (usa a mesma porta).
+
+## Estado do MVP
+
+| Requisito | Estado |
+|---|---|
+| RF01–RF02 Registo, login, logout, terminar todas as sessões | ✅ |
+| RF03 Semestres | ⚠️ API completa; na interface há só o semestre ativo, criado no registo |
+| RF04 Disciplinas | ✅ |
+| RF05–RF06 Tarefas, filtros e ordenação | ✅ |
+| RF07–RF09 Avaliações, médias e simulador de nota necessária | ✅ |
+| RF10 Painel inicial | ✅ |
+| RF11–RF12 Exportar dados e eliminar conta | ✅ |
+| RF13+ Sessões de estudo, calendário, estatísticas (Should) | ⏳ Por fazer (o modelo `StudySession` já existe) |
+| Testes E2E (Playwright) | ⏳ Por fazer |
+
+## Notas de segurança
+
+- O ficheiro `apps/api/.env` tem segredos e nunca deve ir para o Git (está no `.gitignore`).
+- Todos os recursos são filtrados pelo utilizador da sessão. Um recurso de outro utilizador devolve 404, e há testes para isso (`apps/api/test/tasks.test.ts`).
+- A conta do seed é só para desenvolvimento local.

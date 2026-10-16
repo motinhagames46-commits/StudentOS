@@ -1,0 +1,126 @@
+// Modelo de dados — secção 10 da especificação.
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum AssessmentType {
+  TEST
+  EXAM
+  PROJECT
+  ASSIGNMENT
+  PRESENTATION
+  OTHER
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TaskStatus {
+  TODO
+  DONE
+}
+
+model User {
+  id            Int            @id @default(autoincrement())
+  name          String
+  email         String         @unique
+  passwordHash  String
+  tokenVersion  Int            @default(0) // incrementar invalida todas as sessões
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  semesters     Semester[]
+  disciplines   Discipline[]
+  tasks         Task[]
+  studySessions StudySession[]
+}
+
+model Semester {
+  id          Int          @id @default(autoincrement())
+  label       String
+  startDate   DateTime     @db.Date
+  endDate     DateTime     @db.Date
+  isActive    Boolean      @default(false)
+  userId      Int
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplines Discipline[]
+
+  @@index([userId])
+}
+
+model Discipline {
+  id            Int            @id @default(autoincrement())
+  name          String
+  code          String
+  ects          Int?
+  passingGrade  Float          @default(10)
+  color         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  userId        Int
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semesterId    Int?
+  semester      Semester?      @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  assessments   Assessment[]
+  tasks         Task[]
+  studySessions StudySession[]
+
+  @@unique([userId, semesterId, code])
+  @@index([userId])
+}
+
+model Assessment {
+  id           Int            @id @default(autoincrement())
+  name         String
+  type         AssessmentType @default(TEST)
+  weight       Float
+  date         DateTime?
+  score        Float?
+  minScore     Float?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  disciplineId Int
+  discipline   Discipline     @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+
+  @@index([disciplineId])
+}
+
+model Task {
+  id           Int          @id @default(autoincrement())
+  title        String
+  description  String?
+  dueDate      DateTime?
+  priority     TaskPriority @default(MEDIUM)
+  status       TaskStatus   @default(TODO)
+  completedAt  DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  userId       Int
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId Int?
+  discipline   Discipline?  @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, dueDate])
+}
+
+model StudySession {
+  id           Int         @id @default(autoincrement())
+  startedAt    DateTime
+  endedAt      DateTime?
+  notes        String?
+  userId       Int
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId Int?
+  discipline   Discipline? @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+
+  @@index([userId, startedAt])
+}

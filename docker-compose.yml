@@ -1,0 +1,12 @@
+# Alternativa ao "npm run db": PostgreSQL 17 em Docker, na mesma porta.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: studentos
+      POSTGRES_PASSWORD: studentos
+      POSTGRES_DB: studentos
+    ports: ['54329:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+volumes:
+  pgdata:

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "api",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd \"$HOME/Documents/StudentOS\" && PATH=\"$PWD/.tools/node/bin:$PATH\" npm run dev -w @studentos/api"],
+      "port": 4000
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "/bin/sh",
+      "runtimeArgs": ["-c", "cd \"$HOME/Documents/StudentOS\" && PATH=\"$PWD/.tools/node/bin:$PATH\" npm run dev -w @studentos/web"],
+      "port": 5173
+    }
+  ]
+}
