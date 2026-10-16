@@ -13,6 +13,7 @@ import { dashboardRouter } from './routes/dashboard.js';
 import { disciplinesRouter } from './routes/disciplines.js';
 import { meRouter } from './routes/me.js';
 import { semestersRouter } from './routes/semesters.js';
+import { studySessionsRouter } from './routes/study-sessions.js';
 import { tasksRouter } from './routes/tasks.js';
 
 const WEB_DIST = path.resolve(import.meta.dirname, '../../web/dist');
@@ -59,6 +60,7 @@ export function createApp() {
   api.use('/assessments', requireAuth, assessmentsRouter);
   api.use('/tasks', requireAuth, tasksRouter);
   api.use('/dashboard', requireAuth, dashboardRouter);
+  api.use('/study-sessions', requireAuth, studySessionsRouter);
   api.use(apiNotFound);
 
   app.use('/api', api);

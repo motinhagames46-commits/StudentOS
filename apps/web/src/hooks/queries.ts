@@ -5,27 +5,34 @@ import type {
   AssessmentUpdateInput,
   DisciplineCreateInput,
   DisciplineUpdateInput,
+  SemesterCreateInput,
+  SemesterUpdateInput,
+  StudySessionQuery,
+  StudySessionStartInput,
   TaskCreateInput,
   TaskQuery,
   TaskUpdateInput,
 } from '@studentos/shared';
 import { api } from '../lib/api';
-import type { Assessment, Dashboard, Discipline, Task } from '../lib/types';
+import type { Assessment, Dashboard, Discipline, Semester, StudySession, Task } from '../lib/types';
 
 function toQueryString(params: Record<string, string | number | undefined>): string {
   const entries = Object.entries(params).filter((e): e is [string, string | number] => e[1] !== undefined && e[1] !== '');
   return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : '';
 }
 
-function useInvalidateAll() {
+const dataKeys = ['dashboard', 'tasks', 'disciplines', 'discipline', 'study-sessions'];
+
+function useInvalidateAll(extraKeys: string[] = []) {
   const queryClient = useQueryClient();
   return () =>
     Promise.all(
-      ['dashboard', 'tasks', 'disciplines', 'discipline'].map((key) =>
-        queryClient.invalidateQueries({ queryKey: [key] }),
-      ),
+      [...dataKeys, ...extraKeys].map((key) => queryClient.invalidateQueries({ queryKey: [key] })),
     );
 }
+
+/** O semestre ativo aparece no /me (barra lateral) e filtra o painel e as disciplinas. */
+const useInvalidateSemesters = () => useInvalidateAll(['me', 'semesters']);
 
 export const useDashboard = () =>
   useQuery({ queryKey: ['dashboard'], queryFn: () => api<Dashboard>('/dashboard') });
@@ -36,8 +43,11 @@ export const useTasks = (filters: TaskQuery = {}) =>
     queryFn: () => api<Task[]>(`/tasks${toQueryString(filters)}`),
   });
 
-export const useDisciplines = () =>
-  useQuery({ queryKey: ['disciplines'], queryFn: () => api<Discipline[]>('/disciplines') });
+export const useDisciplines = (semesterId?: number) =>
+  useQuery({
+    queryKey: ['disciplines', semesterId],
+    queryFn: () => api<Discipline[]>(`/disciplines${toQueryString({ semesterId })}`),
+  });
 
 export const useDiscipline = (id: number) =>
   useQuery({
@@ -119,5 +129,58 @@ export function useDeleteAssessment() {
   return useMutation({
     mutationFn: (id: number) => api<void>(`/assessments/${id}`, { method: 'DELETE' }),
     onSuccess: invalidate,
+  });
+}
+
+// RF03 — semestres. Mudar o semestre ativo altera o painel, as disciplinas e o /me.
+export const useSemesters = () =>
+  useQuery({ queryKey: ['semesters'], queryFn: () => api<Semester[]>('/semesters') });
+
+export function useCreateSemester() {
+  const invalidate = useInvalidateSemesters();
+  return useMutation({
+    mutationFn: (input: SemesterCreateInput) => api<Semester>('/semesters', { method: 'POST', body: input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateSemester() {
+  const invalidate = useInvalidateSemesters();
+  return useMutation({
+    mutationFn: ({ id, ...input }: SemesterUpdateInput & { id: number }) =>
+      api<Semester>(`/semesters/${id}`, { method: 'PATCH', body: input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteSemester() {
+  const invalidate = useInvalidateSemesters();
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/semesters/${id}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+// RF13 — sessões de estudo
+export const useStudySessions = (range: StudySessionQuery = {}) =>
+  useQuery({
+    queryKey: ['study-sessions', range],
+    queryFn: () => api<StudySession[]>(`/study-sessions${toQueryString(range)}`),
+  });
+
+export function useStartStudySession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: StudySessionStartInput) =>
+      api<StudySession>('/study-sessions/start', { method: 'POST', body: input }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['study-sessions'] }),
+  });
+}
+
+export function useStopStudySession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<StudySession>(`/study-sessions/${id}/stop`, { method: 'POST', body: {} }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['study-sessions'] }),
   });
 }

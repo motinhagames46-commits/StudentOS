@@ -7,6 +7,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { DisciplineDetailPage } from './pages/DisciplineDetailPage';
 import { DisciplinesPage } from './pages/DisciplinesPage';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { StudySessionsPage } from './pages/StudySessionsPage';
 import { TasksPage } from './pages/TasksPage';
 
 function NotFound() {
@@ -32,6 +33,7 @@ export function App() {
           <Route path="tarefas" element={<TasksPage />} />
           <Route path="disciplinas" element={<DisciplinesPage />} />
           <Route path="disciplinas/:id" element={<DisciplineDetailPage />} />
+          <Route path="sessoes" element={<StudySessionsPage />} />
           <Route path="conta" element={<AccountPage />} />
           <Route path="*" element={<NotFound />} />
         </Route>

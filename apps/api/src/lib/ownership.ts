@@ -27,3 +27,9 @@ export async function findOwnedTask(userId: number, id: number) {
   if (!task) throw notFound('TASK_NOT_FOUND', 'Tarefa não encontrada');
   return task;
 }
+
+export async function findOwnedStudySession(userId: number, id: number) {
+  const session = await prisma.studySession.findFirst({ where: { id, userId } });
+  if (!session) throw notFound('STUDY_SESSION_NOT_FOUND', 'Sessão de estudo não encontrada');
+  return session;
+}

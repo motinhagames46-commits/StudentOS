@@ -72,3 +72,27 @@ export const gradeStatusLabels: Record<GradeStatus, string> = {
 };
 
 export const disciplineColors = ['#2563EB', '#16A34A', '#9333EA', '#EA580C', '#0891B2', '#DB2777', '#CA8A04', '#57534E'];
+
+/** Duração legível: "0 min", "45 s", "12 min", "1 h 05 min". */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return '0 min';
+  const totalMinutes = Math.floor(ms / 60000);
+  if (totalMinutes < 1) return `${Math.floor(ms / 1000)} s`;
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return hours ? `${hours} h ${String(minutes).padStart(2, '0')} min` : `${minutes} min`;
+}
+
+/** Cronómetro: "05:09" ou "1:05:09". */
+export function formatClock(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
+}
+
+/** Datas de semestre (sem hora): o valor do <input type="date"> vai como meia-noite UTC. */
+export const dateOnlyToIso = (value: string) => `${value}T00:00:00.000Z`;
+export const isoToDateOnly = (iso: string) => iso.slice(0, 10);

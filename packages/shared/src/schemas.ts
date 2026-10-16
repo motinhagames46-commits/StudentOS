@@ -102,6 +102,25 @@ export const taskQuerySchema = z.object({
   sort: z.enum(['dueDate', 'priority', 'createdAt']).optional(),
 });
 
+// RF13 / RN11 — sessões de estudo
+export const studySessionStartSchema = z.strictObject({
+  disciplineId: positiveId.nullable().optional(),
+});
+
+export const studySessionStopSchema = z.strictObject({
+  notes: z.string().trim().max(1000, 'Máximo 1000 caracteres').nullable().optional(),
+});
+
+export const studySessionQuerySchema = z
+  .object({
+    from: isoDate.optional(),
+    to: isoDate.optional(),
+  })
+  .refine((q) => !q.from || !q.to || q.to >= q.from, {
+    message: 'A data de fim tem de ser posterior à de início',
+    path: ['to'],
+  });
+
 export const gradesQuerySchema = z.object({
   target: z.coerce.number().min(0).max(20).optional(),
 });
@@ -117,3 +136,8 @@ export type AssessmentUpdateInput = z.infer<typeof assessmentUpdateSchema>;
 export type TaskCreateInput = z.infer<typeof taskCreateSchema>;
 export type TaskUpdateInput = z.infer<typeof taskUpdateSchema>;
 export type TaskQuery = z.infer<typeof taskQuerySchema>;
+export type SemesterCreateInput = z.infer<typeof semesterCreateSchema>;
+export type SemesterUpdateInput = z.infer<typeof semesterUpdateSchema>;
+export type StudySessionStartInput = z.infer<typeof studySessionStartSchema>;
+export type StudySessionStopInput = z.infer<typeof studySessionStopSchema>;
+export type StudySessionQuery = z.infer<typeof studySessionQuerySchema>;

@@ -1,7 +1,8 @@
-import { Plus } from 'lucide-react';
+import { CalendarRange, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { DisciplineForm } from '../components/DisciplineForm';
+import { ActiveSemesterSelect, SemesterManager } from '../components/SemesterManager';
 import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
 import { useCreateDiscipline, useDisciplines } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
@@ -9,19 +10,20 @@ import { errorMessage } from '../lib/api';
 import { formatGrade, gradeStatusLabels } from '../lib/format';
 import { gradeTone } from './DashboardPage';
 
-/** Lista de disciplinas (RF04). */
+/** Lista de disciplinas do semestre ativo (RF04) e gestão de semestres (RF03). */
 export function DisciplinesPage() {
   const { data: me } = useMe();
-  const { data, isPending, error, refetch } = useDisciplines();
+  const activeSemester = me?.activeSemester;
+  const { data, isPending, error, refetch } = useDisciplines(activeSemester?.id);
   const create = useCreateDiscipline();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
+  const [managingSemesters, setManagingSemesters] = useState(false);
 
   return (
     <>
       <PageHeader
         title="Disciplinas"
-        subtitle={me?.activeSemester?.label}
         action={
           !creating && (
             <Button onClick={() => setCreating(true)}>
@@ -32,8 +34,20 @@ export function DisciplinesPage() {
         }
       />
 
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <ActiveSemesterSelect className="w-full max-w-xs" />
+        {!managingSemesters && (
+          <Button variant="secondary" onClick={() => setManagingSemesters(true)}>
+            <CalendarRange aria-hidden="true" className="size-4" />
+            Gerir semestres
+          </Button>
+        )}
+      </div>
+
+      {managingSemesters && <SemesterManager onClose={() => setManagingSemesters(false)} />}
+
       {creating && (
-        <Card title="Nova disciplina" className="mb-4">
+        <Card title={activeSemester ? `Nova disciplina — ${activeSemester.label}` : 'Nova disciplina'} className="mb-4">
           <DisciplineForm
             onSubmit={async (v) => {
               const d = await create.mutateAsync(v);
@@ -56,7 +70,7 @@ export function DisciplinesPage() {
       ) : data.length === 0 ? (
         !creating && (
           <EmptyState
-            message="Ainda não tens disciplinas."
+            message={activeSemester ? 'Ainda não tens disciplinas neste semestre.' : 'Ainda não tens disciplinas.'}
             action={<Button onClick={() => setCreating(true)}>Criar disciplina</Button>}
           />
         )

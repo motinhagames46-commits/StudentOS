@@ -72,3 +72,12 @@ export interface Dashboard {
   disciplines: (DisciplineRef & { ects: number | null; passingGrade: number; grades: GradeSummaryDto })[];
   globalAverage: { average: number | null; credits: number; missingEcts: boolean };
 }
+
+export interface StudySession {
+  id: number;
+  startedAt: string;
+  endedAt: string | null;
+  notes: string | null;
+  disciplineId: number | null;
+  discipline: DisciplineRef | null;
+}

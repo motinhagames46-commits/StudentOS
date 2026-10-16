@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { idParamSchema, semesterCreateSchema, semesterUpdateSchema } from '@studentos/shared';
-import { parse } from '../lib/http.js';
+import { parse, validationError } from '../lib/http.js';
 import { findOwnedSemester } from '../lib/ownership.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -28,7 +28,12 @@ semestersRouter.post('/', async (req, res) => {
 semestersRouter.patch('/:id', async (req, res) => {
   const id = parse(idParamSchema, req.params.id);
   const input = parse(semesterUpdateSchema, req.body);
-  await findOwnedSemester(req.userId, id);
+  const current = await findOwnedSemester(req.userId, id);
+  const startDate = input.startDate ? new Date(input.startDate) : current.startDate;
+  const endDate = input.endDate ? new Date(input.endDate) : current.endDate;
+  if (endDate <= startDate) {
+    throw validationError([{ path: 'endDate', message: 'A data de fim tem de ser posterior à de início' }]);
+  }
   const semester = await prisma.$transaction(async (tx) => {
     if (input.isActive) {
       await tx.semester.updateMany({ where: { userId: req.userId }, data: { isActive: false } });

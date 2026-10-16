@@ -1,4 +1,4 @@
-import { BookOpen, CheckSquare, LayoutDashboard, LogOut, UserRound } from 'lucide-react';
+import { BookOpen, CheckSquare, LayoutDashboard, LogOut, Timer, UserRound } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router';
 import { useLogout, useMe } from '../hooks/useAuth';
 
@@ -6,6 +6,7 @@ const nav = [
   { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
   { to: '/tarefas', label: 'Tarefas', icon: CheckSquare, end: false },
   { to: '/disciplinas', label: 'Disciplinas', icon: BookOpen, end: false },
+  { to: '/sessoes', label: 'Sessões', icon: Timer, end: false },
   { to: '/conta', label: 'Conta', icon: UserRound, end: false },
 ];
 
@@ -87,7 +88,7 @@ export function AppLayout() {
       {/* Navegação inferior — mobile */}
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-4 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-10 grid grid-cols-5 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         {nav.map(({ to, label, icon: Icon, end }) => (
           <NavLink

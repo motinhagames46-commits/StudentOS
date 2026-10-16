@@ -68,13 +68,14 @@ Os testes da API usam a base de dados `studentos_test`, que o `npm run db` cria 
 | Requisito | Estado |
 |---|---|
 | RF01–RF02 Registo, login, logout, terminar todas as sessões | ✅ |
-| RF03 Semestres | ⚠️ API completa; na interface há só o semestre ativo, criado no registo |
+| RF03 Semestres (criar, editar, eliminar e escolher o ativo na página Disciplinas) | ✅ |
 | RF04 Disciplinas | ✅ |
 | RF05–RF06 Tarefas, filtros e ordenação | ✅ |
 | RF07–RF09 Avaliações, médias e simulador de nota necessária | ✅ |
 | RF10 Painel inicial | ✅ |
 | RF11–RF12 Exportar dados e eliminar conta | ✅ |
-| RF13+ Sessões de estudo, calendário, estatísticas (Should) | ⏳ Por fazer (o modelo `StudySession` já existe) |
+| RF13 Sessões de estudo: temporizador, disciplina opcional e histórico (Should) | ✅ |
+| RF14–RF15 Estatísticas e calendário (Should) | ⏳ Por fazer |
 | Testes E2E (Playwright) | ⏳ Por fazer |
 
 ## Notas de segurança
