@@ -2,6 +2,8 @@
 
 Organizador académico pessoal para estudantes de TPSI (IPVC): disciplinas, tarefas, avaliações com pesos, cálculo de médias e simulador de "quanto preciso no exame?".
 
+**Versão publicada:** <https://studentos-7axk.onrender.com> (plano gratuito: o primeiro acesso após inatividade pode demorar até 1 minuto).
+
 A especificação completa está em [`StudentOS-Especificacao-v2.md`](StudentOS-Especificacao-v2.md).
 
 ## Stack
