@@ -1,0 +1,22 @@
+# Blueprint do Render (secção 15.2 da especificação): um só serviço web serve a API e o frontend.
+# A base de dados é PostgreSQL gerido no Neon (região UE) — o DATABASE_URL é definido no painel do Render.
+services:
+  - type: web
+    name: studentos
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+    autoDeploy: true
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run db:deploy -w @studentos/api && npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "24"
+      - key: DATABASE_URL
+        sync: false # colar a connection string do Neon ao criar o serviço
+      - key: JWT_SECRET
+        generateValue: true
