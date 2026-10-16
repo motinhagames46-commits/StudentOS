@@ -75,8 +75,14 @@ Os testes da API usam a base de dados `studentos_test`, que o `npm run db` cria 
 | RF10 Painel inicial | ✅ |
 | RF11–RF12 Exportar dados e eliminar conta | ✅ |
 | RF13 Sessões de estudo: temporizador, disciplina opcional e histórico (Should) | ✅ |
-| RF14–RF15 Estatísticas e calendário (Should) | ⏳ Por fazer |
+| RF14 Estatísticas (estudo por disciplina e por dia, progresso das tarefas) | ✅ |
+| RF15 Calendário mensal de prazos e avaliações | ✅ |
+| RF17 Alertas na aplicação (próximas 48 h) | ✅ |
 | Testes E2E (Playwright) | ⏳ Por fazer |
+
+## Deploy
+
+Render (serviço web, Frankfurt) + Neon (PostgreSQL, UE), em plano gratuito. O passo a passo está em [`DEPLOY.md`](DEPLOY.md) e a configuração em [`render.yaml`](render.yaml).
 
 ## Notas de segurança
 
