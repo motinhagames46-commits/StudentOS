@@ -30,20 +30,47 @@ enum TaskStatus {
   DONE
 }
 
+// Origem dos dados (spec §6.1): distingue o que foi criado à mão do que foi importado.
+enum DataOrigin {
+  MANUAL
+  IMPORT_ICS
+  IMPORT_CSV
+}
+
+enum BlockKind {
+  CLASS
+  EVENT
+  OTHER
+}
+
+enum ImportKind {
+  ICS
+  CSV
+}
+
+enum ImportStatus {
+  NEEDS_REVIEW
+  CONFIRMED
+  FAILED
+  EXPIRED
+}
+
 model User {
-  id            Int            @id @default(autoincrement())
-  name          String
-  email         String         @unique
-  passwordHash  String
-  tokenVersion  Int            @default(0) // legado (JWT); mantido para permitir rollback
-  lastLoginAt   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  sessions      UserSession[]
-  semesters     Semester[]
-  disciplines   Discipline[]
-  tasks         Task[]
-  studySessions StudySession[]
+  id             Int             @id @default(autoincrement())
+  name           String
+  email          String          @unique
+  passwordHash   String
+  tokenVersion   Int             @default(0) // legado (JWT); mantido para permitir rollback
+  lastLoginAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  sessions       UserSession[]
+  scheduleBlocks ScheduleBlock[]
+  importJobs     ImportJob[]
+  semesters      Semester[]
+  disciplines    Discipline[]
+  tasks          Task[]
+  studySessions  StudySession[]
 }
 
 // Sessão de autenticação no servidor (spec §14.1). O cookie leva um token opaco aleatório;
@@ -76,21 +103,22 @@ model Semester {
 }
 
 model Discipline {
-  id            Int            @id @default(autoincrement())
-  name          String
-  code          String
-  ects          Int?
-  passingGrade  Float          @default(10)
-  color         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  userId        Int
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  semesterId    Int?
-  semester      Semester?      @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-  assessments   Assessment[]
-  tasks         Task[]
-  studySessions StudySession[]
+  id             Int             @id @default(autoincrement())
+  name           String
+  code           String
+  ects           Int?
+  passingGrade   Float           @default(10)
+  color          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  userId         Int
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semesterId     Int?
+  semester       Semester?       @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  assessments    Assessment[]
+  tasks          Task[]
+  studySessions  StudySession[]
+  scheduleBlocks ScheduleBlock[]
 
   @@unique([userId, semesterId, code])
   @@index([userId])
@@ -126,7 +154,12 @@ model Task {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   disciplineId Int?
   discipline   Discipline?  @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  origin       DataOrigin   @default(MANUAL)
+  externalId   String?
+  importJobId  String?
+  importJob    ImportJob?   @relation(fields: [importJobId], references: [id], onDelete: SetNull)
 
+  @@unique([userId, origin, externalId])
   @@index([userId, status, dueDate])
 }
 
@@ -141,4 +174,60 @@ model StudySession {
   discipline   Discipline? @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
 
   @@index([userId, startedAt])
+}
+
+// Aula ou evento (spec §6.1 ScheduleBlock). Séries recorrentes guardam a regra (RRULE) e as
+// exceções; as ocorrências são geradas apenas no intervalo pedido, em hora local de `timezone`.
+model ScheduleBlock {
+  id             Int         @id @default(autoincrement())
+  title          String
+  kind           BlockKind   @default(CLASS)
+  location       String?
+  description    String?
+  startAt        DateTime // início da primeira ocorrência
+  endAt          DateTime
+  allDay         Boolean     @default(false)
+  timezone       String      @default("Europe/Lisbon")
+  isBusy         Boolean     @default(true)
+  recurrenceRule String? // ex.: FREQ=WEEKLY;BYDAY=MO;UNTIL=20270131T235959Z
+  exceptionDates DateTime[] // inícios de ocorrências canceladas (EXDATE)
+  seriesEndAt    DateTime? // fim da última ocorrência; null = série sem fim
+  origin         DataOrigin  @default(MANUAL)
+  externalId     String? // UID do iCalendar (+ RECURRENCE-ID)
+  fingerprint    String // hash determinístico para deteção de duplicados
+  sourceLabel    String? // ex.: "horario.ics"
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  userId         Int
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId   Int?
+  discipline     Discipline? @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  importJobId    String?
+  importJob      ImportJob?  @relation(fields: [importJobId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, origin, externalId])
+  @@index([userId, startAt])
+  @@index([userId, fingerprint])
+}
+
+// Importação em curso ou concluída (spec §6.1 ImportJob). O ficheiro original nunca é guardado:
+// só os itens normalizados, até à confirmação ou à expiração (24 h).
+model ImportJob {
+  id               String          @id @default(uuid())
+  kind             ImportKind
+  status           ImportStatus    @default(NEEDS_REVIEW)
+  originalFilename String
+  items            Json
+  options          Json?
+  warnings         Json?
+  counts           Json?
+  createdAt        DateTime        @default(now())
+  expiresAt        DateTime
+  confirmedAt      DateTime?
+  userId           Int
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scheduleBlocks   ScheduleBlock[]
+  tasks            Task[]
+
+  @@index([userId, createdAt])
 }

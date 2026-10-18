@@ -93,6 +93,7 @@ export interface Stats {
 export interface CalendarData {
   tasks: Task[];
   assessments: (Assessment & { discipline: DisciplineRef })[];
+  blocks: BlockOccurrence[];
 }
 
 export interface Alerts {
@@ -100,4 +101,21 @@ export interface Alerts {
   assessments: (Assessment & { discipline: DisciplineRef })[];
   overdue: number;
   count: number;
+}
+
+export interface BlockOccurrence {
+  id: string;
+  blockId: number;
+  title: string;
+  kind: 'CLASS' | 'EVENT' | 'OTHER';
+  start: string;
+  end: string;
+  allDay: boolean;
+  isBusy: boolean;
+  location: string | null;
+  origin: 'MANUAL' | 'IMPORT_ICS' | 'IMPORT_CSV';
+  sourceLabel: string | null;
+  recurring: boolean;
+  discipline: DisciplineRef | null;
+  conflict: boolean;
 }

@@ -48,6 +48,10 @@ meRouter.get('/export', async (req, res) => {
       disciplines: { include: { assessments: true } },
       tasks: true,
       studySessions: true,
+      scheduleBlocks: true,
+      importJobs: {
+        select: { id: true, kind: true, status: true, originalFilename: true, createdAt: true, counts: true },
+      },
       sessions: { select: { id: true, userAgent: true, createdAt: true, lastSeenAt: true, expiresAt: true } },
     },
   });

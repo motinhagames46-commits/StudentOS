@@ -37,7 +37,9 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     error = new HttpError(409, 'CONFLICT', 'Já existe um registo com estes dados');
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
     error = new HttpError(404, 'NOT_FOUND', 'Recurso não encontrado');
-  } else if (isBodyParserError(err)) {
+  } else if (bodyParserErrorType(err) === 'entity.too.large') {
+    error = new HttpError(413, 'PAYLOAD_TOO_LARGE', 'O pedido excede o tamanho máximo permitido');
+  } else if (bodyParserErrorType(err) === 'entity.parse.failed') {
     error = new HttpError(400, 'INVALID_JSON', 'O corpo do pedido não é JSON válido');
   } else {
     // Detalhe técnico só no log do servidor, associado ao requestId; nunca na resposta.
@@ -55,11 +57,6 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   });
 }
 
-function isBodyParserError(err: unknown): boolean {
-  return (
-    typeof err === 'object' &&
-    err !== null &&
-    'type' in err &&
-    (err.type === 'entity.parse.failed' || err.type === 'entity.too.large')
-  );
+function bodyParserErrorType(err: unknown): string | null {
+  return typeof err === 'object' && err !== null && 'type' in err && typeof err.type === 'string' ? err.type : null;
 }

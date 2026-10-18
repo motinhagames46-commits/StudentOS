@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { calendarQuerySchema, statsQuerySchema } from '@studentos/shared';
+import { blockOccurrences } from '../lib/calendar.js';
 import { parse } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -75,7 +76,7 @@ insightsRouter.get('/stats', async (req, res) => {
 // RF15 — prazos de tarefas e datas de avaliações num intervalo.
 insightsRouter.get('/calendar', async (req, res) => {
   const { from, to } = parse(calendarQuerySchema, req.query);
-  const [tasks, assessments] = await Promise.all([
+  const [tasks, assessments, blocks] = await Promise.all([
     prisma.task.findMany({
       where: { userId: req.userId, dueDate: { gte: from, lte: to } },
       include: { discipline: disciplineSelect },
@@ -86,8 +87,9 @@ insightsRouter.get('/calendar', async (req, res) => {
       include: { discipline: disciplineSelect },
       orderBy: { date: 'asc' },
     }),
+    blockOccurrences(req.userId, new Date(from), new Date(to)),
   ]);
-  res.json({ tasks, assessments });
+  res.json({ tasks, assessments, blocks });
 });
 
 // RF17 — alertas na aplicação: tarefas por fazer e avaliações sem nota nas próximas 48 h.

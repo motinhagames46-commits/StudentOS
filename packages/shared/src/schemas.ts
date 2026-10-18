@@ -114,6 +114,94 @@ export const studySessionQuerySchema = z
     path: ['to'],
   });
 
+// Aulas e eventos (spec §6.1 ScheduleBlock)
+export const blockKinds = ['CLASS', 'EVENT', 'OTHER'] as const;
+export type BlockKind = (typeof blockKinds)[number];
+
+export const scheduleBlockCreateSchema = z
+  .strictObject({
+    title: z.string('Indica o título').trim().min(1, 'Indica o título').max(200),
+    kind: z.enum(blockKinds).optional(),
+    location: z.string().trim().max(200).nullable().optional(),
+    description: z.string().trim().max(2000).nullable().optional(),
+    startAt: isoDate,
+    endAt: isoDate,
+    isBusy: z.boolean().optional(),
+    disciplineId: positiveId.nullable().optional(),
+    /** Repetir semanalmente até esta data (inclusive), em hora local. */
+    repeatWeeklyUntil: z.iso.date({ error: 'Data inválida' }).nullable().optional(),
+  })
+  .refine((b) => b.endAt > b.startAt, { message: 'O fim tem de ser depois do início', path: ['endAt'] })
+  .refine((b) => !b.repeatWeeklyUntil || b.repeatWeeklyUntil >= b.startAt.slice(0, 10), {
+    message: 'A repetição tem de terminar depois do início',
+    path: ['repeatWeeklyUntil'],
+  });
+
+export const scheduleBlockUpdateSchema = z.strictObject({
+  title: z.string().trim().min(1).max(200).optional(),
+  kind: z.enum(blockKinds).optional(),
+  location: z.string().trim().max(200).nullable().optional(),
+  isBusy: z.boolean().optional(),
+  disciplineId: positiveId.nullable().optional(),
+});
+
+export const skipOccurrenceSchema = z.strictObject({ occurrenceStart: isoDate });
+
+// Importação (spec §8): o ficheiro é enviado como texto, validado e convertido em pré-visualização.
+export const MAX_IMPORT_BYTES = 1_000_000;
+export const importKinds = ['ICS', 'CSV'] as const;
+export const csvFields = [
+  'title',
+  'date',
+  'startTime',
+  'endTime',
+  'weekday',
+  'location',
+  'discipline',
+  'recurrence',
+  'description',
+  'ignore',
+] as const;
+export type CsvField = (typeof csvFields)[number];
+export const dateFormats = ['DMY', 'MDY', 'YMD'] as const;
+export type DateFormat = (typeof dateFormats)[number];
+
+export const importCreateSchema = z.strictObject({
+  kind: z.enum(importKinds),
+  filename: z.string().trim().min(1).max(255),
+  content: z.string().min(1, 'O ficheiro está vazio').max(MAX_IMPORT_BYTES, 'O ficheiro excede 1 MB'),
+  csv: z
+    .strictObject({
+      mapping: z.record(z.string().max(200), z.enum(csvFields)).optional(),
+      dateFormat: z.enum(dateFormats).optional(),
+      validFrom: z.iso.date().optional(),
+      validUntil: z.iso.date().optional(),
+    })
+    .optional(),
+});
+
+export const importItemEditSchema = z.strictObject({
+  key: z.string().max(20),
+  action: z.enum(['create', 'update', 'skip']),
+  target: z.enum(['block', 'task']).optional(),
+  title: z.string().trim().min(1, 'Indica o título').max(200).optional(),
+  kind: z.enum(blockKinds).optional(),
+  startAt: isoDate.optional(),
+  endAt: isoDate.optional(),
+  location: z.string().trim().max(200).nullable().optional(),
+  disciplineId: positiveId.nullable().optional(),
+  isBusy: z.boolean().optional(),
+});
+
+export const importConfirmSchema = z.strictObject({
+  items: z.array(importItemEditSchema).max(2000),
+});
+
+export type ScheduleBlockCreateInput = z.infer<typeof scheduleBlockCreateSchema>;
+export type ScheduleBlockUpdateInput = z.infer<typeof scheduleBlockUpdateSchema>;
+export type ImportCreateInput = z.infer<typeof importCreateSchema>;
+export type ImportItemEdit = z.infer<typeof importItemEditSchema>;
+
 // RF14 — estatísticas dos últimos N dias
 export const statsQuerySchema = z.object({
   days: z.coerce.number().int().min(1).max(90).optional(),

@@ -10,8 +10,7 @@ export default defineConfig({
   test: {
     env: {
       NODE_ENV: 'test',
-      DATABASE_URL:
-        process.env.TEST_DATABASE_URL ?? 'postgresql://studentos:studentos@localhost:54329/studentos_test',
+      DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgresql://studentos:studentos@localhost:54329/studentos_test',
     },
     globalSetup: ['test/global-setup.ts'],
     fileParallelism: false,

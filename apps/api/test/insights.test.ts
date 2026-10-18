@@ -115,7 +115,7 @@ describe('GET /api/calendar (RF15)', () => {
     const theirs = await request(app)
       .get(`/api/calendar?from=${iso(0)}&to=${iso(30 * DAY)}`)
       .set('Cookie', other);
-    expect(theirs.body).toEqual({ tasks: [], assessments: [] });
+    expect(theirs.body).toEqual({ tasks: [], assessments: [], blocks: [] });
   });
 
   it('exige intervalo válido de no máximo 62 dias', async () => {

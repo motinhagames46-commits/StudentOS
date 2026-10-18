@@ -5,6 +5,8 @@ import type {
   AssessmentUpdateInput,
   DisciplineCreateInput,
   DisciplineUpdateInput,
+  ScheduleBlockCreateInput,
+  ScheduleBlockUpdateInput,
   SemesterCreateInput,
   SemesterUpdateInput,
   StudySessionQuery,
@@ -210,3 +212,44 @@ export const useCalendar = (from: string, to: string) =>
 // RF17 — alertas das próximas 48 h (atualiza a cada 5 minutos)
 export const useAlerts = () =>
   useQuery({ queryKey: ['alerts'], queryFn: () => api<Alerts>('/alerts'), refetchInterval: 5 * 60 * 1000 });
+
+// Aulas e eventos (ScheduleBlock)
+function useInvalidateCalendar() {
+  const queryClient = useQueryClient();
+  return () =>
+    Promise.all(['calendar', 'dashboard', 'planner'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
+}
+
+export function useCreateBlock() {
+  const invalidate = useInvalidateCalendar();
+  return useMutation({
+    mutationFn: (input: ScheduleBlockCreateInput) => api<unknown>('/schedule-blocks', { method: 'POST', body: input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useUpdateBlock() {
+  const invalidate = useInvalidateCalendar();
+  return useMutation({
+    mutationFn: ({ id, ...input }: ScheduleBlockUpdateInput & { id: number }) =>
+      api<unknown>(`/schedule-blocks/${id}`, { method: 'PATCH', body: input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteBlock() {
+  const invalidate = useInvalidateCalendar();
+  return useMutation({
+    mutationFn: (id: number) => api<void>(`/schedule-blocks/${id}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useSkipOccurrence() {
+  const invalidate = useInvalidateCalendar();
+  return useMutation({
+    mutationFn: ({ id, occurrenceStart }: { id: number; occurrenceStart: string }) =>
+      api<unknown>(`/schedule-blocks/${id}/skip`, { method: 'POST', body: { occurrenceStart } }),
+    onSuccess: invalidate,
+  });
+}

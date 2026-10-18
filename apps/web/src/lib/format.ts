@@ -1,4 +1,12 @@
-import type { AssessmentType, GradeStatus, TaskPriority } from '@studentos/shared';
+import {
+  DEFAULT_TIMEZONE,
+  instantToZoned,
+  zonedToInstant,
+  type AssessmentType,
+  type BlockKind,
+  type GradeStatus,
+  type TaskPriority,
+} from '@studentos/shared';
 
 const TZ = 'Europe/Lisbon';
 const DAY = 24 * 60 * 60 * 1000;
@@ -105,3 +113,33 @@ export function formatClock(ms: number): string {
 /** Datas de semestre (sem hora): o valor do <input type="date"> vai como meia-noite UTC. */
 export const dateOnlyToIso = (value: string) => `${value}T00:00:00.000Z`;
 export const isoToDateOnly = (iso: string) => iso.slice(0, 10);
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/** Valor para <input type="datetime-local"> na hora de Lisboa (independente do fuso do browser). */
+export function isoToZonedInput(iso: string | null): string {
+  if (!iso) return '';
+  const p = instantToZoned(new Date(iso), DEFAULT_TIMEZONE);
+  return `${p.year}-${pad2(p.month)}-${pad2(p.day)}T${pad2(p.hour)}:${pad2(p.minute)}`;
+}
+
+/** Converte o valor de <input type="datetime-local"> (hora de Lisboa) para ISO UTC. */
+export function zonedInputToIso(value: string): string | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(value);
+  if (!m) return null;
+  return zonedToInstant(+m[1]!, +m[2]!, +m[3]!, +m[4]!, +m[5]!, DEFAULT_TIMEZONE).toISOString();
+}
+
+export function formatTime(iso: string): string {
+  return new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: DEFAULT_TIMEZONE }).format(
+    new Date(iso),
+  );
+}
+
+export const blockKindLabels: Record<BlockKind, string> = { CLASS: 'Aula', EVENT: 'Evento', OTHER: 'Outro' };
+
+export const originLabels: Record<'MANUAL' | 'IMPORT_ICS' | 'IMPORT_CSV', string> = {
+  MANUAL: 'Criado manualmente',
+  IMPORT_ICS: 'Importado de .ics',
+  IMPORT_CSV: 'Importado de CSV',
+};

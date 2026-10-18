@@ -2,10 +2,12 @@ import { Link, Route, Routes } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { RequireAuth } from './components/RequireAuth';
 import { AccountPage } from './pages/AccountPage';
+import { CalendarPage } from './pages/CalendarPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { DashboardPage } from './pages/DashboardPage';
 import { DisciplineDetailPage } from './pages/DisciplineDetailPage';
 import { DisciplinesPage } from './pages/DisciplinesPage';
+import { ImportPage } from './pages/ImportPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { StudySessionsPage } from './pages/StudySessionsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -30,6 +32,8 @@ export function App() {
       <Route element={<RequireAuth />}>
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="calendario" element={<CalendarPage />} />
+          <Route path="importar" element={<ImportPage />} />
           <Route path="tarefas" element={<TasksPage />} />
           <Route path="disciplinas" element={<DisciplinesPage />} />
           <Route path="disciplinas/:id" element={<DisciplineDetailPage />} />

@@ -11,8 +11,10 @@ import { assessmentsRouter } from './routes/assessments.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { disciplinesRouter } from './routes/disciplines.js';
+import { importsRouter } from './routes/imports.js';
 import { insightsRouter } from './routes/insights.js';
 import { meRouter } from './routes/me.js';
+import { scheduleBlocksRouter } from './routes/schedule-blocks.js';
 import { semestersRouter } from './routes/semesters.js';
 import { studySessionsRouter } from './routes/study-sessions.js';
 import { tasksRouter } from './routes/tasks.js';
@@ -26,7 +28,12 @@ export function createApp() {
 
   app.use(requestId);
   app.use(helmet());
-  app.use(express.json({ limit: '100kb' }));
+  // Limite de 100 KB, exceto nas importações (ficheiro como texto, até 1 MB + envelope JSON).
+  const smallJson = express.json({ limit: '100kb' });
+  const importJson = express.json({ limit: '2mb' });
+  app.use((req, res, next) =>
+    req.method === 'POST' && req.path === '/api/imports' ? importJson(req, res, next) : smallJson(req, res, next),
+  );
   app.use(cookieParser());
 
   const api = express.Router();
@@ -67,6 +74,8 @@ export function createApp() {
   api.use('/tasks', requireAuth, tasksRouter);
   api.use('/dashboard', requireAuth, dashboardRouter);
   api.use('/study-sessions', requireAuth, studySessionsRouter);
+  api.use('/imports', requireAuth, importsRouter);
+  api.use('/schedule-blocks', requireAuth, scheduleBlocksRouter);
   api.use(['/stats', '/calendar', '/alerts'], requireAuth);
   api.use(insightsRouter);
   api.use(apiNotFound);
