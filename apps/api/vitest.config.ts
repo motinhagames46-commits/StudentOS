@@ -12,7 +12,6 @@ export default defineConfig({
       NODE_ENV: 'test',
       DATABASE_URL:
         process.env.TEST_DATABASE_URL ?? 'postgresql://studentos:studentos@localhost:54329/studentos_test',
-      JWT_SECRET: 'test-only-secret-0123456789abcdef0123456789abcdef',
     },
     globalSetup: ['test/global-setup.ts'],
     fileParallelism: false,

@@ -1,18 +1,11 @@
 import { Router } from 'express';
 import { loginSchema, registerSchema, semesterFor } from '@studentos/shared';
-import {
-  clearSessionCookie,
-  hashPassword,
-  isCommonPassword,
-  setSessionCookie,
-  signSession,
-  verifyAgainstDummy,
-  verifyPassword,
-} from '../lib/auth.js';
+import { hashPassword, isCommonPassword, verifyAgainstDummy, verifyPassword } from '../lib/auth.js';
 import { HttpError, parse, validationError } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
+import { endAllSessions, endSession, startSession } from '../lib/sessions.js';
 import { requireAuth } from '../middleware/auth.js';
-import { publicUser } from './me.js';
+import { meResponse, publicUser } from './me.js';
 
 export const authRouter = Router();
 
@@ -36,11 +29,11 @@ authRouter.post('/register', async (req, res) => {
     },
   });
 
-  setSessionCookie(res, signSession(user));
+  await startSession(req, res, user.id);
   res.status(201).json({ user: publicUser(user) });
 });
 
-// RF02
+// RF02 — cada login cria uma sessão nova (rotação do identificador)
 authRouter.post('/login', async (req, res) => {
   const input = parse(loginSchema, req.body);
   const user = await prisma.user.findUnique({ where: { email: input.email } });
@@ -52,21 +45,23 @@ authRouter.post('/login', async (req, res) => {
     throw new HttpError(401, 'INVALID_CREDENTIALS', 'Email ou palavra-passe incorretos');
   }
 
-  setSessionCookie(res, signSession(user));
+  await startSession(req, res, user.id);
   res.json({ user: publicUser(user) });
 });
 
-authRouter.post('/logout', (_req, res) => {
-  clearSessionCookie(res);
+// Logout real: a sessão é eliminada no servidor.
+authRouter.post('/logout', async (req, res) => {
+  await endSession(req, res);
   res.status(204).end();
 });
 
-// Termina todas as sessões do utilizador (incrementa tokenVersion).
+// Termina todas as sessões do utilizador em todos os dispositivos.
 authRouter.post('/logout-all', requireAuth, async (req, res) => {
-  await prisma.user.update({
-    where: { id: req.userId },
-    data: { tokenVersion: { increment: 1 } },
-  });
-  clearSessionCookie(res);
+  await endAllSessions(req.userId, res);
   res.status(204).end();
+});
+
+// Contrato do spec §13 (equivalente a GET /api/me).
+authRouter.get('/me', requireAuth, async (req, res) => {
+  res.json(await meResponse(req.userId));
 });

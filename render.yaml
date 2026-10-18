@@ -18,5 +18,3 @@ services:
         value: "24"
       - key: DATABASE_URL
         sync: false # colar a connection string do Neon ao criar o serviço
-      - key: JWT_SECRET
-        generateValue: true

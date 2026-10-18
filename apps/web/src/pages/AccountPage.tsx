@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { SessionsCard } from '../components/SessionsCard';
 import { Button, Card, FormError, PageHeader, TextField } from '../components/ui';
 import { useMe } from '../hooks/useAuth';
 import { api, errorMessage } from '../lib/api';
@@ -87,6 +88,8 @@ export function AccountPage() {
             </div>
           </dl>
         </Card>
+
+        <SessionsCard />
 
         <Card title="Sessões e dados">
           <div className="space-y-4">

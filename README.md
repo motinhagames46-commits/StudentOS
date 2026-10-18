@@ -13,7 +13,7 @@ A especificação completa está em [`StudentOS-Especificacao-v2.md`](StudentOS-
 | Frontend | React 19, React Router 8, TanStack Query 5, Tailwind CSS 4, Vite 8 |
 | Backend | Node.js 24 LTS, Express 5, Zod 4 |
 | Base de dados | PostgreSQL 17, Prisma ORM 7 (`@prisma/adapter-pg`) |
-| Autenticação | JWT em cookie `httpOnly`, bcrypt (custo 12) |
+| Autenticação | Sessões no servidor (token opaco em cookie `httpOnly`, guardado só em hash), bcrypt (custo 12) |
 | Testes | Vitest 5, Supertest, Testing Library, Playwright + axe-core (E2E) |
 
 ## Estrutura
@@ -38,7 +38,7 @@ Primeira vez:
 
 ```bash
 npm install
-cp apps/api/.env.example apps/api/.env   # depois gera um JWT_SECRET (ver o comentário no ficheiro)
+cp apps/api/.env.example apps/api/.env
 npm run db                                # num terminal à parte: PostgreSQL em localhost:54329
 npm run db:migrate                        # cria as tabelas
 npm run db:seed                           # dados de demonstração

@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../src/app.js';
+import { prisma } from '../src/lib/prisma.js';
 import { PASSWORD, registerUser, resetDb } from './helpers.js';
 
 beforeEach(resetDb);
@@ -76,6 +77,79 @@ describe('login e sessão (RF02)', () => {
   it('exige sessão nas rotas protegidas', async () => {
     expect((await request(app).get('/api/tasks')).status).toBe(401);
     expect((await request(app).get('/api/me').set('Cookie', 'sid=invalido')).status).toBe(401);
+  });
+
+  it('logout invalida a sessão no servidor, não só o cookie (spec §14.1)', async () => {
+    const { cookie } = await registerUser('rui');
+    expect((await request(app).get('/api/me').set('Cookie', cookie)).status).toBe(200);
+    expect((await request(app).post('/api/auth/logout').set('Cookie', cookie)).status).toBe(204);
+    // o mesmo cookie, reenviado depois do logout, já não é aceite
+    expect((await request(app).get('/api/me').set('Cookie', cookie)).status).toBe(401);
+  });
+
+  it('o login cria uma sessão nova e destrói a anterior trazida pelo pedido (rotação)', async () => {
+    const { cookie: first } = await registerUser('rui');
+    const login = await request(app)
+      .post('/api/auth/login')
+      .set('Cookie', first)
+      .send({ email: 'rui@exemplo.pt', password: PASSWORD });
+    const second = login.headers['set-cookie'] as unknown as string[];
+    expect(second[0]).not.toBe(first[0]);
+    expect((await request(app).get('/api/me').set('Cookie', first)).status).toBe(401);
+    expect((await request(app).get('/api/me').set('Cookie', second)).status).toBe(200);
+  });
+
+  it('a base de dados guarda só o hash do token, nunca o token', async () => {
+    const { cookie } = await registerUser('rui');
+    const token = /sid=([^;]+)/.exec(cookie[0]!)![1]!;
+    const rows = await prisma.userSession.findMany();
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.tokenHash).not.toContain(token);
+    expect(rows[0]!.tokenHash).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it('sessões expiradas são recusadas e removidas', async () => {
+    const { cookie } = await registerUser('rui');
+    await prisma.userSession.updateMany({ data: { expiresAt: new Date(Date.now() - 1000) } });
+    expect((await request(app).get('/api/me').set('Cookie', cookie)).status).toBe(401);
+    expect(await prisma.userSession.count()).toBe(0);
+  });
+
+  it('lista as sessões ativas e permite revogar outra sessão', async () => {
+    const { cookie: phone } = await registerUser('rui');
+    const login = await request(app).post('/api/auth/login').send({ email: 'rui@exemplo.pt', password: PASSWORD });
+    const laptop = login.headers['set-cookie'] as unknown as string[];
+
+    const list = await request(app).get('/api/me/sessions').set('Cookie', laptop);
+    expect(list.body).toHaveLength(2);
+    expect(list.body.filter((s: { current: boolean }) => s.current)).toHaveLength(1);
+    expect(JSON.stringify(list.body)).not.toMatch(/tokenHash/);
+
+    const other = list.body.find((s: { current: boolean }) => !s.current);
+    expect((await request(app).delete(`/api/me/sessions/${other.id}`).set('Cookie', laptop)).status).toBe(204);
+    expect((await request(app).get('/api/me').set('Cookie', phone)).status).toBe(401);
+    expect((await request(app).get('/api/me').set('Cookie', laptop)).status).toBe(200);
+  });
+
+  it('não permite revogar sessões de outro utilizador (404)', async () => {
+    const { cookie: rui } = await registerUser('rui');
+    const { cookie: ines } = await registerUser('ines');
+    const [inesSession] = (await request(app).get('/api/me/sessions').set('Cookie', ines)).body;
+    expect((await request(app).delete(`/api/me/sessions/${inesSession.id}`).set('Cookie', rui)).status).toBe(404);
+    expect((await request(app).get('/api/me').set('Cookie', ines)).status).toBe(200);
+  });
+
+  it('GET /api/auth/me devolve o utilizador autenticado', async () => {
+    const { cookie } = await registerUser('rui');
+    const res = await request(app).get('/api/auth/me').set('Cookie', cookie);
+    expect(res.body.user.email).toBe('rui@exemplo.pt');
+  });
+
+  it('os erros incluem requestId (spec §13.2)', async () => {
+    const res = await request(app).get('/api/tasks');
+    expect(res.status).toBe(401);
+    expect(res.body.error.requestId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(res.headers['x-request-id']).toBe(res.body.error.requestId);
   });
 
   it('logout-all invalida os tokens anteriores', async () => {

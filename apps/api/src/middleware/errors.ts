@@ -1,7 +1,18 @@
+import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
 import { Prisma } from '../generated/prisma/client.js';
 import { env } from '../lib/env.js';
 import { HttpError } from '../lib/http.js';
+
+const INCOMING_ID = /^[A-Za-z0-9_-]{8,64}$/;
+
+/** Identificador de pedido (spec §13.2): reutiliza o do proxy se for seguro, senão gera um. */
+export function requestId(req: Request, res: Response, next: NextFunction): void {
+  const incoming = req.get('x-request-id');
+  req.requestId = incoming && INCOMING_ID.test(incoming) ? incoming : randomUUID();
+  res.setHeader('X-Request-Id', req.requestId);
+  next();
+}
 
 /** Rejeita pedidos que alteram dados com corpo que não seja JSON (proteção CSRF, secção 12.2). */
 export function requireJsonBody(req: Request, _res: Response, next: NextFunction): void {
@@ -17,7 +28,7 @@ export function apiNotFound(_req: Request, _res: Response, next: NextFunction): 
   next(new HttpError(404, 'ROUTE_NOT_FOUND', 'Rota não encontrada'));
 }
 
-export function errorHandler(err: unknown, _req: Request, res: Response, _next: NextFunction): void {
+export function errorHandler(err: unknown, req: Request, res: Response, _next: NextFunction): void {
   let error: HttpError;
 
   if (err instanceof HttpError) {
@@ -29,7 +40,8 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
   } else if (isBodyParserError(err)) {
     error = new HttpError(400, 'INVALID_JSON', 'O corpo do pedido não é JSON válido');
   } else {
-    if (!env.isTest) console.error(err);
+    // Detalhe técnico só no log do servidor, associado ao requestId; nunca na resposta.
+    if (!env.isTest) console.error(`[${req.requestId}] ${req.method} ${req.path}`, err);
     error = new HttpError(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado');
   }
 
@@ -37,6 +49,7 @@ export function errorHandler(err: unknown, _req: Request, res: Response, _next: 
     error: {
       code: error.code,
       message: error.message,
+      requestId: req.requestId,
       ...(error.details ? { details: error.details } : {}),
     },
   });

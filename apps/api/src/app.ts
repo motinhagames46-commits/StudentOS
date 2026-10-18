@@ -6,7 +6,7 @@ import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from './lib/env.js';
 import { requireAuth } from './middleware/auth.js';
-import { apiNotFound, errorHandler, requireJsonBody } from './middleware/errors.js';
+import { apiNotFound, errorHandler, requestId, requireJsonBody } from './middleware/errors.js';
 import { assessmentsRouter } from './routes/assessments.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
@@ -24,6 +24,7 @@ export function createApp() {
   app.disable('x-powered-by');
   if (env.isProd) app.set('trust proxy', 1);
 
+  app.use(requestId);
   app.use(helmet());
   app.use(express.json({ limit: '100kb' }));
   app.use(cookieParser());
@@ -42,9 +43,13 @@ export function createApp() {
         skipSuccessfulRequests: true,
         standardHeaders: 'draft-8',
         legacyHeaders: false,
-        handler: (_req, res) => {
+        handler: (req, res) => {
           res.status(429).json({
-            error: { code: 'TOO_MANY_REQUESTS', message: 'Demasiadas tentativas. Tenta novamente daqui a 15 minutos.' },
+            error: {
+              code: 'TOO_MANY_REQUESTS',
+              message: 'Demasiadas tentativas. Tenta novamente daqui a 15 minutos.',
+              requestId: req.requestId,
+            },
           });
         },
       }),

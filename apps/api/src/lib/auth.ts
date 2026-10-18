@@ -1,11 +1,13 @@
+import { createHash, randomBytes } from 'node:crypto';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import type { Response } from 'express';
 import { env } from './env.js';
 
 export const SESSION_COOKIE = 'sid';
-const SESSION_TTL_SECONDS = 7 * 24 * 60 * 60;
-const BCRYPT_COST = env.isTest ? 4 : 12; // custo ≥ 12 (RNF01); reduzido só nos testes
+export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+
+// bcrypt com custo ≥ 12 (spec §14.1 aceita "alternativa atual e adequada" ao Argon2id; ver docs/ARCHITECTURE.md).
+const BCRYPT_COST = env.isTest ? 4 : 12;
 
 export const hashPassword = (password: string) => bcrypt.hash(password, BCRYPT_COST);
 export const verifyPassword = (password: string, hash: string) => bcrypt.compare(password, hash);
@@ -14,29 +16,13 @@ export const verifyPassword = (password: string, hash: string) => bcrypt.compare
 const DUMMY_HASH = bcrypt.hashSync('dummy-password-for-timing', BCRYPT_COST);
 export const verifyAgainstDummy = (password: string) => bcrypt.compare(password, DUMMY_HASH);
 
-interface SessionPayload {
-  sub: string;
-  tv: number;
+/** Token opaco de sessão (256 bits). Só o seu SHA-256 é guardado na base de dados. */
+export function newSessionToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString('base64url');
+  return { token, tokenHash: hashSessionToken(token) };
 }
 
-export function signSession(user: { id: number; tokenVersion: number }): string {
-  return jwt.sign({ tv: user.tokenVersion }, env.JWT_SECRET, {
-    subject: String(user.id),
-    expiresIn: SESSION_TTL_SECONDS,
-    algorithm: 'HS256',
-  });
-}
-
-export function verifySession(token: string): { userId: number; tokenVersion: number } | null {
-  try {
-    const payload = jwt.verify(token, env.JWT_SECRET, { algorithms: ['HS256'] }) as SessionPayload;
-    const userId = Number(payload.sub);
-    if (!Number.isInteger(userId) || typeof payload.tv !== 'number') return null;
-    return { userId, tokenVersion: payload.tv };
-  } catch {
-    return null;
-  }
-}
+export const hashSessionToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 const cookieOptions = {
   httpOnly: true,
@@ -46,7 +32,7 @@ const cookieOptions = {
 };
 
 export function setSessionCookie(res: Response, token: string): void {
-  res.cookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_TTL_SECONDS * 1000 });
+  res.cookie(SESSION_COOKIE, token, { ...cookieOptions, maxAge: SESSION_TTL_MS });
 }
 
 export function clearSessionCookie(res: Response): void {

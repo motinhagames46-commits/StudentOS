@@ -49,7 +49,6 @@ export default defineConfig({
         NODE_ENV: 'production',
         PORT: String(PORT),
         DATABASE_URL,
-        JWT_SECRET: process.env.E2E_JWT_SECRET ?? 'e2e-only-secret-0123456789abcdef0123456789abcdef',
       },
     },
   ],

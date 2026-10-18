@@ -14,9 +14,4 @@ export const env = {
   isTest: nodeEnv === 'test',
   PORT: Number(process.env.PORT ?? 4000),
   DATABASE_URL: required('DATABASE_URL'),
-  JWT_SECRET: required('JWT_SECRET'),
 };
-
-if (env.isProd && env.JWT_SECRET.length < 32) {
-  throw new Error('JWT_SECRET tem de ter pelo menos 32 caracteres em produção');
-}

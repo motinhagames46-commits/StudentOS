@@ -22,7 +22,6 @@ jobs:
     env:
       DATABASE_URL: postgresql://studentos:studentos@localhost:5432/studentos_test
       TEST_DATABASE_URL: postgresql://studentos:studentos@localhost:5432/studentos_test
-      JWT_SECRET: ci-only-secret-not-used-in-production-000000
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -55,7 +54,6 @@ jobs:
           --health-interval 5s --health-timeout 5s --health-retries 10
     env:
       E2E_DATABASE_URL: postgresql://studentos:studentos@localhost:5432/studentos_test
-      E2E_JWT_SECRET: ci-only-secret-not-used-in-production-000000
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5

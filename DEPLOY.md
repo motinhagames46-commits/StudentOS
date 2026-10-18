@@ -28,7 +28,7 @@ O Render faz deploy a partir do GitHub.
 
 1. Entra em <https://dashboard.render.com> com a conta do GitHub.
 2. **New → Blueprint** e escolhe o repositório `studentos`. O Render lê o [`render.yaml`](render.yaml).
-3. Quando pedir `DATABASE_URL`, cola a connection string do Neon. O `JWT_SECRET` é gerado automaticamente.
+3. Quando pedir `DATABASE_URL`, cola a connection string do Neon.
 4. **Apply**. O primeiro build demora 3 a 5 minutos.
    - Build: `npm ci --include=dev && npm run build`.
    - Arranque: o servidor aplica as migrações (`prisma migrate deploy`) e só depois começa a servir.
