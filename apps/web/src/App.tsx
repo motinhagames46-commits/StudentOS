@@ -8,6 +8,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { DisciplineDetailPage } from './pages/DisciplineDetailPage';
 import { DisciplinesPage } from './pages/DisciplinesPage';
 import { ImportPage } from './pages/ImportPage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
+import { PlanPage } from './pages/PlanPage';
+import { PreferencesPage } from './pages/PreferencesPage';
 import { PrivacyPage } from './pages/PrivacyPage';
 import { StudySessionsPage } from './pages/StudySessionsPage';
 import { TasksPage } from './pages/TasksPage';
@@ -34,6 +37,9 @@ export function App() {
           <Route index element={<DashboardPage />} />
           <Route path="calendario" element={<CalendarPage />} />
           <Route path="importar" element={<ImportPage />} />
+          <Route path="plano" element={<PlanPage />} />
+          <Route path="preferencias" element={<PreferencesPage />} />
+          <Route path="integracoes" element={<IntegrationsPage />} />
           <Route path="tarefas" element={<TasksPage />} />
           <Route path="disciplinas" element={<DisciplinesPage />} />
           <Route path="disciplinas/:id" element={<DisciplineDetailPage />} />

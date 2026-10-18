@@ -1,8 +1,11 @@
 import {
   BookOpen,
+  CalendarCheck,
   CalendarDays,
+  SlidersHorizontal,
   CheckSquare,
   FileUp,
+  Link2,
   LayoutDashboard,
   LogOut,
   MoreHorizontal,
@@ -26,6 +29,7 @@ interface NavItem {
 const nav: NavItem[] = [
   { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
   { to: '/calendario', label: 'Calendário', icon: CalendarDays, end: false },
+  { to: '/plano', label: 'Plano', icon: CalendarCheck, end: false },
   { to: '/tarefas', label: 'Tarefas', icon: CheckSquare, end: false },
   { to: '/disciplinas', label: 'Disciplinas', icon: BookOpen, end: false },
   { to: '/sessoes', label: 'Foco', icon: Timer, end: false },
@@ -33,7 +37,9 @@ const nav: NavItem[] = [
 
 /** Definições e ferramentas. */
 const secondary: NavItem[] = [
+  { to: '/preferencias', label: 'Preferências de estudo', icon: SlidersHorizontal, end: false },
   { to: '/importar', label: 'Importar horário', icon: FileUp, end: false },
+  { to: '/integracoes', label: 'Integrações', icon: Link2, end: false },
   { to: '/conta', label: 'Conta', icon: UserRound, end: false },
 ];
 

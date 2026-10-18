@@ -50,14 +50,22 @@ async function main() {
         score: 15,
         date: inDays(-10, 23, 59),
       },
-      { disciplineId: pw.id, name: 'Exame', type: 'EXAM', weight: 40, minScore: 8, date: inDays(12, 9, 30) },
+      {
+        disciplineId: pw.id,
+        name: 'Exame',
+        type: 'EXAM',
+        weight: 40,
+        minScore: 8,
+        date: inDays(12, 9, 30),
+        prepMinutes: 360,
+      },
       { disciplineId: bd.id, name: 'Mini-teste', type: 'TEST', weight: 20, score: 16.5, date: inDays(-20, 14, 0) },
-      { disciplineId: bd.id, name: 'Projeto', type: 'PROJECT', weight: 40, date: inDays(5, 23, 59) },
+      { disciplineId: bd.id, name: 'Projeto', type: 'PROJECT', weight: 40, date: inDays(5, 23, 59), prepMinutes: 240 },
       { disciplineId: bd.id, name: 'Teste final', type: 'TEST', weight: 40, minScore: 7.5, date: inDays(20, 10, 0) },
       { disciplineId: es.id, name: 'Relatório', type: 'ASSIGNMENT', weight: 50, score: 14 },
       { disciplineId: es.id, name: 'Apresentação', type: 'PRESENTATION', weight: 50, score: 17 },
       { disciplineId: mat.id, name: 'Teste 1', type: 'TEST', weight: 50, score: 8.5, date: inDays(-15, 9, 0) },
-      { disciplineId: mat.id, name: 'Teste 2', type: 'TEST', weight: 50, date: inDays(3, 9, 0) },
+      { disciplineId: mat.id, name: 'Teste 2', type: 'TEST', weight: 50, date: inDays(3, 9, 0), prepMinutes: 180 },
     ],
   });
 
@@ -70,8 +78,22 @@ async function main() {
         dueDate: inDays(1),
         priority: 'MEDIUM',
       },
-      { userId: user.id, disciplineId: bd.id, title: 'Modelo ER do projeto', dueDate: inDays(3), priority: 'HIGH' },
-      { userId: user.id, disciplineId: mat.id, title: 'Exercícios da ficha 4', dueDate: inDays(2), priority: 'HIGH' },
+      {
+        userId: user.id,
+        disciplineId: bd.id,
+        title: 'Modelo ER do projeto',
+        dueDate: inDays(3),
+        priority: 'HIGH',
+        estimatedMinutes: 120,
+      },
+      {
+        userId: user.id,
+        disciplineId: mat.id,
+        title: 'Exercícios da ficha 4',
+        dueDate: inDays(2),
+        priority: 'HIGH',
+        estimatedMinutes: 90,
+      },
       {
         userId: user.id,
         disciplineId: es.id,
@@ -116,6 +138,15 @@ async function main() {
       session(8, 10, 75, pw.id),
       session(9, 20, 30, mat.id),
       session(11, 14, 55, bd.id),
+    ],
+  });
+
+  // Disponibilidade de exemplo para o plano de estudo: dias úteis 18:00–21:00 e sábado 10:00–13:00
+  await prisma.studyPreferences.create({ data: { userId: user.id } });
+  await prisma.availabilityRule.createMany({
+    data: [
+      ...[1, 2, 3, 4, 5].map((weekday) => ({ userId: user.id, weekday, startMinute: 18 * 60, endMinute: 21 * 60 })),
+      { userId: user.id, weekday: 6, startMinute: 10 * 60, endMinute: 13 * 60 },
     ],
   });
 

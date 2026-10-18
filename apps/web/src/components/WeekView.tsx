@@ -295,7 +295,11 @@ function HourGutter({ hours }: { hours: number[] }) {
   return (
     <div aria-hidden="true">
       {hours.map((h) => (
-        <div key={h} className="-mt-1.5 pr-1 text-right text-[10px] text-stone-500" style={{ height: HOUR_PX }}>
+        <div
+          key={h}
+          className="relative -top-1.5 pr-1 text-right text-[10px] text-stone-500"
+          style={{ height: HOUR_PX }}
+        >
           {String(h).padStart(2, '0')}:00
         </div>
       ))}

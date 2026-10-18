@@ -43,6 +43,20 @@ enum BlockKind {
   OTHER
 }
 
+enum PlannedSessionStatus {
+  PLANNED
+  COMPLETED
+  MISSED
+  CANCELLED
+}
+
+enum StudyPlanStatus {
+  DRAFT
+  CONFIRMED
+  SUPERSEDED
+  DISCARDED
+}
+
 enum ImportKind {
   ICS
   CSV
@@ -56,21 +70,25 @@ enum ImportStatus {
 }
 
 model User {
-  id             Int             @id @default(autoincrement())
-  name           String
-  email          String          @unique
-  passwordHash   String
-  tokenVersion   Int             @default(0) // legado (JWT); mantido para permitir rollback
-  lastLoginAt    DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  sessions       UserSession[]
-  scheduleBlocks ScheduleBlock[]
-  importJobs     ImportJob[]
-  semesters      Semester[]
-  disciplines    Discipline[]
-  tasks          Task[]
-  studySessions  StudySession[]
+  id                Int                @id @default(autoincrement())
+  name              String
+  email             String             @unique
+  passwordHash      String
+  tokenVersion      Int                @default(0) // legado (JWT); mantido para permitir rollback
+  lastLoginAt       DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  sessions          UserSession[]
+  scheduleBlocks    ScheduleBlock[]
+  importJobs        ImportJob[]
+  semesters         Semester[]
+  disciplines       Discipline[]
+  tasks             Task[]
+  studySessions     StudySession[]
+  studyPreferences  StudyPreferences?
+  availabilityRules AvailabilityRule[]
+  studyPlans        StudyPlan[]
+  plannedSessions   PlannedSession[]
 }
 
 // Sessão de autenticação no servidor (spec §14.1). O cookie leva um token opaco aleatório;
@@ -103,75 +121,82 @@ model Semester {
 }
 
 model Discipline {
-  id             Int             @id @default(autoincrement())
-  name           String
-  code           String
-  ects           Int?
-  passingGrade   Float           @default(10)
-  color          String?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  userId         Int
-  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  semesterId     Int?
-  semester       Semester?       @relation(fields: [semesterId], references: [id], onDelete: SetNull)
-  assessments    Assessment[]
-  tasks          Task[]
-  studySessions  StudySession[]
-  scheduleBlocks ScheduleBlock[]
+  id              Int              @id @default(autoincrement())
+  name            String
+  code            String
+  ects            Int?
+  passingGrade    Float            @default(10)
+  color           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  userId          Int
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semesterId      Int?
+  semester        Semester?        @relation(fields: [semesterId], references: [id], onDelete: SetNull)
+  assessments     Assessment[]
+  tasks           Task[]
+  studySessions   StudySession[]
+  scheduleBlocks  ScheduleBlock[]
+  plannedSessions PlannedSession[]
 
   @@unique([userId, semesterId, code])
   @@index([userId])
 }
 
 model Assessment {
-  id           Int            @id @default(autoincrement())
-  name         String
-  type         AssessmentType @default(TEST)
-  weight       Float
-  date         DateTime?
-  score        Float?
-  minScore     Float?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  disciplineId Int
-  discipline   Discipline     @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  id              Int              @id @default(autoincrement())
+  name            String
+  type            AssessmentType   @default(TEST)
+  weight          Float
+  date            DateTime?
+  score           Float?
+  minScore        Float?
+  prepMinutes     Int? // tempo estimado de preparação (planeador)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  disciplineId    Int
+  discipline      Discipline       @relation(fields: [disciplineId], references: [id], onDelete: Cascade)
+  plannedSessions PlannedSession[]
 
   @@index([disciplineId])
 }
 
 model Task {
-  id           Int          @id @default(autoincrement())
-  title        String
-  description  String?
-  dueDate      DateTime?
-  priority     TaskPriority @default(MEDIUM)
-  status       TaskStatus   @default(TODO)
-  completedAt  DateTime?
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  userId       Int
-  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  disciplineId Int?
-  discipline   Discipline?  @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
-  origin       DataOrigin   @default(MANUAL)
-  externalId   String?
-  importJobId  String?
-  importJob    ImportJob?   @relation(fields: [importJobId], references: [id], onDelete: SetNull)
+  id               Int              @id @default(autoincrement())
+  title            String
+  description      String?
+  dueDate          DateTime?
+  priority         TaskPriority     @default(MEDIUM)
+  status           TaskStatus       @default(TODO)
+  completedAt      DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  userId           Int
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId     Int?
+  discipline       Discipline?      @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  origin           DataOrigin       @default(MANUAL)
+  externalId       String?
+  importJobId      String?
+  importJob        ImportJob?       @relation(fields: [importJobId], references: [id], onDelete: SetNull)
+  estimatedMinutes Int? // duração estimada (planeador)
+  plannedSessions  PlannedSession[]
 
   @@unique([userId, origin, externalId])
   @@index([userId, status, dueDate])
 }
 
 model StudySession {
-  id           Int         @id @default(autoincrement())
-  startedAt    DateTime
-  endedAt      DateTime?
-  notes        String?
-  userId       Int
-  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  disciplineId Int?
-  discipline   Discipline? @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  id               Int             @id @default(autoincrement())
+  startedAt        DateTime
+  endedAt          DateTime?
+  notes            String?
+  userId           Int
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId     Int?
+  discipline       Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  plannedSessionId Int?
+  plannedSession   PlannedSession? @relation(fields: [plannedSessionId], references: [id], onDelete: SetNull)
 
   @@index([userId, startedAt])
 }
@@ -230,4 +255,75 @@ model ImportJob {
   tasks            Task[]
 
   @@index([userId, createdAt])
+}
+
+// Preferências de estudo (spec §6.1 PlanningPreference). Valores por omissão documentados em docs/ARCHITECTURE.md.
+model StudyPreferences {
+  id                Int      @id @default(autoincrement())
+  sessionMinutes    Int      @default(50)
+  minSessionMinutes Int      @default(25)
+  breakMinutes      Int      @default(10)
+  maxDailyMinutes   Int      @default(180)
+  updatedAt         DateTime @updatedAt
+  userId            Int      @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// Janela semanal disponível para estudo (spec §6.1 AvailabilityRule), em hora local.
+model AvailabilityRule {
+  id          Int      @id @default(autoincrement())
+  weekday     Int // 1 = segunda … 7 = domingo
+  startMinute Int // minutos desde a meia-noite
+  endMinute   Int
+  createdAt   DateTime @default(now())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Versão de um plano (spec §6.1 StudyPlan). Um rascunho guarda a proposta até ser confirmado.
+model StudyPlan {
+  id          String           @id @default(uuid())
+  version     Int
+  status      StudyPlanStatus  @default(DRAFT)
+  fromDate    DateTime
+  toDate      DateTime
+  proposal    Json
+  rules       Json
+  createdAt   DateTime         @default(now())
+  confirmedAt DateTime?
+  userId      Int
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions    PlannedSession[]
+
+  @@index([userId, createdAt])
+}
+
+// Sessão de estudo planeada (spec §6.1 StudySession). Distinta de StudySession, que regista o foco real.
+model PlannedSession {
+  id             Int                  @id @default(autoincrement())
+  startAt        DateTime
+  endAt          DateTime
+  plannedMinutes Int
+  actualMinutes  Int?
+  status         PlannedSessionStatus @default(PLANNED)
+  pinned         Boolean              @default(false)
+  reason         String
+  completedAt    DateTime?
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  userId         Int
+  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  taskId         Int?
+  task           Task?                @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  assessmentId   Int?
+  assessment     Assessment?          @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+  disciplineId   Int?
+  discipline     Discipline?          @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  planId         String?
+  plan           StudyPlan?           @relation(fields: [planId], references: [id], onDelete: SetNull)
+  focusSessions  StudySession[]
+
+  @@index([userId, startAt])
 }

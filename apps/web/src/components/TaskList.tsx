@@ -76,6 +76,8 @@ function TaskItem({
               {overdue ? `Em atraso · ${relativeDay(task.dueDate)}` : relativeDay(task.dueDate)}
             </span>
           )}
+          {task.estimatedMinutes ? <span>~{task.estimatedMinutes} min</span> : null}
+          {task.origin && task.origin !== 'MANUAL' && <span>Importada</span>}
           {!compact && task.priority === 'HIGH' && !done && (
             <Badge tone="amber">Prioridade {priorityLabels.HIGH.toLowerCase()}</Badge>
           )}

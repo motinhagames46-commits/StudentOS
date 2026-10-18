@@ -31,7 +31,18 @@ studySessionsRouter.get('/', async (req, res) => {
 // RN11 — no máximo uma sessão em curso por utilizador. O bloqueio da linha do utilizador
 // serializa pedidos simultâneos, para que dois "iniciar" em paralelo não criem duas sessões.
 studySessionsRouter.post('/start', async (req, res) => {
-  const { disciplineId } = parse(studySessionStartSchema, req.body ?? {});
+  const input = parse(studySessionStartSchema, req.body ?? {});
+  let disciplineId = input.disciplineId ?? null;
+  let plannedSessionId: number | null = null;
+  if (input.plannedSessionId) {
+    // Foco iniciado a partir do plano: a disciplina vem da sessão planeada (que tem de ser do utilizador).
+    const planned = await prisma.plannedSession.findFirst({
+      where: { id: input.plannedSessionId, userId: req.userId, status: 'PLANNED' },
+    });
+    if (!planned) throw new HttpError(404, 'PLANNED_SESSION_NOT_FOUND', 'Sessão planeada não encontrada');
+    plannedSessionId = planned.id;
+    disciplineId = disciplineId ?? planned.disciplineId;
+  }
   if (disciplineId) await findOwnedDiscipline(req.userId, disciplineId);
 
   const session = await prisma.$transaction(async (tx) => {
@@ -41,7 +52,7 @@ studySessionsRouter.post('/start', async (req, res) => {
       throw new HttpError(409, 'STUDY_SESSION_IN_PROGRESS', 'Já tens uma sessão de estudo em curso');
     }
     return tx.studySession.create({
-      data: { startedAt: new Date(), disciplineId: disciplineId ?? null, userId: req.userId },
+      data: { startedAt: new Date(), disciplineId, plannedSessionId, userId: req.userId },
       include: { discipline: disciplineSelect },
     });
   });

@@ -73,6 +73,13 @@ export const assessmentCreateSchema = z.strictObject({
   date: isoDate.nullable().optional(),
   score: grade.nullable().optional(),
   minScore: grade.nullable().optional(),
+  prepMinutes: z
+    .number('Indica os minutos')
+    .int('Indica um número inteiro de minutos')
+    .min(5, 'Mínimo 5 minutos')
+    .max(6000, 'Máximo 6000 minutos')
+    .nullable()
+    .optional(),
 });
 export const assessmentUpdateSchema = assessmentCreateSchema.partial();
 
@@ -82,6 +89,13 @@ export const taskCreateSchema = z.strictObject({
   dueDate: isoDate.nullable().optional(),
   priority: z.enum(taskPriorities).optional(),
   disciplineId: positiveId.nullable().optional(),
+  estimatedMinutes: z
+    .number('Indica os minutos')
+    .int('Indica um número inteiro de minutos')
+    .min(5, 'Mínimo 5 minutos')
+    .max(6000, 'Máximo 6000 minutos')
+    .nullable()
+    .optional(),
 });
 export const taskUpdateSchema = taskCreateSchema.partial().extend({
   status: z.enum(taskStatuses).optional(),
@@ -98,6 +112,7 @@ export const taskQuerySchema = z.object({
 // RF13 / RN11 — sessões de estudo
 export const studySessionStartSchema = z.strictObject({
   disciplineId: positiveId.nullable().optional(),
+  plannedSessionId: positiveId.nullable().optional(),
 });
 
 export const studySessionStopSchema = z.strictObject({
@@ -201,6 +216,70 @@ export type ScheduleBlockCreateInput = z.infer<typeof scheduleBlockCreateSchema>
 export type ScheduleBlockUpdateInput = z.infer<typeof scheduleBlockUpdateSchema>;
 export type ImportCreateInput = z.infer<typeof importCreateSchema>;
 export type ImportItemEdit = z.infer<typeof importItemEditSchema>;
+
+// Planeador (spec §11): preferências, disponibilidade semanal e sessões planeadas.
+export const availabilityWindowSchema = z
+  .strictObject({
+    weekday: z.number().int().min(1).max(7),
+    startMinute: z.number().int().min(0).max(1439),
+    endMinute: z.number().int().min(1).max(1440),
+  })
+  .refine((w) => w.endMinute - w.startMinute >= 15, {
+    message: 'Cada período tem de ter pelo menos 15 minutos e terminar depois de começar',
+    path: ['endMinute'],
+  });
+
+export const studyPreferencesSchema = z
+  .strictObject({
+    sessionMinutes: z.number().int().min(15, 'Mínimo 15 minutos').max(180, 'Máximo 180 minutos'),
+    minSessionMinutes: z.number().int().min(10, 'Mínimo 10 minutos').max(180),
+    breakMinutes: z.number().int().min(0).max(60, 'Máximo 60 minutos'),
+    maxDailyMinutes: z.number().int().min(15, 'Mínimo 15 minutos').max(960, 'Máximo 16 horas'),
+    availability: z.array(availabilityWindowSchema).max(50),
+  })
+  .refine((p) => p.minSessionMinutes <= p.sessionMinutes, {
+    message: 'A sessão mínima não pode ser maior do que a sessão habitual',
+    path: ['minSessionMinutes'],
+  })
+  .superRefine((p, ctx) => {
+    for (let day = 1; day <= 7; day++) {
+      const windows = p.availability.filter((w) => w.weekday === day).sort((a, b) => a.startMinute - b.startMinute);
+      for (let i = 1; i < windows.length; i++) {
+        if (windows[i]!.startMinute < windows[i - 1]!.endMinute) {
+          ctx.addIssue({ code: 'custom', message: 'Há períodos sobrepostos no mesmo dia', path: ['availability'] });
+          return;
+        }
+      }
+    }
+  });
+
+export const plannerPreviewSchema = z.strictObject({
+  from: z.iso.date({ error: 'Data inválida' }).optional(),
+  days: z.number().int().min(1).max(28).optional(),
+});
+
+export const plannedSessionUpdateSchema = z
+  .strictObject({
+    startAt: isoDate.optional(),
+    endAt: isoDate.optional(),
+    pinned: z.boolean().optional(),
+  })
+  .refine((u) => (u.startAt === undefined) === (u.endAt === undefined), {
+    message: 'Indica o início e o fim',
+    path: ['endAt'],
+  })
+  .refine((u) => !u.startAt || !u.endAt || u.endAt > u.startAt, {
+    message: 'O fim tem de ser depois do início',
+    path: ['endAt'],
+  });
+
+export const plannedSessionCompleteSchema = z.strictObject({
+  actualMinutes: z.number().int().min(1).max(600).optional(),
+});
+
+export type StudyPreferencesInput = z.infer<typeof studyPreferencesSchema>;
+export type AvailabilityWindowInput = z.infer<typeof availabilityWindowSchema>;
+export type PlannedSessionUpdateInput = z.infer<typeof plannedSessionUpdateSchema>;
 
 // RF14 — estatísticas dos últimos N dias
 export const statsQuerySchema = z.object({

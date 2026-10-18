@@ -67,4 +67,45 @@ test.describe('acessibilidade (axe)', () => {
     await expect(page.getByText('Para passar precisas de 8,0')).toBeVisible();
     await expectNoSeriousViolations(page);
   });
+
+  test('calendário (semana)', async ({ page }) => {
+    await apiPost(page, '/schedule-blocks', {
+      title: 'Aula de Matemática',
+      startAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+      endAt: new Date(Date.now() + 3 * 60 * 60 * 1000).toISOString(),
+      disciplineId,
+    });
+    await page.goto('/calendario');
+    await expect(page.getByRole('heading', { level: 1, name: 'Calendário' })).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+
+  test('plano de estudo com proposta', async ({ page }) => {
+    await page.request.put('/api/preferences/study', {
+      data: {
+        sessionMinutes: 50,
+        minSessionMinutes: 25,
+        breakMinutes: 10,
+        maxDailyMinutes: 180,
+        availability: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, startMinute: 480, endMinute: 1320 })),
+      },
+    });
+    await apiPost(page, '/tasks', { title: 'Relatório', estimatedMinutes: 90, disciplineId });
+    await page.goto('/plano');
+    await page.getByRole('button', { name: 'Gerar plano (7 dias)' }).click();
+    await expect(page.getByText(/Proposta de plano/)).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+
+  for (const [name, path, heading] of [
+    ['importar', '/importar', 'Importar horário'],
+    ['preferências', '/preferencias', 'Preferências de estudo'],
+    ['integrações', '/integracoes', 'Integrações'],
+  ] as const) {
+    test(name, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+      await expectNoSeriousViolations(page);
+    });
+  }
 });

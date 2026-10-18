@@ -66,6 +66,7 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
                     <span>Peso {formatGrade(a.weight)}%</span>
                     {a.date && <span>{formatDate(a.date)}</span>}
                     {a.minScore !== null && <span>Mínimo {formatGrade(a.minScore)}</span>}
+                    {a.prepMinutes !== null && <span>Preparação ~{a.prepMinutes} min</span>}
                   </p>
                 </div>
                 <div className="text-right">
@@ -123,6 +124,7 @@ function AssessmentForm({
   const [date, setDate] = useState(isoToDateInput(initial?.date ?? null));
   const [score, setScore] = useState(initial?.score != null ? String(initial.score) : '');
   const [minScore, setMinScore] = useState(initial?.minScore != null ? String(initial.minScore) : '');
+  const [prep, setPrep] = useState(initial?.prepMinutes != null ? String(initial.prepMinutes) : '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -137,6 +139,7 @@ function AssessmentForm({
       date: date ? dateInputToIso(date, '09:00') : null,
       score: toNumber(score),
       minScore: toNumber(minScore),
+      prepMinutes: prep.trim() ? Number(prep) : null,
     });
     if (!parsed.success) {
       setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
@@ -216,6 +219,19 @@ function AssessmentForm({
           error={errors.minScore}
         />
       </div>
+      <TextField
+        label="Preparação estimada (min)"
+        type="number"
+        inputMode="numeric"
+        min={5}
+        step={15}
+        placeholder="ex.: 240"
+        value={prep}
+        onChange={(e) => setPrep(e.target.value)}
+        error={errors.prepMinutes}
+        hint="Usado pelo plano de estudo. Opcional."
+        className="sm:max-w-xs"
+      />
       <FormError message={formError} />
       <div className="flex justify-end gap-2">
         <Button variant="secondary" onClick={onDone}>

@@ -23,7 +23,7 @@ export class ApiError extends Error {
   }
 }
 
-type Method = 'GET' | 'POST' | 'PATCH' | 'DELETE';
+type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
 export async function api<T>(path: string, options: { method?: Method; body?: unknown } = {}): Promise<T> {
   const { method = 'GET', body } = options;

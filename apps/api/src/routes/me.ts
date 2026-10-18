@@ -49,6 +49,10 @@ meRouter.get('/export', async (req, res) => {
       tasks: true,
       studySessions: true,
       scheduleBlocks: true,
+      studyPreferences: true,
+      availabilityRules: true,
+      plannedSessions: true,
+      studyPlans: { select: { id: true, version: true, status: true, fromDate: true, toDate: true, createdAt: true } },
       importJobs: {
         select: { id: true, kind: true, status: true, originalFilename: true, createdAt: true, counts: true },
       },

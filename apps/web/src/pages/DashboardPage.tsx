@@ -2,12 +2,21 @@ import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { StudyByDisciplineChart, TaskProgress } from '../components/charts';
 import { TaskList } from '../components/TaskList';
+import { QuickActions, TodayPlan } from '../components/TodayPlan';
 import { Badge, Card, DisciplineChip, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
 import { useDashboard, useStats, useUpdateTask } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
 import { formatDate, formatDuration, formatGrade, gradeStatusLabels, relativeDay } from '../lib/format';
 import type { Dashboard, GradeSummaryDto } from '../lib/types';
+
+const todayLabel = () =>
+  new Intl.DateTimeFormat('pt-PT', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Lisbon',
+  }).format(new Date());
 
 export function gradeTone(status: GradeSummaryDto['status']) {
   return status === 'approved'
@@ -31,7 +40,7 @@ export function DashboardPage() {
     <>
       <PageHeader
         title={`Olá, ${firstName ?? ''}`}
-        subtitle={data?.activeSemester?.label ?? me?.activeSemester?.label}
+        subtitle={[todayLabel(), data?.activeSemester?.label ?? me?.activeSemester?.label].filter(Boolean).join(' · ')}
       />
 
       {error ? (
@@ -43,7 +52,9 @@ export function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          <QuickActions />
           <Stats data={data} />
+          <TodayPlan />
 
           {data.overdueTasks.length > 0 && (
             <Card title={`Em atraso (${data.overdueTasks.length})`} className="border-red-200">

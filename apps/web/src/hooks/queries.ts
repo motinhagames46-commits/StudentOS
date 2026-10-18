@@ -7,6 +7,7 @@ import type {
   DisciplineUpdateInput,
   ScheduleBlockCreateInput,
   ScheduleBlockUpdateInput,
+  StudyPreferencesInput,
   SemesterCreateInput,
   SemesterUpdateInput,
   StudySessionQuery,
@@ -22,9 +23,13 @@ import type {
   CalendarData,
   Dashboard,
   Discipline,
+  PlannerSessionsResponse,
+  PlanView,
   Semester,
   Stats,
+  StudyPreferencesView,
   StudySession,
+  Suggestion,
   Task,
 } from '../lib/types';
 
@@ -35,7 +40,18 @@ function toQueryString(params: Record<string, string | number | undefined>): str
   return entries.length ? `?${new URLSearchParams(entries.map(([k, v]) => [k, String(v)]))}` : '';
 }
 
-const dataKeys = ['dashboard', 'tasks', 'disciplines', 'discipline', 'study-sessions', 'stats', 'calendar', 'alerts'];
+const dataKeys = [
+  'dashboard',
+  'tasks',
+  'disciplines',
+  'discipline',
+  'study-sessions',
+  'stats',
+  'calendar',
+  'alerts',
+  'planner',
+  'suggestion',
+];
 
 function useInvalidateAll(extraKeys: string[] = []) {
   const queryClient = useQueryClient();
@@ -250,6 +266,97 @@ export function useSkipOccurrence() {
   return useMutation({
     mutationFn: ({ id, occurrenceStart }: { id: number; occurrenceStart: string }) =>
       api<unknown>(`/schedule-blocks/${id}/skip`, { method: 'POST', body: { occurrenceStart } }),
+    onSuccess: invalidate,
+  });
+}
+
+// Planeador (spec §11)
+const plannerKeys = ['planner', 'calendar', 'dashboard', 'stats', 'suggestion'];
+function useInvalidatePlanner() {
+  const queryClient = useQueryClient();
+  return () => Promise.all(plannerKeys.map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
+}
+
+export const useStudyPreferences = () =>
+  useQuery({ queryKey: ['preferences'], queryFn: () => api<StudyPreferencesView>('/preferences/study') });
+
+export function useSaveStudyPreferences() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: StudyPreferencesInput) =>
+      api<StudyPreferencesView>('/preferences/study', { method: 'PUT', body: input }),
+    onSuccess: (data) => {
+      queryClient.setQueryData(['preferences'], data);
+      void queryClient.invalidateQueries({ queryKey: ['planner'] });
+    },
+  });
+}
+
+export const usePlannerSessions = (from: string, to: string) =>
+  useQuery({
+    queryKey: ['planner', 'sessions', from, to],
+    queryFn: () => api<PlannerSessionsResponse>(`/planner/sessions${toQueryString({ from, to })}`),
+    placeholderData: (previous) => previous,
+  });
+
+export const useSuggestion = () =>
+  useQuery({ queryKey: ['suggestion'], queryFn: () => api<Suggestion>('/planner/suggestion') });
+
+export function usePlanPreview() {
+  const invalidate = useInvalidatePlanner();
+  return useMutation({
+    mutationFn: ({ replan, ...body }: { replan?: boolean; from?: string; days?: number }) =>
+      api<PlanView>(replan ? '/planner/replan' : '/planner/preview', { method: 'POST', body }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useConfirmPlan() {
+  const invalidate = useInvalidatePlanner();
+  return useMutation({
+    mutationFn: (id: string) => api<{ created: number; removed: number }>(`/planner/${id}/confirm`, { method: 'POST' }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDiscardPlan() {
+  const invalidate = useInvalidatePlanner();
+  return useMutation({
+    mutationFn: (id: string) => api<void>(`/planner/${id}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+export function usePlannedSessionAction() {
+  const invalidate = useInvalidatePlanner();
+  return useMutation({
+    mutationFn: async (
+      action:
+        | { kind: 'complete'; id: number; actualMinutes?: number }
+        | { kind: 'miss'; id: number }
+        | { kind: 'pin'; id: number; pinned: boolean }
+        | { kind: 'move'; id: number; startAt: string; endAt: string }
+        | { kind: 'remove'; id: number },
+    ) => {
+      switch (action.kind) {
+        case 'complete':
+          return api<unknown>(`/planned-sessions/${action.id}/complete`, {
+            method: 'POST',
+            body: action.actualMinutes ? { actualMinutes: action.actualMinutes } : {},
+          });
+        case 'miss':
+          return api<unknown>(`/planned-sessions/${action.id}/miss`, { method: 'POST', body: {} });
+        case 'pin':
+          return api<unknown>(`/planned-sessions/${action.id}`, { method: 'PATCH', body: { pinned: action.pinned } });
+        case 'move':
+          return api<unknown>(`/planned-sessions/${action.id}`, {
+            method: 'PATCH',
+            body: { startAt: action.startAt, endAt: action.endAt },
+          });
+        case 'remove':
+          return api<void>(`/planned-sessions/${action.id}`, { method: 'DELETE' });
+      }
+    },
     onSuccess: invalidate,
   });
 }

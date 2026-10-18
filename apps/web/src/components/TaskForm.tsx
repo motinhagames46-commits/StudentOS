@@ -10,6 +10,7 @@ export interface TaskFormValues {
   dueDate: string | null;
   priority: TaskPriority;
   disciplineId: number | null;
+  estimatedMinutes: number | null;
 }
 
 interface TaskFormProps {
@@ -25,6 +26,7 @@ export function TaskForm({ disciplines, initial, submitLabel = 'Adicionar', onSu
   const [date, setDate] = useState(isoToDateInput(initial?.dueDate ?? null));
   const [priority, setPriority] = useState<TaskPriority>(initial?.priority ?? 'MEDIUM');
   const [disciplineId, setDisciplineId] = useState(initial?.disciplineId ? String(initial.disciplineId) : '');
+  const [estimate, setEstimate] = useState(initial?.estimatedMinutes ? String(initial.estimatedMinutes) : '');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -36,6 +38,7 @@ export function TaskForm({ disciplines, initial, submitLabel = 'Adicionar', onSu
       dueDate: date ? dateInputToIso(date) : null,
       priority,
       disciplineId: disciplineId ? Number(disciplineId) : null,
+      estimatedMinutes: estimate.trim() ? Number(estimate) : null,
     };
 
     const parsed = taskCreateSchema.safeParse(values);
@@ -53,6 +56,7 @@ export function TaskForm({ disciplines, initial, submitLabel = 'Adicionar', onSu
         setTitle('');
         setDate('');
         setPriority('MEDIUM');
+        setEstimate('');
       }
     } catch (err) {
       if (err instanceof ApiError && err.details.length) setErrors(err.fieldErrors());
@@ -82,7 +86,7 @@ export function TaskForm({ disciplines, initial, submitLabel = 'Adicionar', onSu
           error={errors.dueDate}
         />
       </div>
-      <div className="grid gap-3 sm:grid-cols-[1fr_10rem_auto] sm:items-end">
+      <div className="grid gap-3 sm:grid-cols-[1fr_9rem_9rem_auto] sm:items-end">
         <SelectField
           label="Disciplina"
           value={disciplineId}
@@ -103,6 +107,17 @@ export function TaskForm({ disciplines, initial, submitLabel = 'Adicionar', onSu
             </option>
           ))}
         </SelectField>
+        <TextField
+          label="Duração (min)"
+          type="number"
+          inputMode="numeric"
+          min={5}
+          step={5}
+          placeholder="ex.: 90"
+          value={estimate}
+          onChange={(e) => setEstimate(e.target.value)}
+          error={errors.estimatedMinutes}
+        />
         <div className="flex gap-2">
           {onCancel && (
             <Button variant="secondary" onClick={onCancel}>

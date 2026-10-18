@@ -1,4 +1,11 @@
-import type { AssessmentType, GradeSummary, RequiredScore, TaskPriority, TaskStatus } from '@studentos/shared';
+import type {
+  AssessmentType,
+  GradeSummary,
+  PlanResult,
+  RequiredScore,
+  TaskPriority,
+  TaskStatus,
+} from '@studentos/shared';
 
 export interface User {
   id: number;
@@ -32,6 +39,7 @@ export interface Assessment {
   date: string | null;
   score: number | null;
   minScore: number | null;
+  prepMinutes: number | null;
   disciplineId: number;
 }
 
@@ -62,6 +70,8 @@ export interface Task {
   completedAt: string | null;
   disciplineId: number | null;
   discipline: DisciplineRef | null;
+  estimatedMinutes: number | null;
+  origin?: 'MANUAL' | 'IMPORT_ICS' | 'IMPORT_CSV';
 }
 
 export interface Dashboard {
@@ -119,3 +129,57 @@ export interface BlockOccurrence {
   discipline: DisciplineRef | null;
   conflict: boolean;
 }
+
+export type PlannedSessionStatus = 'PLANNED' | 'COMPLETED' | 'MISSED' | 'CANCELLED';
+
+export interface PlannedSession {
+  id: number;
+  startAt: string;
+  endAt: string;
+  plannedMinutes: number;
+  actualMinutes: number | null;
+  status: PlannedSessionStatus;
+  pinned: boolean;
+  reason: string;
+  protected?: boolean;
+  task: { id: number; title: string; status: string } | null;
+  assessment: { id: number; name: string; date: string | null } | null;
+  discipline: DisciplineRef | null;
+}
+
+export interface PlanView {
+  id: string;
+  version: number;
+  status: string;
+  fromDate: string;
+  toDate: string;
+  createdAt: string;
+  expiresAt: string;
+  proposal: PlanResult & {
+    kind: 'plan' | 'replan';
+    removals: { id: number; startAt: string; endAt: string; reason: string }[];
+  };
+}
+
+export interface PlannerSessionsResponse {
+  sessions: PlannedSession[];
+  draft: PlanView | null;
+  hasAvailability: boolean;
+}
+
+export interface StudyPreferencesView {
+  sessionMinutes: number;
+  minSessionMinutes: number;
+  breakMinutes: number;
+  maxDailyMinutes: number;
+  availability: { weekday: number; startMinute: number; endMinute: number }[];
+}
+
+export type Suggestion =
+  | { kind: 'session'; session: PlannedSession; message: string }
+  | {
+      kind: 'item';
+      item: { type: 'task' | 'assessment'; id: number; title: string; disciplineId: number | null };
+      message: string;
+    }
+  | { kind: 'missing'; message: string };
