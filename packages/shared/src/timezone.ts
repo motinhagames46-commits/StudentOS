@@ -69,6 +69,23 @@ export function addDaysToKey(key: string, days: number): string {
   return `${t.getUTCFullYear()}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`;
 }
 
+/** Diferença em dias civis entre duas chaves aaaa-mm-dd (to − from). */
+export function daysBetweenKeys(from: string, to: string): number {
+  const utc = (key: string) => {
+    const [y, m, d] = key.split('-').map(Number) as [number, number, number];
+    return Date.UTC(y, m - 1, d);
+  };
+  return Math.round((utc(to) - utc(from)) / (24 * 60 * 60 * 1000));
+}
+
+/**
+ * Dias civis de `now` até `date` no fuso indicado: 0 = hoje, 1 = amanhã, −1 = ontem.
+ * Fonte única para "hoje/amanhã/daqui a N dias" na API e na interface.
+ */
+export function calendarDaysUntil(date: Date, now: Date, timeZone: string): number {
+  return daysBetweenKeys(zonedDayKey(now, timeZone), zonedDayKey(date, timeZone));
+}
+
 /** Dia da semana (1 = segunda … 7 = domingo) de uma chave aaaa-mm-dd. */
 export function weekdayOfKey(key: string): number {
   const [y, m, d] = key.split('-').map(Number) as [number, number, number];

@@ -14,6 +14,7 @@ import {
   zonedDayKey,
   type PlanResult,
   type ProposedSession,
+  type WorkItem,
 } from '@studentos/shared';
 import type { Prisma } from '../generated/prisma/client.js';
 import { HttpError, notFound, parse } from '../lib/http.js';
@@ -235,39 +236,46 @@ plannerRouter.get('/sessions', async (req, res) => {
 });
 
 // GET /api/planner/suggestion — "O que devo estudar agora?" (spec §11.7)
+// A explicação é sempre recalculada no momento do pedido: o texto guardado no plano fica desatualizado
+// quando o estudante muda a tarefa ou o tempo passa.
 plannerRouter.get('/suggestion', async (req, res) => {
   const now = new Date();
   const soon = new Date(now.getTime() + 30 * 60 * 1000);
-  const current = await prisma.plannedSession.findFirst({
-    where: { userId: req.userId, status: 'PLANNED', startAt: { lt: soon }, endAt: { gt: now } },
-    include: sessionInclude,
-    orderBy: { startAt: 'asc' },
-  });
+  const end = startOfZonedDay(addDaysToKey(zonedDayKey(now, DEFAULT_TIMEZONE), 1), DEFAULT_TIMEZONE);
+  const [current, { input }] = await Promise.all([
+    prisma.plannedSession.findFirst({
+      where: { userId: req.userId, status: 'PLANNED', startAt: { lt: soon }, endAt: { gt: now } },
+      include: sessionInclude,
+      orderBy: { startAt: 'asc' },
+    }),
+    buildPlannerContext(req.userId, now, end, now),
+  ]);
+  const describe = (item: WorkItem) => explain(item, priorityOf(item, now), now, DEFAULT_TIMEZONE);
+
   if (current) {
-    res.json({ kind: 'session', session: current, message: current.reason });
+    const item = input.items.find(
+      (i) =>
+        (i.type === 'task' && i.id === current.taskId) || (i.type === 'assessment' && i.id === current.assessmentId),
+    );
+    res.json({ kind: 'session', session: current, message: item ? describe(item) : 'Sessão de estudo planeada.' });
     return;
   }
 
-  const end = startOfZonedDay(addDaysToKey(zonedDayKey(now, DEFAULT_TIMEZONE), 1), DEFAULT_TIMEZONE);
-  const { input } = await buildPlannerContext(req.userId, now, end, now);
-  const candidates = input.items.filter((i) => i.remainingMinutes !== null && i.remainingMinutes > 0);
+  // Itens sem duração estimada também contam: uma tarefa urgente não pode desaparecer só por não ter estimativa.
+  const candidates = input.items.filter((i) => i.remainingMinutes === null || i.remainingMinutes > 0);
   if (candidates.length === 0) {
-    const missing = input.items.filter((i) => i.remainingMinutes === null).length;
-    res.json({
-      kind: 'missing',
-      message: missing
-        ? `Indica a duração estimada de ${missing} tarefa(s) ou avaliação(ões) para receberes sugestões.`
-        : 'Não há trabalho pendente com duração estimada. Adiciona tarefas ou avaliações.',
-    });
+    res.json({ kind: 'missing', message: 'Não há trabalho pendente. Adiciona tarefas ou avaliações.' });
     return;
   }
   const ranked = candidates
     .map((item) => ({ item, p: priorityOf(item, now) }))
     .sort((a, b) => b.p.score - a.p.score || a.item.id - b.item.id);
-  const top = ranked[0]!;
+  const top = ranked[0]!.item;
+  const needsEstimate = top.remainingMinutes === null;
   res.json({
     kind: 'item',
-    item: { type: top.item.type, id: top.item.id, title: top.item.title, disciplineId: top.item.disciplineId },
-    message: explain(top.item, top.p),
+    item: { type: top.type, id: top.id, title: top.title, disciplineId: top.disciplineId },
+    needsEstimate,
+    message: describe(top) + (needsEstimate ? ' Indica a duração estimada para o planeador lhe reservar tempo.' : ''),
   });
 });

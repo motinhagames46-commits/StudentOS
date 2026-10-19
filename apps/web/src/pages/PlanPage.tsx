@@ -23,7 +23,7 @@ import {
   usePlanPreview,
 } from '../hooks/queries';
 import { api, errorMessage } from '../lib/api';
-import { formatDate, formatTime, isoToZonedInput, zonedInputToIso } from '../lib/format';
+import { formatDate, formatTime, isoToZonedInput, studyTitle, zonedInputToIso } from '../lib/format';
 import type { PlannedSession, PlanView } from '../lib/types';
 
 const TZ = DEFAULT_TIMEZONE;
@@ -38,7 +38,7 @@ const statusTone = { PLANNED: 'blue', COMPLETED: 'green', MISSED: 'red', CANCELL
 const longDay = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
 
 function sessionTitle(s: PlannedSession) {
-  return s.task?.title ?? s.assessment?.name ?? 'Estudo';
+  return studyTitle(s.task?.title ?? s.assessment?.name, s.discipline?.code);
 }
 
 /** Plano de estudo (spec §11.6): proposta → confirmação; ações por sessão; replaneamento. */
@@ -73,7 +73,7 @@ export function PlanPage() {
       id: `draft:${i}`,
       start: p.start,
       end: p.end,
-      title: `Proposta: ${p.title}`,
+      title: `Proposta: ${studyTitle(p.title, p.disciplineCode)}`,
       subtitle: `${p.minutes} min`,
       color: null,
       variant: 'free',
@@ -265,7 +265,7 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
                     <span className="tabular-nums">
                       {formatTime(s.start)}–{formatTime(s.end)}
                     </span>{' '}
-                    · {s.title}
+                    · {studyTitle(s.title, s.disciplineCode)}
                   </p>
                   <p className="text-xs text-stone-500">{s.reason}</p>
                 </li>
@@ -331,7 +331,6 @@ function SessionCard({
         <div className="min-w-0">
           <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-stone-900">
             {sessionTitle(s)}
-            {s.discipline && <span className="text-xs text-stone-500">{s.discipline.code}</span>}
             <Badge tone={statusTone[s.status]}>{statusLabels[s.status]}</Badge>
             {s.pinned && <Badge>Fixada</Badge>}
           </p>

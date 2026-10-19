@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_PLANNER_PREFERENCES,
+  explain,
   overlaps,
   planStudy,
   priorityOf,
@@ -8,7 +9,7 @@ import {
   type PlannerInput,
   type WorkItem,
 } from './planner.js';
-import { zonedDayKey } from './timezone.js';
+import { calendarDaysUntil, zonedDayKey } from './timezone.js';
 
 const TZ = 'Europe/Lisbon';
 // Segunda-feira, 19/10/2026, 08:00 em Lisboa (07:00 UTC)
@@ -199,8 +200,37 @@ describe('prioridades e distribuição (spec §11.4–11.5)', () => {
     });
     const { sessions } = planStudy(input({ items: [t] }));
     expect(sessions[0]!.reason).toBe(
-      'Prioridade média: Teste «Teste 2» (MAT) é daqui a 3 dias; vale 40% da nota; faltam cerca de 120 min.',
+      'Urgência média: Teste «Teste 2» (MAT) é daqui a 3 dias; vale 40% da nota; faltam cerca de 120 min.',
     );
+  });
+
+  describe('dias até ao prazo contados em dias civis de Lisboa (igual à lista de tarefas)', () => {
+    const at = (deadline: string, now: string) => {
+      const t = task(1, { deadline: new Date(deadline), label: 'Tarefa', title: 'T' });
+      const n = new Date(now);
+      return explain(t, priorityOf(t, n), n, 'Europe/Lisbon');
+    };
+    it('às 23:00, um prazo amanhã às 10:00 é «amanhã» (não «hoje»)', () => {
+      expect(at('2026-10-20T09:00:00Z', '2026-10-19T22:00:00Z')).toMatch(/é amanhã/);
+    });
+    it('conta dias civis através da mudança de hora (25/10/2026)', () => {
+      // sábado 23:30 WEST → segunda 00:30 WET: 25 h, mas dois dias civis
+      expect(at('2026-10-26T00:30:00Z', '2026-10-24T22:30:00Z')).toMatch(/é daqui a 2 dias/);
+    });
+    it('um prazo que já passou hoje não diz «há 1 dia»', () => {
+      expect(at('2026-10-19T09:00:00Z', '2026-10-19T15:00:00Z')).toMatch(/o prazo terminou hoje/);
+      expect(at('2026-10-17T09:00:00Z', '2026-10-19T15:00:00Z')).toMatch(/o prazo passou há 2 dia\(s\)/);
+    });
+    it('chama «Urgência» ao nível calculado, para não colidir com a prioridade escolhida', () => {
+      expect(at('2026-10-20T09:00:00Z', '2026-10-19T22:00:00Z')).toMatch(/^Urgência (alta|média|baixa):/);
+    });
+  });
+
+  it('calendarDaysUntil: 0 = hoje, 1 = amanhã, −1 = ontem, no fuso indicado', () => {
+    const now = new Date('2026-10-19T22:30:00Z'); // 23:30 em Lisboa
+    expect(calendarDaysUntil(new Date('2026-10-19T22:50:00Z'), now, 'Europe/Lisbon')).toBe(0);
+    expect(calendarDaysUntil(new Date('2026-10-19T23:10:00Z'), now, 'Europe/Lisbon')).toBe(1);
+    expect(calendarDaysUntil(new Date('2026-10-18T12:00:00Z'), now, 'Europe/Lisbon')).toBe(-1);
   });
 
   it('distribui o trabalho por vários dias em vez de o concentrar', () => {

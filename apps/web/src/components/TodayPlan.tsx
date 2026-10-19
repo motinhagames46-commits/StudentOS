@@ -1,20 +1,23 @@
 import { DEFAULT_TIMEZONE, addDaysToKey, startOfZonedDay, zonedDayKey } from '@studentos/shared';
-import { CalendarPlus, FileUp, Link2, ListPlus, Sparkles } from 'lucide-react';
+import { CalendarPlus, Clock, FileUp, ListPlus, Sparkles } from 'lucide-react';
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import { usePlannerSessions, useSuggestion } from '../hooks/queries';
 import { errorMessage } from '../lib/api';
-import { formatTime } from '../lib/format';
+import { formatTime, studyTitle } from '../lib/format';
 import { Badge, Card, EmptyState, ErrorState, Skeleton } from './ui';
 
 const statusLabels = { PLANNED: 'Planeada', COMPLETED: 'Concluída', MISSED: 'Falhada', CANCELLED: 'Retirada' } as const;
 
-/** Atalhos do painel (spec §7.1): cada um leva a uma funcionalidade que existe. */
+/**
+ * Atalhos do painel (spec §7.1): cada um leva a uma funcionalidade que existe e funciona.
+ * Sem "Ligar calendário" enquanto as integrações não estiverem disponíveis.
+ */
 export function QuickActions() {
   const actions = [
     { to: '/tarefas', label: 'Adicionar tarefa', icon: ListPlus },
     { to: '/importar', label: 'Importar horário', icon: FileUp },
-    { to: '/integracoes', label: 'Ligar calendário', icon: Link2 },
+    { to: '/preferencias', label: 'Definir disponibilidade', icon: Clock },
     { to: '/plano', label: 'Planear semana', icon: CalendarPlus },
   ];
   return (
@@ -85,7 +88,7 @@ export function TodayPlan() {
                     {formatTime(s.startAt)}–{formatTime(s.endAt)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm text-stone-900">
-                    {s.task?.title ?? s.assessment?.name ?? 'Estudo'}
+                    {studyTitle(s.task?.title ?? s.assessment?.name, s.discipline?.code)}
                   </span>
                   <Badge tone={s.status === 'COMPLETED' ? 'green' : s.status === 'MISSED' ? 'red' : 'blue'}>
                     {statusLabels[s.status]}
@@ -99,9 +102,22 @@ export function TodayPlan() {
               <Sparkles aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
               <span>
                 <strong>O que estudar agora: </strong>
-                {suggestion.data.kind === 'session'
-                  ? `${suggestion.data.session.task?.title ?? suggestion.data.session.assessment?.name ?? 'sessão planeada'} — ${suggestion.data.message}`
-                  : suggestion.data.message}
+                {suggestion.data.message}
+                {suggestion.data.kind === 'item' && suggestion.data.needsEstimate && (
+                  <>
+                    {' '}
+                    <Link
+                      to={
+                        suggestion.data.item.type === 'assessment' && suggestion.data.item.disciplineId
+                          ? `/disciplinas/${suggestion.data.item.disciplineId}`
+                          : '/tarefas'
+                      }
+                      className="font-medium text-accent underline"
+                    >
+                      Indicar duração
+                    </Link>
+                  </>
+                )}
               </span>
             </p>
           )}

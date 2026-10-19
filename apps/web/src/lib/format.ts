@@ -1,5 +1,6 @@
 import {
   DEFAULT_TIMEZONE,
+  calendarDaysUntil,
   instantToZoned,
   zonedToInstant,
   type AssessmentType,
@@ -9,7 +10,6 @@ import {
 } from '@studentos/shared';
 
 const TZ = 'Europe/Lisbon';
-const DAY = 24 * 60 * 60 * 1000;
 
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: TZ }).format(
@@ -33,19 +33,21 @@ export function formatGrade(value: number | null | undefined, minDigits = 0): st
   return value.toLocaleString('pt-PT', { minimumFractionDigits: minDigits, maximumFractionDigits: 2 });
 }
 
-function startOfDay(d: Date): number {
-  const copy = new Date(d);
-  copy.setHours(0, 0, 0, 0);
-  return copy.getTime();
-}
-
-/** "Hoje", "Amanhã", "Daqui a 3 dias", "Ontem", "Há 2 dias". */
+/**
+ * "Hoje", "Amanhã", "Daqui a 3 dias", "Ontem", "Há 2 dias" — dias civis em Europe/Lisbon,
+ * a mesma regra que o planeador usa nas explicações (calendarDaysUntil).
+ */
 export function relativeDay(iso: string, now: Date = new Date()): string {
-  const days = Math.round((startOfDay(new Date(iso)) - startOfDay(now)) / DAY);
+  const days = calendarDaysUntil(new Date(iso), now, DEFAULT_TIMEZONE);
   if (days === 0) return 'Hoje';
   if (days === 1) return 'Amanhã';
   if (days === -1) return 'Ontem';
   return days > 0 ? `Daqui a ${days} dias` : `Há ${-days} dias`;
+}
+
+/** Título de uma sessão de estudo: deixa claro que é tempo para estudar, não o evento em si. */
+export function studyTitle(title: string | null | undefined, disciplineCode?: string | null): string {
+  return ['Estudar', disciplineCode, title].filter(Boolean).join(' · ');
 }
 
 /** Converte o valor de um <input type="date"> (aaaa-mm-dd, hora local) para ISO 8601 UTC. */

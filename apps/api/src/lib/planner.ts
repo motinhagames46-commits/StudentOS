@@ -68,7 +68,8 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
     blockOccurrences(userId, from, to),
     prisma.plannedSession.findMany({ where: { userId, status: { not: 'CANCELLED' } } }),
     prisma.task.findMany({
-      where: { userId, status: 'TODO' },
+      // Disciplinas arquivadas saem do plano; tarefas sem disciplina continuam.
+      where: { userId, status: 'TODO', OR: [{ disciplineId: null }, { discipline: { archivedAt: null } }] },
       include: { discipline: { select: { id: true, code: true } } },
     }),
     prisma.assessment.findMany({

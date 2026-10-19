@@ -5,7 +5,15 @@
 // protegidas (concluídas, fixadas, a decorrer); nunca no passado; nunca sobrepõe sessões; respeita as
 // janelas de disponibilidade e o limite diário; não termina sessões depois do prazo do item; não cria
 // sessões infinitas — o trabalho que não cabe é reportado como "não planeado".
-import { addDaysToKey, instantToZoned, weekdayOfKey, zonedDayKey, zonedToInstant } from './timezone.js';
+import {
+  DEFAULT_TIMEZONE,
+  addDaysToKey,
+  calendarDaysUntil,
+  instantToZoned,
+  weekdayOfKey,
+  zonedDayKey,
+  zonedToInstant,
+} from './timezone.js';
 
 export interface PlannerPreferences {
   sessionMinutes: number;
@@ -75,6 +83,7 @@ export interface ProposedSession {
   itemId: number;
   title: string;
   disciplineId: number | null;
+  disciplineCode: string | null;
   reason: string;
 }
 
@@ -139,20 +148,24 @@ export function priorityOf(item: WorkItem, now: Date): PriorityBreakdown {
   return { score: Math.round(score * 1000) / 1000, factors, daysUntilDeadline: days };
 }
 
-function relativeDays(days: number): string {
-  const d = Math.floor(days);
-  if (days < 0) return `o prazo passou há ${Math.max(1, Math.ceil(-days))} dia(s)`;
+/** Distância ao prazo em dias civis do fuso do utilizador (a mesma regra da lista de tarefas). */
+function relativeDays(deadline: Date, now: Date, timeZone: string): string {
+  const d = calendarDaysUntil(deadline, now, timeZone);
+  if (deadline < now) return d >= 0 ? 'o prazo terminou hoje' : `o prazo passou há ${-d} dia(s)`;
   if (d === 0) return 'é hoje';
   if (d === 1) return 'é amanhã';
   return `é daqui a ${d} dias`;
 }
 
-/** Explicação legível, só com números que existem no sistema (spec §11.4). */
-export function explain(item: WorkItem, p: PriorityBreakdown): string {
-  const level = p.score >= 0.6 ? 'Prioridade alta' : p.score >= 0.35 ? 'Prioridade média' : 'Prioridade baixa';
+/**
+ * Explicação legível, só com números que existem no sistema (spec §11.4).
+ * O nível chama-se «Urgência» para não se confundir com a prioridade que o estudante escolhe.
+ */
+export function explain(item: WorkItem, p: PriorityBreakdown, now: Date, timeZone = DEFAULT_TIMEZONE): string {
+  const level = p.score >= 0.6 ? 'Urgência alta' : p.score >= 0.35 ? 'Urgência média' : 'Urgência baixa';
   const what = `${item.label} «${item.title}»${item.disciplineCode ? ` (${item.disciplineCode})` : ''}`;
   const parts: string[] = [];
-  if (p.daysUntilDeadline !== null) parts.push(`${what} ${relativeDays(p.daysUntilDeadline)}`);
+  if (item.deadline) parts.push(`${what} ${relativeDays(item.deadline, now, timeZone)}`);
   else parts.push(`${what} sem prazo definido`);
   if (item.weightPercent !== null) parts.push(`vale ${item.weightPercent}% da nota`);
   if (item.remainingMinutes !== null) parts.push(`faltam cerca de ${item.remainingMinutes} min`);
@@ -254,7 +267,12 @@ export function planStudy(input: PlannerInput): PlanResult {
       continue;
     }
     const priority = priorityOf(item, input.now);
-    work.push({ item, remaining: item.remainingMinutes, priority, reason: explain(item, priority) });
+    work.push({
+      item,
+      remaining: item.remainingMinutes,
+      priority,
+      reason: explain(item, priority, input.now, input.timeZone),
+    });
   }
   // Ordem estável: prioridade, depois prazo mais cedo, depois tipo e id.
   work.sort(
@@ -360,6 +378,7 @@ export function planStudy(input: PlannerInput): PlanResult {
         itemId: chosen.item.id,
         title: chosen.item.title,
         disciplineId: chosen.item.disciplineId,
+        disciplineCode: chosen.item.disciplineCode,
         reason: chosen.reason,
       });
       chosen.remaining -= minutes;

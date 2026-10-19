@@ -297,19 +297,61 @@ describe('isolamento por utilizador', () => {
 });
 
 describe('sugestão "o que devo estudar agora?" (spec §11.7)', () => {
-  it('diz o que falta quando não há estimativas', async () => {
-    await createTask(ines, { title: 'Sem duração' });
+  it('sem trabalho pendente diz o que fazer', async () => {
     const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
     expect(res.body.kind).toBe('missing');
-    expect(res.body.message).toMatch(/duração estimada de 1/);
+    expect(res.body.message).toMatch(/Não há trabalho pendente/);
   });
 
-  it('recomenda o item mais prioritário com a explicação', async () => {
+  it('não ignora tarefas sem duração estimada: recomenda-as e pede a duração', async () => {
+    await createTask(ines, { title: 'Sem duração', dueDate: iso(1 * DAY), priority: 'HIGH' });
+    const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
+    expect(res.body).toMatchObject({ kind: 'item', needsEstimate: true, item: { title: 'Sem duração' } });
+    expect(res.body.message).toMatch(/Indica a duração estimada/);
+  });
+
+  it('uma tarefa em atraso e prioritária ganha a uma tarefa média só por ter duração', async () => {
+    await createTask(ines, { title: 'Média com duração', estimatedMinutes: 90, dueDate: iso(2 * DAY) });
+    await createTask(ines, { title: 'Em atraso', dueDate: iso(-1 * DAY), priority: 'HIGH' });
+    const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
+    expect(res.body.item.title).toBe('Em atraso');
+    expect(res.body.message).toMatch(/o prazo passou/);
+  });
+
+  it('recomenda o item mais urgente com a explicação', async () => {
     await createTask(ines, { title: 'Longe', estimatedMinutes: 60, dueDate: iso(20 * DAY) });
     await createTask(ines, { title: 'Perto', estimatedMinutes: 60, dueDate: iso(1 * DAY), priority: 'HIGH' });
     const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
     expect(res.body).toMatchObject({ kind: 'item', item: { title: 'Perto' } });
-    expect(res.body.message).toMatch(/Prioridade/);
+    expect(res.body.message).toMatch(/^Urgência/);
+  });
+
+  it('ignora tarefas de disciplinas arquivadas (mas não as tarefas sem disciplina)', async () => {
+    await createTask(ines, { title: 'Arquivada', estimatedMinutes: 60, dueDate: iso(1 * DAY), priority: 'HIGH' });
+    await request(app).patch(`/api/disciplines/${disciplineId}`).set('Cookie', ines).send({ archived: true });
+    await createTask(ines, { title: 'Pessoal', disciplineId: null, estimatedMinutes: 30, dueDate: iso(5 * DAY) });
+    const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
+    expect(res.body.item.title).toBe('Pessoal');
+  });
+
+  it('durante uma sessão planeada, a explicação é recalculada agora (não o texto guardado no plano)', async () => {
+    const { body: t } = await createTask(ines, { title: 'Ficha', estimatedMinutes: 60, dueDate: iso(1 * DAY) });
+    await prisma.plannedSession.create({
+      data: {
+        userId: inesUserId,
+        taskId: t.id,
+        disciplineId,
+        startAt: new Date(Date.now() - 10 * 60_000),
+        endAt: new Date(Date.now() + 40 * 60_000),
+        plannedMinutes: 50,
+        reason: 'Prioridade baixa: texto antigo do plano.',
+      },
+    });
+    await request(app).patch(`/api/tasks/${t.id}`).set('Cookie', ines).send({ priority: 'HIGH' });
+    const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
+    expect(res.body.kind).toBe('session');
+    expect(res.body.message).not.toMatch(/texto antigo/);
+    expect(res.body.message).toMatch(/^Urgência .*«Ficha» \(PW\) é amanhã/);
   });
 });
 

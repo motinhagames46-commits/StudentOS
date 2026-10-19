@@ -187,6 +187,8 @@ export type Suggestion =
   | {
       kind: 'item';
       item: { type: 'task' | 'assessment'; id: number; title: string; disciplineId: number | null };
+      /** O item mais urgente ainda não tem duração estimada: o planeador não lhe consegue reservar tempo. */
+      needsEstimate?: boolean;
       message: string;
     }
   | { kind: 'missing'; message: string };
