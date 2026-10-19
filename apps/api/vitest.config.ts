@@ -10,6 +10,8 @@ export default defineConfig({
   test: {
     env: {
       NODE_ENV: 'test',
+      // Igual ao Render: o processo corre em UTC; o fuso da aplicação é sempre explícito (Europe/Lisbon).
+      TZ: 'UTC',
       DATABASE_URL: process.env.TEST_DATABASE_URL ?? 'postgresql://studentos:studentos@localhost:54329/studentos_test',
     },
     globalSetup: ['test/global-setup.ts'],
