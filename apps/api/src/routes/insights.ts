@@ -47,7 +47,11 @@ insightsRouter.get('/stats', async (req, res) => {
   for (const s of sessions) {
     const start = Math.max(s.startedAt.getTime(), from.getTime());
     const end = Math.min((s.endedAt ?? now).getTime(), now.getTime());
-    const ms = Math.max(0, end - start);
+    // Só conta o tempo de foco: as pausas são descontadas proporcionalmente à parte dentro do intervalo.
+    const fullMs = Math.max(1, (s.endedAt ?? now).getTime() - s.startedAt.getTime());
+    const pausedMs = s.pausedSeconds * 1000 + (s.pausedAt && !s.endedAt ? now.getTime() - s.pausedAt.getTime() : 0);
+    const focusShare = Math.max(0, 1 - pausedMs / fullMs);
+    const ms = Math.max(0, end - start) * focusShare;
     if (ms === 0) continue;
 
     const entry = byDiscipline.get(s.disciplineId) ?? { discipline: s.discipline, ms: 0 };

@@ -127,6 +127,7 @@ model Discipline {
   ects            Int?
   passingGrade    Float            @default(10)
   color           String?
+  archivedAt      DateTime? // arquivada: fora das listas ativas, histórico preservado
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   userId          Int
@@ -191,6 +192,10 @@ model StudySession {
   startedAt        DateTime
   endedAt          DateTime?
   notes            String?
+  targetMinutes    Int? // preset de foco (ex.: 25 ou 50)
+  breakMinutes     Int? // pausa sugerida no fim (ex.: 5 ou 10)
+  pausedAt         DateTime? // pausa em curso
+  pausedSeconds    Int             @default(0) // tempo total em pausa (não conta como estudo)
   userId           Int
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   disciplineId     Int?

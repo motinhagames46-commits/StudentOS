@@ -70,10 +70,11 @@ export const useTasks = (filters: TaskQuery = {}) =>
     queryFn: () => api<Task[]>(`/tasks${toQueryString(filters)}`),
   });
 
-export const useDisciplines = (semesterId?: number) =>
+export const useDisciplines = (semesterId?: number, archived = false) =>
   useQuery({
-    queryKey: ['disciplines', semesterId],
-    queryFn: () => api<Discipline[]>(`/disciplines${toQueryString({ semesterId })}`),
+    queryKey: ['disciplines', semesterId, archived],
+    queryFn: () =>
+      api<Discipline[]>(`/disciplines${toQueryString({ semesterId, archived: archived ? 'true' : undefined })}`),
   });
 
 export const useDiscipline = (id: number) =>
@@ -210,6 +211,16 @@ export function useStopStudySession() {
     mutationFn: (id: number) => api<StudySession>(`/study-sessions/${id}/stop`, { method: 'POST', body: {} }),
     onSettled: () =>
       Promise.all(['study-sessions', 'stats'].map((key) => queryClient.invalidateQueries({ queryKey: [key] }))),
+  });
+}
+
+// Modo foco: pausar/retomar a sessão em curso (o estado fica no servidor)
+export function usePauseStudySession() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action }: { id: number; action: 'pause' | 'resume' }) =>
+      api<StudySession>(`/study-sessions/${id}/${action}`, { method: 'POST', body: {} }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['study-sessions'] }),
   });
 }
 

@@ -95,3 +95,24 @@ describe('GET /api/dashboard (HU04)', () => {
     expect(res.body.disciplines).toHaveLength(1);
   });
 });
+
+describe('GET /api/tasks — pesquisa e prioridade (spec §7.3)', () => {
+  it('pesquisa no título e na descrição, sem distinguir maiúsculas, e filtra por prioridade', async () => {
+    const post = (body: object) => request(app).post('/api/tasks').set('Cookie', alice).send(body);
+    await post({ title: 'Relatório de Bases de Dados', priority: 'HIGH' });
+    await post({ title: 'Ficha 3', description: 'exercícios de RELATÓRIO', priority: 'LOW' });
+    await post({ title: 'Outra coisa', priority: 'HIGH' });
+
+    const search = await request(app).get('/api/tasks?q=relatório').set('Cookie', alice);
+    expect(search.body.map((t: { title: string }) => t.title).sort()).toEqual([
+      'Ficha 3',
+      'Relatório de Bases de Dados',
+    ]);
+    const high = await request(app).get('/api/tasks?q=relatório&priority=HIGH').set('Cookie', alice);
+    expect(high.body.map((t: { title: string }) => t.title)).toEqual(['Relatório de Bases de Dados']);
+    const noAccents = await request(app).get('/api/tasks?q=relatorio').set('Cookie', alice);
+    expect(noAccents.body).toHaveLength(2);
+    // a pesquisa nunca devolve tarefas de outro utilizador
+    expect((await request(app).get('/api/tasks?q=relatório').set('Cookie', bob)).body).toEqual([]);
+  });
+});

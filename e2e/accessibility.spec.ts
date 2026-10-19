@@ -101,6 +101,7 @@ test.describe('acessibilidade (axe)', () => {
     ['importar', '/importar', 'Importar horário'],
     ['preferências', '/preferencias', 'Preferências de estudo'],
     ['integrações', '/integracoes', 'Integrações'],
+    ['modo foco', '/sessoes', 'Sessões de estudo'],
   ] as const) {
     test(name, async ({ page }) => {
       await page.goto(path);

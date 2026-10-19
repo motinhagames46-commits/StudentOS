@@ -1,4 +1,4 @@
-import { Play, Square } from 'lucide-react';
+import { Pause, Play, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { StudyByDayChart } from '../components/charts';
 import {
@@ -12,9 +12,11 @@ import {
   LoadingList,
   PageHeader,
   SelectField,
+  TextField,
 } from '../components/ui';
 import {
   useDisciplines,
+  usePauseStudySession,
   useStartStudySession,
   useStats,
   useStopStudySession,
@@ -32,8 +34,33 @@ const formatTime = (iso: string) =>
     new Date(iso),
   );
 
-const durationMs = (s: StudySession) =>
-  s.endedAt ? new Date(s.endedAt).getTime() - new Date(s.startedAt).getTime() : 0;
+/** Tempo de foco: duração total menos as pausas (terminadas e, se existir, a que está em curso). */
+const focusMs = (s: StudySession, now = Date.now()) => {
+  const end = s.endedAt ? new Date(s.endedAt).getTime() : now;
+  const ongoingPause = s.pausedAt && !s.endedAt ? now - new Date(s.pausedAt).getTime() : 0;
+  return Math.max(0, end - new Date(s.startedAt).getTime() - s.pausedSeconds * 1000 - ongoingPause);
+};
+const durationMs = (s: StudySession) => (s.endedAt ? focusMs(s) : 0);
+
+// Modo foco (spec §7.6): presets editáveis; a escolha fica só neste browser, por conveniência.
+const PRESETS = {
+  livre: { label: 'Livre (sem objetivo)', target: null, rest: null },
+  '25/5': { label: '25 min foco / 5 min pausa', target: 25, rest: 5 },
+  '50/10': { label: '50 min foco / 10 min pausa', target: 50, rest: 10 },
+  custom: { label: 'Personalizado', target: null, rest: null },
+} as const;
+type PresetKey = keyof typeof PRESETS;
+const PRESET_STORAGE_KEY = 'studentos.focusPreset';
+
+function loadPreset(): { key: PresetKey; target: string; rest: string } {
+  const fallback = { key: 'livre' as PresetKey, target: '40', rest: '10' };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(PRESET_STORAGE_KEY) ?? 'null');
+    return saved && saved.key in PRESETS ? { ...fallback, ...saved } : fallback;
+  } catch {
+    return fallback;
+  }
+}
 
 /** Sessões de estudo: temporizador iniciar/parar e histórico dos últimos 30 dias (RF13 / RN11). */
 export function StudySessionsPage() {
@@ -46,14 +73,35 @@ export function StudySessionsPage() {
   const disciplines = useDisciplines(me?.activeSemester?.id);
   const start = useStartStudySession();
   const stop = useStopStudySession();
+  const pause = usePauseStudySession();
   const stats = useStats(14);
   const [disciplineId, setDisciplineId] = useState('');
+  const [preset, setPreset] = useState(loadPreset);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PRESET_STORAGE_KEY, JSON.stringify(preset));
+    } catch {
+      // sem armazenamento local: a escolha não é lembrada, mas tudo funciona
+    }
+  }, [preset]);
+
+  const customTarget = Number(preset.target);
+  const customRest = Number(preset.rest);
+  const customInvalid =
+    preset.key === 'custom' &&
+    (!Number.isInteger(customTarget) ||
+      customTarget < 5 ||
+      customTarget > 180 ||
+      !Number.isInteger(customRest) ||
+      customRest < 0 ||
+      customRest > 60);
 
   const running = sessions.data?.find((s) => s.endedAt === null);
   const finished = sessions.data?.filter((s) => s.endedAt !== null) ?? [];
   const week = finished.filter((s) => new Date(s.startedAt).getTime() >= range.weekStart);
   const weekTotal = week.reduce((sum, s) => sum + durationMs(s), 0);
-  const actionError = start.error ?? stop.error;
+  const actionError = start.error ?? stop.error ?? pause.error;
 
   return (
     <>
@@ -66,7 +114,7 @@ export function StudySessionsPage() {
           ) : running ? (
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
-                <RunningClock startedAt={running.startedAt} />
+                <RunningClock session={running} />
                 <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-stone-500">
                   Desde as {formatTime(running.startedAt)}
                   {running.discipline ? (
@@ -74,19 +122,40 @@ export function StudySessionsPage() {
                   ) : (
                     <span>· sem disciplina</span>
                   )}
+                  {running.pausedAt && <Badge tone="amber">Em pausa</Badge>}
                 </p>
               </div>
-              <Button variant="danger" onClick={() => stop.mutate(running.id)} loading={stop.isPending}>
-                <Square aria-hidden="true" className="size-4" />
-                Parar
-              </Button>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => pause.mutate({ id: running.id, action: running.pausedAt ? 'resume' : 'pause' })}
+                  loading={pause.isPending}
+                >
+                  {running.pausedAt ? (
+                    <Play aria-hidden="true" className="size-4" />
+                  ) : (
+                    <Pause aria-hidden="true" className="size-4" />
+                  )}
+                  {running.pausedAt ? 'Retomar' : 'Pausar'}
+                </Button>
+                <Button variant="danger" onClick={() => stop.mutate(running.id)} loading={stop.isPending}>
+                  <Square aria-hidden="true" className="size-4" />
+                  Parar
+                </Button>
+              </div>
             </div>
           ) : (
             <form
               className="flex flex-wrap items-end gap-3"
               onSubmit={(e) => {
                 e.preventDefault();
-                start.mutate({ disciplineId: disciplineId ? Number(disciplineId) : null });
+                if (customInvalid) return;
+                const chosen = PRESETS[preset.key];
+                start.mutate({
+                  disciplineId: disciplineId ? Number(disciplineId) : null,
+                  targetMinutes: preset.key === 'custom' ? customTarget : chosen.target,
+                  breakMinutes: preset.key === 'custom' ? customRest : chosen.rest,
+                });
               }}
             >
               <SelectField
@@ -102,7 +171,43 @@ export function StudySessionsPage() {
                   </option>
                 ))}
               </SelectField>
-              <Button type="submit" loading={start.isPending}>
+              <SelectField
+                label="Modo foco"
+                value={preset.key}
+                onChange={(e) => setPreset((p) => ({ ...p, key: e.target.value as PresetKey }))}
+                className="min-w-48 flex-1"
+              >
+                {Object.entries(PRESETS).map(([key, p]) => (
+                  <option key={key} value={key}>
+                    {p.label}
+                  </option>
+                ))}
+              </SelectField>
+              {preset.key === 'custom' && (
+                <>
+                  <TextField
+                    label="Foco (min)"
+                    type="number"
+                    min={5}
+                    max={180}
+                    required
+                    value={preset.target}
+                    onChange={(e) => setPreset((p) => ({ ...p, target: e.target.value }))}
+                    className="w-28"
+                  />
+                  <TextField
+                    label="Pausa (min)"
+                    type="number"
+                    min={0}
+                    max={60}
+                    required
+                    value={preset.rest}
+                    onChange={(e) => setPreset((p) => ({ ...p, rest: e.target.value }))}
+                    className="w-28"
+                  />
+                </>
+              )}
+              <Button type="submit" loading={start.isPending} disabled={customInvalid}>
                 <Play aria-hidden="true" className="size-4" />
                 Iniciar
               </Button>
@@ -166,20 +271,44 @@ export function StudySessionsPage() {
   );
 }
 
-/** Cronómetro da sessão em curso; só existe enquanto há uma sessão a decorrer. */
-function RunningClock({ startedAt }: { startedAt: string }) {
+/**
+ * Cronómetro da sessão em curso: mostra só o tempo de foco (para durante as pausas) e, com um preset,
+ * a contagem decrescente até ao objetivo. Ao atingi-lo sugere a pausa, sem parar a sessão.
+ */
+function RunningClock({ session }: { session: StudySession }) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(id);
   }, []);
+  const focus = focusMs(session, now);
+  const targetMs = session.targetMinutes ? session.targetMinutes * 60_000 : null;
   return (
-    <p
-      role="timer"
-      aria-label="Tempo decorrido"
-      className="text-4xl font-semibold tabular-nums tracking-tight text-stone-900"
-    >
-      {formatClock(now - new Date(startedAt).getTime())}
-    </p>
+    <div>
+      <p
+        role="timer"
+        aria-label="Tempo de foco"
+        className="text-4xl font-semibold tabular-nums tracking-tight text-stone-900"
+      >
+        {formatClock(focus)}
+      </p>
+      {session.pausedAt && (
+        <p className="text-sm text-amber-900">Em pausa há {formatClock(now - new Date(session.pausedAt).getTime())}</p>
+      )}
+      {targetMs !== null && focus < targetMs && (
+        <p className="text-sm text-stone-600">
+          Objetivo {session.targetMinutes} min · faltam{' '}
+          <span className="tabular-nums">{formatClock(targetMs - focus)}</span>
+        </p>
+      )}
+      <div role="status">
+        {targetMs !== null && focus >= targetMs && (
+          <p className="text-sm font-medium text-green-800">
+            Objetivo de {session.targetMinutes} min atingido
+            {session.breakMinutes ? ` — faz uma pausa de ${session.breakMinutes} min.` : '.'}
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

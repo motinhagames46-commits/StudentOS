@@ -1,4 +1,4 @@
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { Archive, ArchiveRestore, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { AssessmentSection } from '../components/AssessmentSection';
@@ -43,7 +43,12 @@ export function DisciplineDetailPage() {
 
   async function handleDelete() {
     if (!d) return;
-    const ok = window.confirm(`Eliminar "${d.name}"? As avaliações são eliminadas; as tarefas ficam sem disciplina.`);
+    const content = d.assessments.length || d.pendingTasks;
+    const ok = window.confirm(
+      content
+        ? `Eliminar "${d.name}" de forma permanente?\n\n• ${d.assessments.length} avaliação(ões) e as notas registadas serão apagadas.\n• As tarefas ficam sem disciplina.\n\nSe só já não a frequentas, usa "Arquivar": o histórico fica guardado.`
+        : `Eliminar "${d.name}"?`,
+    );
     if (!ok) return;
     await remove.mutateAsync(d.id);
     navigate('/disciplinas', { replace: true });
@@ -82,12 +87,25 @@ export function DisciplineDetailPage() {
                 {d.semester ? ` · ${d.semester.label}` : ''}
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{d.name}</h1>
+              {d.archivedAt && <Badge>Arquivada</Badge>}
             </div>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button variant="secondary" onClick={() => setEditing(true)}>
               <Pencil aria-hidden="true" className="size-4" />
               Editar
+            </Button>
+            <Button
+              variant="secondary"
+              loading={update.isPending}
+              onClick={() => update.mutate({ id: d.id, archived: !d.archivedAt })}
+            >
+              {d.archivedAt ? (
+                <ArchiveRestore aria-hidden="true" className="size-4" />
+              ) : (
+                <Archive aria-hidden="true" className="size-4" />
+              )}
+              {d.archivedAt ? 'Reativar' : 'Arquivar'}
             </Button>
             <Button variant="danger" onClick={handleDelete} loading={remove.isPending}>
               <Trash2 aria-hidden="true" className="size-4" />

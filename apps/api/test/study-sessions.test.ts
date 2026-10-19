@@ -161,3 +161,48 @@ describe('GET /api/study-sessions', () => {
     expect(reversed.status).toBe(400);
   });
 });
+
+describe('modo foco: presets e pausa (spec §7.6)', () => {
+  it('guarda o preset, pausa e retoma no servidor e desconta as pausas na duração e nas estatísticas', async () => {
+    const { cookie: me } = await createUserAndLogin('foco');
+    const { cookie: other } = await createUserAndLogin('outro');
+    const start = await request(app)
+      .post('/api/study-sessions/start')
+      .set('Cookie', me)
+      .send({ targetMinutes: 25, breakMinutes: 5 });
+    expect(start.body).toMatchObject({ targetMinutes: 25, breakMinutes: 5, pausedSeconds: 0, pausedAt: null });
+    const id = start.body.id;
+
+    expect((await request(app).post(`/api/study-sessions/${id}/pause`).set('Cookie', other)).status).toBe(404);
+    expect((await request(app).post(`/api/study-sessions/${id}/resume`).set('Cookie', me)).status).toBe(409);
+    expect((await request(app).post(`/api/study-sessions/${id}/pause`).set('Cookie', me)).body.pausedAt).not.toBeNull();
+    expect((await request(app).post(`/api/study-sessions/${id}/pause`).set('Cookie', me)).status).toBe(409);
+
+    // simular: sessão começou há 60 min e está em pausa há 20 min
+    await prisma.studySession.update({
+      where: { id },
+      data: { startedAt: new Date(Date.now() - 60 * 60_000), pausedAt: new Date(Date.now() - 20 * 60_000) },
+    });
+    const resumed = await request(app).post(`/api/study-sessions/${id}/resume`).set('Cookie', me);
+    expect(resumed.body.pausedAt).toBeNull();
+    expect(resumed.body.pausedSeconds).toBeGreaterThanOrEqual(20 * 60 - 2);
+
+    const stopped = await request(app).post(`/api/study-sessions/${id}/stop`).set('Cookie', me).send({});
+    expect(stopped.body.endedAt).not.toBeNull();
+    const stats = await request(app).get('/api/stats?days=1').set('Cookie', me);
+    expect(stats.body.totalMinutes).toBeGreaterThanOrEqual(39);
+    expect(stats.body.totalMinutes).toBeLessThanOrEqual(41); // 60 min − 20 min de pausa
+  });
+
+  it('terminar durante uma pausa conta a pausa até ao fim', async () => {
+    const { cookie: me } = await createUserAndLogin('pausa');
+    const { body: s } = await request(app).post('/api/study-sessions/start').set('Cookie', me).send({});
+    await prisma.studySession.update({
+      where: { id: s.id },
+      data: { startedAt: new Date(Date.now() - 30 * 60_000), pausedAt: new Date(Date.now() - 10 * 60_000) },
+    });
+    const stopped = await request(app).post(`/api/study-sessions/${s.id}/stop`).set('Cookie', me).send({});
+    expect(stopped.body.pausedAt).toBeNull();
+    expect(stopped.body.pausedSeconds).toBeGreaterThanOrEqual(10 * 60 - 2);
+  });
+});

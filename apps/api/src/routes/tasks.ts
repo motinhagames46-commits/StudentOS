@@ -24,14 +24,26 @@ tasksRouter.get('/', async (req, res) => {
     where: {
       userId: req.userId,
       ...(q.status ? { status: q.status } : {}),
+      ...(q.priority ? { priority: q.priority } : {}),
       ...(q.disciplineId ? { disciplineId: q.disciplineId } : {}),
+
       ...(q.from || q.to ? { dueDate: { ...(q.from ? { gte: q.from } : {}), ...(q.to ? { lte: q.to } : {}) } } : {}),
     },
     include: { discipline: disciplineSelect },
     orderBy,
   });
-  res.json(tasks);
+  // Pesquisa sem distinguir maiúsculas nem acentos ("relatorio" encontra "Relatório"), independente do
+  // locale da base de dados. As listas de um estudante são pequenas, por isso filtra-se na aplicação.
+  const needle = q.q ? foldText(q.q) : '';
+  res.json(needle ? tasks.filter((t) => foldText(`${t.title} ${t.description ?? ''}`).includes(needle)) : tasks);
 });
+
+function foldText(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
 
 // RF05 — a disciplina referenciada tem de pertencer ao utilizador (RN10, previne IDOR)
 tasksRouter.post('/', async (req, res) => {

@@ -104,3 +104,24 @@ describe('conta (RF11, RF12)', () => {
     expect((await request(app).get('/api/me').set('Cookie', cookie)).status).toBe(401);
   });
 });
+
+describe('arquivar disciplinas (spec §7.2)', () => {
+  it('arquivar retira das listas ativas sem apagar o histórico, e reativar devolve-a', async () => {
+    await addAssessment({ name: 'Teste', weight: 50, score: 14 });
+    const archive = await request(app)
+      .patch(`/api/disciplines/${disciplineId}`)
+      .set('Cookie', cookie)
+      .send({ archived: true });
+    expect(archive.status).toBe(200);
+    expect(archive.body.archivedAt).not.toBeNull();
+
+    expect((await request(app).get('/api/disciplines').set('Cookie', cookie)).body).toEqual([]);
+    const archived = await request(app).get('/api/disciplines?archived=true').set('Cookie', cookie);
+    expect(archived.body).toHaveLength(1);
+    expect(archived.body[0].assessments).toHaveLength(1); // histórico preservado
+    expect((await request(app).get('/api/dashboard').set('Cookie', cookie)).body.disciplines).toEqual([]);
+
+    await request(app).patch(`/api/disciplines/${disciplineId}`).set('Cookie', cookie).send({ archived: false });
+    expect((await request(app).get('/api/disciplines').set('Cookie', cookie)).body).toHaveLength(1);
+  });
+});

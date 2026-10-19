@@ -52,7 +52,14 @@ studySessionsRouter.post('/start', async (req, res) => {
       throw new HttpError(409, 'STUDY_SESSION_IN_PROGRESS', 'Já tens uma sessão de estudo em curso');
     }
     return tx.studySession.create({
-      data: { startedAt: new Date(), disciplineId, plannedSessionId, userId: req.userId },
+      data: {
+        startedAt: new Date(),
+        disciplineId,
+        plannedSessionId,
+        targetMinutes: input.targetMinutes ?? null,
+        breakMinutes: input.breakMinutes ?? null,
+        userId: req.userId,
+      },
       include: { discipline: disciplineSelect },
     });
   });
@@ -67,11 +74,46 @@ studySessionsRouter.post('/:id/stop', async (req, res) => {
     throw new HttpError(409, 'STUDY_SESSION_ALREADY_STOPPED', 'Esta sessão de estudo já terminou');
   }
 
-  // endedAt > startedAt (secção 10.1)
+  // endedAt > startedAt (secção 10.1); uma pausa em curso termina com a sessão.
   const endedAt = new Date(Math.max(Date.now(), current.startedAt.getTime() + 1));
   const session = await prisma.studySession.update({
     where: { id },
-    data: { endedAt, ...(notes !== undefined ? { notes } : {}) },
+    data: {
+      endedAt,
+      ...(current.pausedAt
+        ? { pausedAt: null, pausedSeconds: current.pausedSeconds + secondsBetween(current.pausedAt, endedAt) }
+        : {}),
+      ...(notes !== undefined ? { notes } : {}),
+    },
+    include: { discipline: disciplineSelect },
+  });
+  res.json(session);
+});
+
+const secondsBetween = (a: Date, b: Date) => Math.max(0, Math.round((b.getTime() - a.getTime()) / 1000));
+
+// Pausar/retomar (spec §7.6): o estado fica no servidor, por isso sobrevive a uma atualização da página.
+studySessionsRouter.post('/:id/pause', async (req, res) => {
+  const id = parse(idParamSchema, req.params.id);
+  const current = await findOwnedStudySession(req.userId, id);
+  if (current.endedAt) throw new HttpError(409, 'STUDY_SESSION_ALREADY_STOPPED', 'Esta sessão de estudo já terminou');
+  if (current.pausedAt) throw new HttpError(409, 'STUDY_SESSION_PAUSED', 'A sessão já está em pausa');
+  const session = await prisma.studySession.update({
+    where: { id },
+    data: { pausedAt: new Date() },
+    include: { discipline: disciplineSelect },
+  });
+  res.json(session);
+});
+
+studySessionsRouter.post('/:id/resume', async (req, res) => {
+  const id = parse(idParamSchema, req.params.id);
+  const current = await findOwnedStudySession(req.userId, id);
+  if (current.endedAt) throw new HttpError(409, 'STUDY_SESSION_ALREADY_STOPPED', 'Esta sessão de estudo já terminou');
+  if (!current.pausedAt) throw new HttpError(409, 'STUDY_SESSION_NOT_PAUSED', 'A sessão não está em pausa');
+  const session = await prisma.studySession.update({
+    where: { id },
+    data: { pausedAt: null, pausedSeconds: current.pausedSeconds + secondsBetween(current.pausedAt, new Date()) },
     include: { discipline: disciplineSelect },
   });
   res.json(session);

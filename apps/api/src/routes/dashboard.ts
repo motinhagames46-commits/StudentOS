@@ -37,7 +37,11 @@ dashboardRouter.get('/', async (req, res) => {
       take: 5,
     }),
     prisma.discipline.findMany({
-      where: { userId: req.userId, ...(activeSemester ? { semesterId: activeSemester.id } : {}) },
+      where: {
+        userId: req.userId,
+        archivedAt: null,
+        ...(activeSemester ? { semesterId: activeSemester.id } : {}),
+      },
       include: { assessments: true },
       orderBy: { name: 'asc' },
     }),

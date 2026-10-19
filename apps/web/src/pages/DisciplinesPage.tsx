@@ -14,7 +14,11 @@ import { gradeTone } from './DashboardPage';
 export function DisciplinesPage() {
   const { data: me } = useMe();
   const activeSemester = me?.activeSemester;
-  const { data, isPending, error, refetch } = useDisciplines(activeSemester?.id);
+  const [showArchived, setShowArchived] = useState(false);
+  const { data, isPending, error, refetch } = useDisciplines(
+    showArchived ? undefined : activeSemester?.id,
+    showArchived,
+  );
   const create = useCreateDiscipline();
   const navigate = useNavigate();
   const [creating, setCreating] = useState(false);
@@ -36,6 +40,9 @@ export function DisciplinesPage() {
 
       <div className="mb-4 flex flex-wrap items-end gap-2">
         <ActiveSemesterSelect className="w-full max-w-xs" />
+        <Button variant="ghost" aria-pressed={showArchived} onClick={() => setShowArchived((v) => !v)}>
+          {showArchived ? 'Ver disciplinas ativas' : 'Ver arquivadas'}
+        </Button>
         {!managingSemesters && (
           <Button variant="secondary" onClick={() => setManagingSemesters(true)}>
             <CalendarRange aria-hidden="true" className="size-4" />
@@ -70,7 +77,13 @@ export function DisciplinesPage() {
       ) : data.length === 0 ? (
         !creating && (
           <EmptyState
-            message={activeSemester ? 'Ainda não tens disciplinas neste semestre.' : 'Ainda não tens disciplinas.'}
+            message={
+              showArchived
+                ? 'Não tens disciplinas arquivadas.'
+                : activeSemester
+                  ? 'Ainda não tens disciplinas neste semestre.'
+                  : 'Ainda não tens disciplinas.'
+            }
             action={<Button onClick={() => setCreating(true)}>Criar disciplina</Button>}
           />
         )

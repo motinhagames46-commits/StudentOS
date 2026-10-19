@@ -72,7 +72,7 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       include: { discipline: { select: { id: true, code: true } } },
     }),
     prisma.assessment.findMany({
-      where: { discipline: { userId }, score: null, OR: [{ date: null }, { date: { gt: now } }] },
+      where: { discipline: { userId, archivedAt: null }, score: null, OR: [{ date: null }, { date: { gt: now } }] },
       include: { discipline: { select: { id: true, code: true } } },
     }),
   ]);

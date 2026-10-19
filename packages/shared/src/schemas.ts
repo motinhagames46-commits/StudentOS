@@ -64,7 +64,10 @@ export const disciplineCreateSchema = z.strictObject({
     .optional(),
   semesterId: positiveId.nullable().optional(),
 });
-export const disciplineUpdateSchema = disciplineCreateSchema.partial();
+export const disciplineUpdateSchema = disciplineCreateSchema.partial().extend({
+  /** Arquivar (true) ou reativar (false); preferível a eliminar (spec §7.2). */
+  archived: z.boolean().optional(),
+});
 
 export const assessmentCreateSchema = z.strictObject({
   name: z.string('Indica o nome').trim().min(1, 'Indica o nome').max(100),
@@ -102,6 +105,8 @@ export const taskUpdateSchema = taskCreateSchema.partial().extend({
 });
 
 export const taskQuerySchema = z.object({
+  q: z.string().trim().max(100).optional(),
+  priority: z.enum(taskPriorities).optional(),
   status: z.enum(taskStatuses).optional(),
   disciplineId: z.coerce.number().int().positive().optional(),
   from: isoDate.optional(),
@@ -113,6 +118,9 @@ export const taskQuerySchema = z.object({
 export const studySessionStartSchema = z.strictObject({
   disciplineId: positiveId.nullable().optional(),
   plannedSessionId: positiveId.nullable().optional(),
+  /** Preset do modo foco (spec §7.6), ex.: 25/5 ou 50/10. */
+  targetMinutes: z.number().int().min(5, 'Mínimo 5 minutos').max(180, 'Máximo 180 minutos').nullable().optional(),
+  breakMinutes: z.number().int().min(0).max(60, 'Máximo 60 minutos').nullable().optional(),
 });
 
 export const studySessionStopSchema = z.strictObject({

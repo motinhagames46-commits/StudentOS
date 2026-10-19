@@ -52,6 +52,7 @@ export interface DisciplineRef {
 
 export interface Discipline extends DisciplineRef {
   ects: number | null;
+  archivedAt: string | null;
   passingGrade: number;
   semesterId: number | null;
   semester?: Semester | null;
@@ -90,6 +91,12 @@ export interface StudySession {
   notes: string | null;
   disciplineId: number | null;
   discipline: DisciplineRef | null;
+  /** Modo foco (spec §7.6): objetivo e pausa sugerida, em minutos. */
+  targetMinutes: number | null;
+  breakMinutes: number | null;
+  /** Início da pausa em curso; o tempo de pausas já terminadas está em pausedSeconds. */
+  pausedAt: string | null;
+  pausedSeconds: number;
 }
 
 export interface Stats {

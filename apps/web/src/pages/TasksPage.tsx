@@ -1,12 +1,13 @@
-import type { TaskQuery, TaskStatus } from '@studentos/shared';
+import { taskPriorities, type TaskPriority, type TaskQuery, type TaskStatus } from '@studentos/shared';
 import { CalendarDays } from 'lucide-react';
-import { useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { Link } from 'react-router';
 import { TaskForm } from '../components/TaskForm';
 import { TaskList } from '../components/TaskList';
-import { Card, ErrorState, LoadingList, PageHeader, SelectField } from '../components/ui';
+import { Card, ErrorState, LoadingList, PageHeader, SelectField, TextField } from '../components/ui';
 import { useCreateTask, useDeleteTask, useDisciplines, useTasks, useUpdateTask } from '../hooks/queries';
 import { errorMessage } from '../lib/api';
+import { priorityLabels } from '../lib/format';
 
 type StatusFilter = TaskStatus | 'ALL';
 
@@ -21,11 +22,16 @@ export function TasksPage() {
   const [status, setStatus] = useState<StatusFilter>('TODO');
   const [disciplineId, setDisciplineId] = useState('');
   const [sort, setSort] = useState<NonNullable<TaskQuery['sort']>>('dueDate');
+  const [search, setSearch] = useState('');
+  const [priority, setPriority] = useState<TaskPriority | ''>('');
+  const deferredSearch = useDeferredValue(search.trim());
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const filters: TaskQuery = {
     ...(status !== 'ALL' ? { status } : {}),
     ...(disciplineId ? { disciplineId: Number(disciplineId) } : {}),
+    ...(priority ? { priority } : {}),
+    ...(deferredSearch ? { q: deferredSearch } : {}),
     sort,
   };
   const tasks = useTasks(filters);
@@ -105,6 +111,27 @@ export function TasksPage() {
           <option value="priority">Prioridade</option>
           <option value="createdAt">Mais recentes</option>
         </SelectField>
+        <SelectField
+          label="Prioridade"
+          value={priority}
+          onChange={(e) => setPriority(e.target.value as TaskPriority | '')}
+          className="min-w-32 flex-1 sm:w-36 sm:flex-none"
+        >
+          <option value="">Todas</option>
+          {taskPriorities.map((p) => (
+            <option key={p} value={p}>
+              {priorityLabels[p]}
+            </option>
+          ))}
+        </SelectField>
+        <TextField
+          label="Pesquisar"
+          type="search"
+          placeholder="Título ou descrição"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="min-w-48 flex-1"
+        />
       </div>
 
       <Card>
@@ -134,7 +161,13 @@ export function TasksPage() {
               onToggle={(t) => updateTask.mutate(t)}
               onEdit={setEditingId}
               onDelete={handleDelete}
-              emptyMessage={status === 'DONE' ? 'Ainda não concluíste tarefas.' : 'Sem tarefas pendentes'}
+              emptyMessage={
+                deferredSearch
+                  ? `Nenhuma tarefa corresponde a «${deferredSearch}».`
+                  : status === 'DONE'
+                    ? 'Ainda não concluíste tarefas.'
+                    : 'Sem tarefas pendentes'
+              }
             />
           </>
         )}

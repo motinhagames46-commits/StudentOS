@@ -18,12 +18,20 @@ export const disciplinesRouter = Router();
 
 const assessmentOrder = [{ date: { sort: 'asc', nulls: 'last' } }, { id: 'asc' }] as const;
 
-const listQuery = z.object({ semesterId: z.coerce.number().int().positive().optional() });
+const listQuery = z.object({
+  semesterId: z.coerce.number().int().positive().optional(),
+  /** "true" lista só as arquivadas; por omissão só as ativas. */
+  archived: z.enum(['true', 'false']).optional(),
+});
 
 disciplinesRouter.get('/', async (req, res) => {
-  const { semesterId } = parse(listQuery, req.query);
+  const { semesterId, archived } = parse(listQuery, req.query);
   const disciplines = await prisma.discipline.findMany({
-    where: { userId: req.userId, ...(semesterId ? { semesterId } : {}) },
+    where: {
+      userId: req.userId,
+      archivedAt: archived === 'true' ? { not: null } : null,
+      ...(semesterId ? { semesterId } : {}),
+    },
     include: {
       assessments: { orderBy: [...assessmentOrder] },
       _count: { select: { tasks: { where: { status: 'TODO' } } } },
@@ -74,12 +82,12 @@ disciplinesRouter.get('/:id', async (req, res) => {
 
 disciplinesRouter.patch('/:id', async (req, res) => {
   const id = parse(idParamSchema, req.params.id);
-  const input = parse(disciplineUpdateSchema, req.body);
+  const { archived, ...input } = parse(disciplineUpdateSchema, req.body);
   await findOwnedDiscipline(req.userId, id);
   if (input.semesterId) await findOwnedSemester(req.userId, input.semesterId);
   const discipline = await prisma.discipline.update({
     where: { id },
-    data: input,
+    data: { ...input, ...(archived !== undefined ? { archivedAt: archived ? new Date() : null } : {}) },
     include: { assessments: { orderBy: [...assessmentOrder] } },
   });
   res.json({ ...discipline, grades: gradeSummary(discipline) });
