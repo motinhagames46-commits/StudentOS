@@ -5,7 +5,7 @@ Referência dos endpoints que existem no código (`apps/api/src/routes`). Os esq
 ## Convenções
 
 - Base: `/api`. Em produção a API e o frontend partilham a mesma origem.
-- **Autenticação:** sessão no servidor, com o cookie `sid` (`HttpOnly`, `SameSite=Lax`, `Secure` em produção). Todas as rotas, exceto `/api/health` e `/api/auth/*`, exigem sessão e respondem 401 `UNAUTHENTICATED` sem ela.
+- **Autenticação:** sessão no servidor, com o cookie `sid` (`HttpOnly`, `SameSite=Lax`, `Secure` em produção). Todas as rotas exigem sessão e respondem 401 `UNAUTHORIZED` sem ela, exceto `/api/health`, `/api/auth/register`, `/api/auth/login` e `/api/auth/logout`.
 - **Isolamento:** cada pedido é filtrado pelo utilizador da sessão. Um recurso de outro utilizador responde **404**, como se não existisse. O `userId` nunca vem do cliente.
 - **Corpo:** os pedidos que alteram dados têm de ser JSON (`Content-Type: application/json`), caso contrário recebem 415. Isto protege contra CSRF com formulários simples. Limites: 100 KB em geral e 2 MB em `/api/imports`. Acima do limite, a resposta é 413 `PAYLOAD_TOO_LARGE`.
 - **Limites de pedidos** (por IP): 300 pedidos a cada 15 minutos. Operações que verificam a palavra-passe (login, registo, mudar a palavra-passe e eliminar a conta): 10 tentativas falhadas a cada 15 minutos. Acima do limite, a resposta é 429 `TOO_MANY_REQUESTS`, no formato de erro comum.
