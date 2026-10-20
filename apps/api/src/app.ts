@@ -44,7 +44,7 @@ export function createApp() {
 
   // Secção 12.3 — limites de pedidos (desativados nos testes; ver test/rate-limit.test.ts)
   if (!env.isTest) {
-    api.use(generalLimiter());
+    api.use(generalLimiter(env.RATE_LIMIT_PER_15_MIN));
     const credentials = credentialLimiter();
     api.use(['/auth/login', '/auth/register', '/me/password'], credentials);
     api.delete('/me', credentials);

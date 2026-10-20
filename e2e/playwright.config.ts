@@ -49,6 +49,9 @@ export default defineConfig({
         NODE_ENV: 'production',
         PORT: String(PORT),
         DATABASE_URL,
+        // Todos os testes vêm do mesmo IP: o limite geral de produção (300/15 min) bloquearia a suite.
+        // O limite de tentativas de palavra-passe mantém-se igual ao de produção.
+        RATE_LIMIT_PER_15_MIN: '10000',
       },
     },
   ],

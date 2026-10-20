@@ -30,7 +30,7 @@ e2e               Playwright + axe-core, contra o build de produção
   - em `/conta` é possível revogar sessões de outros dispositivos;
   - mudar a palavra-passe (`POST /api/me/password`) exige a atual, apaga todas as sessões e abre uma nova neste dispositivo, para que um cookie roubado deixe de servir;
   - eliminar a conta exige o email e a palavra-passe.
-- **Limites de pedidos** (`lib/rate-limit.ts`): 300 pedidos a cada 15 minutos por IP; 10 tentativas falhadas a cada 15 minutos nas operações que verificam a palavra-passe (login, registo, mudar a palavra-passe e eliminar a conta). O 429 usa o formato de erro comum. Os limitadores estão desligados nos outros testes e têm testes próprios (`test/rate-limit.test.ts`).
+- **Limites de pedidos** (`lib/rate-limit.ts`): 300 pedidos a cada 15 minutos por IP; 10 tentativas falhadas a cada 15 minutos nas operações que verificam a palavra-passe (login, registo, mudar a palavra-passe e eliminar a conta). O 429 usa o formato de erro comum. Os limitadores estão desligados nos outros testes e têm testes próprios (`test/rate-limit.test.ts`). O limite geral pode ser aumentado com `RATE_LIMIT_PER_15_MIN`; só a configuração dos testes E2E o faz, porque todos os pedidos vêm do mesmo IP.
 - **Nada no browser:** não há tokens em `localStorage` nem em `sessionStorage`. O único valor guardado no browser é o último preset do modo foco, que é uma preferência de interface.
 - **CSRF:** os pedidos que alteram dados têm de ser JSON (415 caso contrário). Com o `SameSite=Lax`, isto basta para uma SPA na mesma origem.
 

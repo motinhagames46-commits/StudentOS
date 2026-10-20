@@ -14,4 +14,14 @@ export const env = {
   isTest: nodeEnv === 'test',
   PORT: Number(process.env.PORT ?? 4000),
   DATABASE_URL: required('DATABASE_URL'),
+  /** Pedidos por IP a cada 15 minutos (limite geral). Só os testes E2E o aumentam: todos vêm do mesmo IP. */
+  RATE_LIMIT_PER_15_MIN: positiveInt('RATE_LIMIT_PER_15_MIN', 300),
 };
+
+function positiveInt(name: string, fallback: number): number {
+  const raw = process.env[name];
+  if (raw === undefined || raw === '') return fallback;
+  const value = Number(raw);
+  if (!Number.isInteger(value) || value <= 0) throw new Error(`${name} tem de ser um inteiro positivo`);
+  return value;
+}
