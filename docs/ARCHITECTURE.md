@@ -27,7 +27,10 @@ e2e               Playwright + axe-core, contra o build de produção
   - a tabela `UserSession` guarda só o hash SHA-256 do token;
   - a sessão dura 7 dias;
   - o logout é real (a linha é apagada) e cada login gera um token novo;
-  - em `/conta` é possível revogar sessões de outros dispositivos.
+  - em `/conta` é possível revogar sessões de outros dispositivos;
+  - mudar a palavra-passe (`POST /api/me/password`) exige a atual, apaga todas as sessões e abre uma nova neste dispositivo, para que um cookie roubado deixe de servir;
+  - eliminar a conta exige o email e a palavra-passe.
+- **Limites de pedidos** (`lib/rate-limit.ts`): 300 pedidos a cada 15 minutos por IP; 10 tentativas falhadas a cada 15 minutos nas operações que verificam a palavra-passe (login, registo, mudar a palavra-passe e eliminar a conta). O 429 usa o formato de erro comum. Os limitadores estão desligados nos outros testes e têm testes próprios (`test/rate-limit.test.ts`).
 - **Nada no browser:** não há tokens em `localStorage` nem em `sessionStorage`. O único valor guardado no browser é o último preset do modo foco, que é uma preferência de interface.
 - **CSRF:** os pedidos que alteram dados têm de ser JSON (415 caso contrário). Com o `SameSite=Lax`, isto basta para uma SPA na mesma origem.
 
@@ -48,6 +51,8 @@ e2e               Playwright + axe-core, contra o build de produção
 - A base de dados guarda instantes em UTC.
 - O fuso por omissão é `Europe/Lisbon`. Os cálculos locais (janelas de disponibilidade, expansão de aulas semanais e agrupamento por dia) usam `@date-fns/tz` e os helpers de `packages/shared/src/timezone.ts`, que lidam corretamente com as mudanças de hora.
 - Um prazo sem hora é guardado às 23:59, hora local.
+- «Hoje», «amanhã» e «daqui a N dias» contam-se em **dias civis de Lisboa** com uma só função, `calendarDaysUntil`, usada pela API (explicações do planeador) e pela interface (lista de tarefas). O início do dia no painel também é a meia-noite de Lisboa.
+- O servidor de produção corre em UTC, e os testes também (`TZ: 'UTC'` nas configurações do Vitest), para que um cálculo que dependa por engano do fuso do processo falhe localmente.
 
 ## Horário (ScheduleBlock) e recorrência
 
@@ -92,7 +97,10 @@ Fluxo obrigatório do spec §8.2: **ficheiro → validação → pré-visualiza�
    - respeita o limite diário;
    - nunca termina uma sessão depois do prazo do item.
 5. **O que não cabe** é reportado com um motivo, e o plano nunca inventa disponibilidade. Motivos: `NO_ESTIMATE` (sem estimativa), `NO_SPACE`, `PAST_DEADLINE` e `BEYOND_HORIZON` (o prazo fica fora do horizonte do plano).
-6. **Explicações:** cada sessão traz uma explicação legível que só usa números existentes no sistema, como o prazo, o peso e os minutos.
+6. **Explicações:** cada sessão traz uma explicação legível que só usa números existentes no sistema, como o prazo, o peso e os minutos. O nível calculado chama-se **«Urgência»** (alta ≥ 0,6, média ≥ 0,35, baixa), para não se confundir com a prioridade que o estudante escolhe numa tarefa.
+7. **Disciplinas arquivadas** saem do planeador (tarefas e avaliações); as tarefas sem disciplina continuam.
+
+**«O que estudar agora»** (`GET /api/planner/suggestion`): se houver uma sessão planeada a decorrer (ou a começar nos próximos 30 minutos), sugere-a; caso contrário, o item com maior pontuação. A explicação é **sempre recalculada no momento do pedido**, porque o texto guardado no plano fica desatualizado. Os itens sem duração estimada também contam: uma tarefa urgente não desaparece por não ter estimativa; a resposta traz `needsEstimate` e a interface pede a duração.
 
 **Valores por omissão** (`DEFAULT_PLANNER_PREFERENCES`, editáveis em `/preferencias`): sessões de 50 minutos (mínimo 25), pausa de 10 minutos e limite diário de 180 minutos. O horizonte é de 7 dias (máximo 28).
 
@@ -127,12 +135,12 @@ Não incluída nesta versão: o planeador e todos os cálculos funcionam sem IA.
 
 ## Testes
 
-| Camada            | Ferramenta                                    | O que cobre                                                                                                        |
-| ----------------- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `packages/shared` | Vitest                                        | Médias e nota necessária; planeador (sobreposições, limite diário, prazos, determinismo, mudança de hora).         |
-| `apps/api`        | Vitest + Supertest, com a BD `studentos_test` | Autenticação e sessões, isolamento (404), validação, importação, recorrência, planeador, modo foco e estatísticas. |
-| `apps/web`        | Vitest + Testing Library                      | Componentes críticos (simulador de notas, lista de tarefas).                                                       |
-| `e2e`             | Playwright + axe-core                         | Fluxo principal, fluxo do planeador (spec §15.3) e acessibilidade das páginas principais.                          |
+| Camada            | Ferramenta                                    | O que cobre                                                                                                                                                                      |
+| ----------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared` | Vitest                                        | Médias e nota necessária; planeador (sobreposições, limite diário, prazos, determinismo, mudança de hora).                                                                       |
+| `apps/api`        | Vitest + Supertest, com a BD `studentos_test` | Autenticação e sessões, palavra-passe, limites de pedidos, isolamento (404), validação, importação, recorrência, planeador e sugestão, painel (fuso), modo foco e estatísticas.  |
+| `apps/web`        | Vitest + Testing Library                      | Componentes críticos (simulador de notas, lista de tarefas).                                                                                                                     |
+| `e2e`             | Playwright + axe-core                         | Fluxo principal, fluxo do planeador (spec §15.3), conta (mudar palavra-passe, eliminar), privacidade, alinhamento do calendário semanal e acessibilidade das páginas principais. |
 
 ## Deploy
 
@@ -141,12 +149,14 @@ Não incluída nesta versão: o planeador e todos os cálculos funcionam sem IA.
 
 ## Diferenças em relação ao spec
 
-| Spec                                              | Implementação                                                                     | Motivo                                                                                       |
-| ------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Argon2id                                          | bcrypt com custo 12                                                               | O módulo nativo não compilava; `bcryptjs` é JavaScript puro.                                 |
-| `POST /api/study-sessions/:id/complete` e `/miss` | `/api/planned-sessions/:id/complete` e `/miss`                                    | `/api/study-sessions` regista o tempo real de foco; as sessões planeadas são outra entidade. |
-| `POST /api/planner/confirm`                       | `POST /api/planner/:id/confirm`                                                   | Cada proposta tem identificador e é revalidada antes de ser aplicada.                        |
-| `GET/POST /api/assessments`                       | `GET/POST /api/disciplines/:id/assessments` e `PATCH/DELETE /api/assessments/:id` | Uma avaliação pertence sempre a uma disciplina.                                              |
-| Prazo com hora opcional                           | Um prazo sem hora fica às 23:59, hora local                                       | Assim, uma tarefa "para hoje" não aparece em atraso logo de manhã.                           |
-| Rotas Outlook e Moodle                            | Só `GET /api/integrations` (`NOT_CONFIGURED`)                                     | Faltam credenciais da Microsoft e autorização do IPVC.                                       |
-| `POST /api/ai/study-assistance`                   | Não incluído                                                                      | O spec põe a IA na prioridade 7.                                                             |
+| Spec                                              | Implementação                                                                     | Motivo                                                                                                                                               |
+| ------------------------------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Argon2id                                          | bcrypt com custo 12                                                               | O módulo nativo não compilava; `bcryptjs` é JavaScript puro.                                                                                         |
+| `POST /api/study-sessions/:id/complete` e `/miss` | `/api/planned-sessions/:id/complete` e `/miss`                                    | `/api/study-sessions` regista o tempo real de foco; as sessões planeadas são outra entidade.                                                         |
+| `POST /api/planner/confirm`                       | `POST /api/planner/:id/confirm`                                                   | Cada proposta tem identificador e é revalidada antes de ser aplicada.                                                                                |
+| `GET/POST /api/assessments`                       | `GET/POST /api/disciplines/:id/assessments` e `PATCH/DELETE /api/assessments/:id` | Uma avaliação pertence sempre a uma disciplina.                                                                                                      |
+| Prazo com hora opcional                           | Um prazo sem hora fica às 23:59, hora local                                       | Assim, uma tarefa "para hoje" não aparece em atraso logo de manhã.                                                                                   |
+| Rotas Outlook e Moodle                            | Só `GET /api/integrations` (`NOT_CONFIGURED`)                                     | Faltam credenciais da Microsoft e autorização do IPVC.                                                                                               |
+| `POST /api/ai/study-assistance`                   | Não incluído                                                                      | O spec põe a IA na prioridade 7.                                                                                                                     |
+| Atalho «Ligar calendário» no painel (§7.1)        | Atalho «Definir disponibilidade»                                                  | As integrações ainda não estão disponíveis; um atalho para uma página «indisponível» engana. A disponibilidade é o que o planeador precisa primeiro. |
+| Prioridade no plano (§11.4)                       | Nível chamado «Urgência»                                                          | Evita dois significados para «prioridade» no mesmo ecrã.                                                                                             |

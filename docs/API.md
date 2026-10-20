@@ -8,7 +8,7 @@ Referência dos endpoints que existem no código (`apps/api/src/routes`). Os esq
 - **Autenticação:** sessão no servidor, com o cookie `sid` (`HttpOnly`, `SameSite=Lax`, `Secure` em produção). Todas as rotas, exceto `/api/health` e `/api/auth/*`, exigem sessão e respondem 401 `UNAUTHENTICATED` sem ela.
 - **Isolamento:** cada pedido é filtrado pelo utilizador da sessão. Um recurso de outro utilizador responde **404**, como se não existisse. O `userId` nunca vem do cliente.
 - **Corpo:** os pedidos que alteram dados têm de ser JSON (`Content-Type: application/json`), caso contrário recebem 415. Isto protege contra CSRF com formulários simples. Limites: 100 KB em geral e 2 MB em `/api/imports`. Acima do limite, a resposta é 413 `PAYLOAD_TOO_LARGE`.
-- **Limites de pedidos:** 300 pedidos a cada 15 minutos. Login e registo: 10 tentativas falhadas a cada 15 minutos (429 `TOO_MANY_REQUESTS`).
+- **Limites de pedidos** (por IP): 300 pedidos a cada 15 minutos. Operações que verificam a palavra-passe (login, registo, mudar a palavra-passe e eliminar a conta): 10 tentativas falhadas a cada 15 minutos. Acima do limite, a resposta é 429 `TOO_MANY_REQUESTS`, no formato de erro comum.
 - **Datas:** ISO 8601 em UTC na API. A interface usa o fuso `Europe/Lisbon`.
 - **Identificador de pedido:** cada resposta traz o cabeçalho `X-Request-Id`, que também vem no corpo dos erros.
 
@@ -35,18 +35,19 @@ O campo `details` só aparece em erros de validação. Nunca contém stack trace
 
 ## Autenticação e conta
 
-| Método | Caminho                | Descrição                                                           |
-| ------ | ---------------------- | ------------------------------------------------------------------- |
-| POST   | `/api/auth/register`   | Cria a conta e inicia sessão (201).                                 |
-| POST   | `/api/auth/login`      | Inicia sessão. Cria um token novo a cada login (rotação).           |
-| POST   | `/api/auth/logout`     | Revoga a sessão atual.                                              |
-| POST   | `/api/auth/logout-all` | Revoga todas as sessões da conta.                                   |
-| GET    | `/api/auth/me`         | Utilizador autenticado.                                             |
-| GET    | `/api/me`              | Perfil e semestre ativo.                                            |
-| GET    | `/api/me/sessions`     | Sessões ativas (dispositivos), sem o hash do token.                 |
-| DELETE | `/api/me/sessions/:id` | Revoga uma sessão.                                                  |
-| GET    | `/api/me/export`       | Exportação de todos os dados em JSON (RGPD), sem hashes nem tokens. |
-| DELETE | `/api/me`              | Elimina a conta e todos os dados. Corpo: `{ "confirmEmail" }`.      |
+| Método | Caminho                | Descrição                                                                                                                              |
+| ------ | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/auth/register`   | Cria a conta e inicia sessão (201).                                                                                                    |
+| POST   | `/api/auth/login`      | Inicia sessão. Cria um token novo a cada login (rotação).                                                                              |
+| POST   | `/api/auth/logout`     | Revoga a sessão atual.                                                                                                                 |
+| POST   | `/api/auth/logout-all` | Revoga todas as sessões da conta.                                                                                                      |
+| GET    | `/api/auth/me`         | Utilizador autenticado.                                                                                                                |
+| GET    | `/api/me`              | Perfil e semestre ativo.                                                                                                               |
+| GET    | `/api/me/sessions`     | Sessões ativas (dispositivos), sem o hash do token.                                                                                    |
+| DELETE | `/api/me/sessions/:id` | Revoga uma sessão.                                                                                                                     |
+| GET    | `/api/me/export`       | Exportação de todos os dados em JSON (RGPD), sem hashes nem tokens.                                                                    |
+| POST   | `/api/me/password`     | Muda a palavra-passe. Corpo: `{ "currentPassword", "newPassword" }`. Termina todas as sessões e abre uma nova neste dispositivo (204). |
+| DELETE | `/api/me`              | Elimina a conta e todos os dados. Corpo: `{ "confirmEmail", "password" }`.                                                             |
 
 ## Semestres, disciplinas e avaliações
 
@@ -108,19 +109,19 @@ O tempo de foco de uma sessão é `endedAt − startedAt − pausedSeconds`. Ao 
 
 ## Planeador de estudo
 
-| Método  | Caminho                              | Descrição                                                                                                              |
-| ------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| GET/PUT | `/api/preferences/study`             | Duração das sessões, pausa, limite diário e disponibilidade semanal.                                                   |
-| POST    | `/api/planner/preview`               | Gera uma proposta (`{ from?, days? (1–28) }`) sem alterar as sessões existentes. A proposta expira em 30 minutos.      |
-| POST    | `/api/planner/replan`                | Nova proposta a partir de agora. Mantém as sessões concluídas, fixadas e a decorrer.                                   |
-| POST    | `/api/planner/:id/confirm`           | Aplica a proposta depois de a revalidar. Se o estado mudou, responde 409 `PLAN_STALE`; se expirou, 410 `PLAN_EXPIRED`. |
-| DELETE  | `/api/planner/:id`                   | Descarta a proposta.                                                                                                   |
-| GET     | `/api/planner/sessions?from=&to=`    | Sessões planeadas, sem as canceladas, e a proposta pendente.                                                           |
-| GET     | `/api/planner/suggestion`            | "O que devo estudar agora?"                                                                                            |
-| PATCH   | `/api/planned-sessions/:id`          | Mover a sessão (fica fixada) ou fixá-la e desafixá-la.                                                                 |
-| POST    | `/api/planned-sessions/:id/complete` | Concluir a sessão, com `actualMinutes` opcional. Não conclui a tarefa associada.                                       |
-| POST    | `/api/planned-sessions/:id/miss`     | Marcar como falhada. Uma sessão que ainda não começou responde 409 `NOT_STARTED`.                                      |
-| DELETE  | `/api/planned-sessions/:id`          | Retirar do plano.                                                                                                      |
+| Método  | Caminho                              | Descrição                                                                                                                                                                                                              |
+| ------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET/PUT | `/api/preferences/study`             | Duração das sessões, pausa, limite diário e disponibilidade semanal.                                                                                                                                                   |
+| POST    | `/api/planner/preview`               | Gera uma proposta (`{ from?, days? (1–28) }`) sem alterar as sessões existentes. A proposta expira em 30 minutos.                                                                                                      |
+| POST    | `/api/planner/replan`                | Nova proposta a partir de agora. Mantém as sessões concluídas, fixadas e a decorrer.                                                                                                                                   |
+| POST    | `/api/planner/:id/confirm`           | Aplica a proposta depois de a revalidar. Se o estado mudou, responde 409 `PLAN_STALE`; se expirou, 410 `PLAN_EXPIRED`.                                                                                                 |
+| DELETE  | `/api/planner/:id`                   | Descarta a proposta.                                                                                                                                                                                                   |
+| GET     | `/api/planner/sessions?from=&to=`    | Sessões planeadas, sem as canceladas, e a proposta pendente.                                                                                                                                                           |
+| GET     | `/api/planner/suggestion`            | "O que devo estudar agora?" A explicação é recalculada no momento do pedido e começa por «Urgência alta/média/baixa». Inclui itens sem duração estimada: nesse caso `needsEstimate: true` e a mensagem pede a duração. |
+| PATCH   | `/api/planned-sessions/:id`          | Mover a sessão (fica fixada) ou fixá-la e desafixá-la.                                                                                                                                                                 |
+| POST    | `/api/planned-sessions/:id/complete` | Concluir a sessão, com `actualMinutes` opcional. Não conclui a tarefa associada.                                                                                                                                       |
+| POST    | `/api/planned-sessions/:id/miss`     | Marcar como falhada. Uma sessão que ainda não começou responde 409 `NOT_STARTED`.                                                                                                                                      |
+| DELETE  | `/api/planned-sessions/:id`          | Retirar do plano.                                                                                                                                                                                                      |
 
 > **Diferença em relação ao spec §13:** o spec sugere `/api/study-sessions/:id/complete` e `/miss`. Aqui, `/api/study-sessions` regista o tempo real de foco e as sessões **planeadas** ficam em `/api/planned-sessions`. A confirmação do plano é `/api/planner/:id/confirm`, porque cada proposta tem identificador próprio.
 
