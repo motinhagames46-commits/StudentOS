@@ -89,7 +89,7 @@ export function PlanPage() {
     <>
       <PageHeader
         title="Plano de estudo"
-        subtitle="Proposta determinística a partir das tuas tarefas, avaliações, aulas e disponibilidade. Nada muda sem confirmares."
+        subtitle="Proposta automática (sem IA) a partir das tuas tarefas, avaliações, aulas e disponibilidade. Nada muda sem confirmares."
         action={
           <div className="flex flex-wrap gap-2">
             {sessions.some((s) => s.status === 'PLANNED') && (

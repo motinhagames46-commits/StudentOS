@@ -8,8 +8,8 @@ import { TaskList } from '../components/TaskList';
 import { Badge, Button, Card, ErrorState, LoadingList, Skeleton } from '../components/ui';
 import { useDeleteDiscipline, useDiscipline, useTasks, useUpdateDiscipline, useUpdateTask } from '../hooks/queries';
 import { ApiError, errorMessage } from '../lib/api';
-import { formatGrade, gradeStatusLabels } from '../lib/format';
-import { gradeTone } from './DashboardPage';
+import { formatGrade } from '../lib/format';
+import { GradeStatusBadge } from '../components/GradeStatusBadge';
 
 /** Detalhe da disciplina: avaliações, médias e simulador de nota necessária (RF07–RF09). */
 export function DisciplineDetailPage() {
@@ -129,7 +129,7 @@ export function DisciplineDetailPage() {
         <div className="rounded-xl border border-stone-200 bg-white px-4 py-3">
           <dt className="text-xs text-stone-500">Estado</dt>
           <dd className="mt-2">
-            <Badge tone={gradeTone(g.status)}>{gradeStatusLabels[g.status]}</Badge>
+            <GradeStatusBadge grades={g} passingGrade={d.passingGrade} />
           </dd>
         </div>
       </dl>

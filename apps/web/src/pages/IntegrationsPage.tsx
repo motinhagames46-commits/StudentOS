@@ -69,8 +69,8 @@ export function IntegrationsPage() {
           <Card title="Assistente de IA" action={<Badge>Desligado</Badge>}>
             <p className="flex gap-2 text-sm text-stone-600">
               <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              Não incluído nesta versão. O plano de estudo é calculado por regras determinísticas, sem IA, e nenhum dado
-              é enviado a fornecedores de IA.
+              Não incluído nesta versão. O plano de estudo é calculado por regras fixas, sem IA, e nenhum dado é enviado
+              a fornecedores de IA.
             </p>
           </Card>
         </div>

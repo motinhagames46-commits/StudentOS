@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeGrades, requiredScore, globalAverage, roundFinal, exceedsWeightLimit } from './grades.js';
+import { computeGrades, requiredScore, globalAverage, roundFinal, exceedsWeightLimit, isAtRisk } from './grades.js';
 
 // Exemplo da secção 4.1 da especificação — Programação Web
 const pw = [
@@ -126,5 +126,37 @@ describe('utilitários', () => {
   it('exceedsWeightLimit', () => {
     expect(exceedsWeightLimit(70, 30)).toBe(false);
     expect(exceedsWeightLimit(70, 40)).toBe(true);
+  });
+});
+
+describe('isAtRisk — disciplina em curso com média abaixo da aprovação', () => {
+  it('8,5 com metade por avaliar está em risco (arredonda a 9 < 10)', () => {
+    const g = computeGrades([
+      { weight: 50, score: 8.5 },
+      { weight: 50, score: null },
+    ]);
+    expect(isAtRisk(g)).toBe(true);
+  });
+  it('9,5 já arredonda a 10: não está em risco', () => {
+    const g = computeGrades([
+      { weight: 50, score: 9.5 },
+      { weight: 50, score: null },
+    ]);
+    expect(isAtRisk(g)).toBe(false);
+  });
+  it('respeita a nota de aprovação da disciplina', () => {
+    const g = computeGrades(
+      [
+        { weight: 50, score: 11 },
+        { weight: 50, score: null },
+      ],
+      12,
+    );
+    expect(isAtRisk(g, 12)).toBe(true);
+  });
+  it('sem notas, concluída ou com pesos incompletos não é «em risco»', () => {
+    expect(isAtRisk(computeGrades([{ weight: 100, score: null }]))).toBe(false);
+    expect(isAtRisk(computeGrades([{ weight: 100, score: 8 }]))).toBe(false); // já reprovada, não «em risco»
+    expect(isAtRisk(computeGrades([{ weight: 60, score: 5 }]))).toBe(false);
   });
 });

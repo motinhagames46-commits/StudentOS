@@ -96,6 +96,21 @@ export function computeGrades(items: readonly GradeItem[], passingGrade: number 
 }
 
 /**
+ * «Em risco»: a disciplina ainda está em curso, mas a média das avaliações já classificadas, arredondada
+ * como a nota final (RN05), fica abaixo da nota de aprovação. Uma disciplina já reprovada não é «em risco».
+ */
+export function isAtRisk(
+  summary: Pick<GradeSummary, 'status' | 'currentAverage'>,
+  passingGrade: number = DEFAULT_PASSING_GRADE,
+): boolean {
+  return (
+    summary.status === 'in-progress' &&
+    summary.currentAverage !== null &&
+    roundFinal(summary.currentAverage) < passingGrade
+  );
+}
+
+/**
  * Nota uniforme necessária em todas as avaliações pendentes para obter a nota final `target` (RN07).
  * x = ((A − 0,5)·100 − C) / P, limitada inferiormente pela maior nota mínima pendente.
  */

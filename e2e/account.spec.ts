@@ -44,3 +44,12 @@ test('mudar a palavra-passe e eliminar a conta com confirmação', async ({ page
   await page.getByRole('button', { name: 'Entrar' }).click();
   await expect(page.getByText(/incorretos/)).toBeVisible();
 });
+
+test('a página de privacidade é pública e descreve o tratamento real dos dados', async ({ page }) => {
+  await page.goto('/privacidade');
+  await expect(page.getByRole('heading', { level: 1, name: 'Privacidade' })).toBeVisible();
+  const text = await page.locator('main').innerText();
+  expect(text).not.toMatch(/\[preencher|cifrada/);
+  for (const fact of ['hash', 'Render', 'Neon', 'user-agent', 'exportas', 'eliminas a conta'])
+    expect(text).toContain(fact);
+});

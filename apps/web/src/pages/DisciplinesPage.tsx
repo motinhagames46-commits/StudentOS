@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { DisciplineForm } from '../components/DisciplineForm';
 import { ActiveSemesterSelect, SemesterManager } from '../components/SemesterManager';
-import { Badge, Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
+import { Button, Card, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
 import { useCreateDiscipline, useDisciplines } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
-import { formatGrade, gradeStatusLabels } from '../lib/format';
-import { gradeTone } from './DashboardPage';
+import { formatGrade } from '../lib/format';
+import { GradeStatusBadge } from '../components/GradeStatusBadge';
 
 /** Lista de disciplinas do semestre ativo (RF04) e gestão de semestres (RF03). */
 export function DisciplinesPage() {
@@ -101,7 +101,7 @@ export function DisciplinesPage() {
                     <p className="text-xs font-semibold tracking-wide text-stone-500">{d.code}</p>
                     <p className="truncate text-base font-medium text-stone-900">{d.name}</p>
                     <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-500">
-                      <Badge tone={gradeTone(d.grades.status)}>{gradeStatusLabels[d.grades.status]}</Badge>
+                      <GradeStatusBadge grades={d.grades} passingGrade={d.passingGrade} />
                       {d.ects && <span>{d.ects} ECTS</span>}
                       <span>
                         {d.pendingTasks} {d.pendingTasks === 1 ? 'tarefa pendente' : 'tarefas pendentes'}

@@ -1,13 +1,14 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { StudyByDisciplineChart, TaskProgress } from '../components/charts';
+import { GradeStatusBadge } from '../components/GradeStatusBadge';
 import { TaskList } from '../components/TaskList';
 import { QuickActions, TodayPlan } from '../components/TodayPlan';
-import { Badge, Card, DisciplineChip, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
+import { Card, DisciplineChip, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/ui';
 import { useDashboard, useStats, useUpdateTask } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
-import { formatDate, formatDuration, formatGrade, gradeStatusLabels, relativeDay } from '../lib/format';
+import { formatDate, formatDuration, formatGrade, relativeDay } from '../lib/format';
 import type { Dashboard, GradeSummaryDto } from '../lib/types';
 
 const todayLabel = () =>
@@ -17,16 +18,6 @@ const todayLabel = () =>
     month: 'long',
     timeZone: 'Europe/Lisbon',
   }).format(new Date());
-
-export function gradeTone(status: GradeSummaryDto['status']) {
-  return status === 'approved'
-    ? 'green'
-    : status === 'failed'
-      ? 'red'
-      : status === 'incomplete-config'
-        ? 'amber'
-        : 'neutral';
-}
 
 /** Painel inicial — responde às três perguntas da secção 1.1 (RF10 / HU04). */
 export function DashboardPage() {
@@ -180,7 +171,7 @@ export function DashboardPage() {
                         <p className="truncate text-sm font-medium text-stone-900 group-hover:underline">{d.name}</p>
                         <RequiredHint grades={d.grades} />
                       </div>
-                      <Badge tone={gradeTone(d.grades.status)}>{gradeStatusLabels[d.grades.status]}</Badge>
+                      <GradeStatusBadge grades={d.grades} passingGrade={d.passingGrade} />
                       <span className="w-14 text-right text-lg font-semibold tabular-nums text-stone-900">
                         {formatGrade(d.grades.finalGrade ?? d.grades.currentAverage, 1)}
                       </span>
@@ -219,7 +210,7 @@ function Stats({ data }: { data: Dashboard }) {
     { label: 'Tarefas esta semana', value: String(data.upcomingTasks.length) },
     { label: 'Em atraso', value: String(data.overdueTasks.length), alert: data.overdueTasks.length > 0 },
     {
-      label: 'Média global',
+      label: 'Média (aprovadas)',
       value: formatGrade(average, 1),
       hint: credits ? `${credits} ECTS aprovados` : 'Sem disciplinas concluídas',
     },
@@ -232,7 +223,7 @@ function Stats({ data }: { data: Dashboard }) {
           <dd className={`mt-1 text-2xl font-semibold tabular-nums ${s.alert ? 'text-red-700' : 'text-stone-900'}`}>
             {s.value}
           </dd>
-          {s.hint && <dd className="mt-0.5 hidden text-xs text-stone-500 sm:block">{s.hint}</dd>}
+          {s.hint && <dd className="mt-0.5 text-xs text-stone-500">{s.hint}</dd>}
         </div>
       ))}
     </dl>
