@@ -2,9 +2,9 @@ import { existsSync } from 'node:fs';
 import path from 'node:path';
 import cookieParser from 'cookie-parser';
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 import helmet from 'helmet';
 import { env } from './lib/env.js';
+import { credentialLimiter, generalLimiter } from './lib/rate-limit.js';
 import { requireAuth } from './middleware/auth.js';
 import { apiNotFound, errorHandler, requestId, requireJsonBody } from './middleware/errors.js';
 import { assessmentsRouter } from './routes/assessments.js';
@@ -42,28 +42,12 @@ export function createApp() {
   const api = express.Router();
   api.use(requireJsonBody);
 
-  // Secção 12.3 — limites de pedidos (desativados nos testes)
+  // Secção 12.3 — limites de pedidos (desativados nos testes; ver test/rate-limit.test.ts)
   if (!env.isTest) {
-    api.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: 'draft-8', legacyHeaders: false }));
-    api.use(
-      ['/auth/login', '/auth/register'],
-      rateLimit({
-        windowMs: 15 * 60 * 1000,
-        limit: 10,
-        skipSuccessfulRequests: true,
-        standardHeaders: 'draft-8',
-        legacyHeaders: false,
-        handler: (req, res) => {
-          res.status(429).json({
-            error: {
-              code: 'TOO_MANY_REQUESTS',
-              message: 'Demasiadas tentativas. Tenta novamente daqui a 15 minutos.',
-              requestId: req.requestId,
-            },
-          });
-        },
-      }),
-    );
+    api.use(generalLimiter());
+    const credentials = credentialLimiter();
+    api.use(['/auth/login', '/auth/register', '/me/password'], credentials);
+    api.delete('/me', credentials);
   }
 
   api.get('/health', (_req, res) => {

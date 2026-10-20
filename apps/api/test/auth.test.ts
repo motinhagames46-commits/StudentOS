@@ -166,3 +166,42 @@ describe('login e sessão (RF02)', () => {
     expect(res.status).toBe(415);
   });
 });
+
+describe('mudar a palavra-passe', () => {
+  const change = (cookie: string[], body: object) =>
+    request(app).post('/api/me/password').set('Cookie', cookie).send(body);
+  const login = (password: string) => request(app).post('/api/auth/login').send({ email: 'ines@exemplo.pt', password });
+
+  it('exige a palavra-passe atual e recusa palavras-passe comuns', async () => {
+    const { cookie } = await registerUser('ines');
+    const wrong = await change(cookie, { currentPassword: 'nao-e-esta-de-todo', newPassword: 'outra-frase-bem-longa' });
+    expect(wrong.status).toBe(400);
+    expect(wrong.body.error.details[0].path).toBe('currentPassword');
+    const common = await change(cookie, { currentPassword: PASSWORD, newPassword: 'password1234' });
+    expect(common.status).toBe(400);
+    expect(common.body.error.details[0].path).toBe('newPassword');
+    const same = await change(cookie, { currentPassword: PASSWORD, newPassword: PASSWORD });
+    expect(same.status).toBe(400);
+    expect((await login(PASSWORD)).status).toBe(200);
+  });
+
+  it('muda a palavra-passe, termina as sessões dos outros dispositivos e renova a deste', async () => {
+    const { cookie: phone } = await registerUser('ines');
+    const laptop = (await login(PASSWORD)).headers['set-cookie'] as unknown as string[];
+    const res = await change(phone, { currentPassword: PASSWORD, newPassword: 'nova-frase-bem-segura' });
+    expect(res.status).toBe(204);
+    const renewed = res.headers['set-cookie'] as unknown as string[];
+    expect(renewed[0]).toMatch(/sid=.+; .*HttpOnly/i);
+
+    expect((await request(app).get('/api/me').set('Cookie', laptop)).status).toBe(401);
+    expect((await request(app).get('/api/me').set('Cookie', phone)).status).toBe(401);
+    expect((await request(app).get('/api/me').set('Cookie', renewed)).status).toBe(200);
+    expect((await login(PASSWORD)).status).toBe(401);
+    expect((await login('nova-frase-bem-segura')).status).toBe(200);
+  });
+
+  it('exige sessão', async () => {
+    const res = await request(app).post('/api/me/password').send({ currentPassword: 'a', newPassword: 'b' });
+    expect(res.status).toBe(401);
+  });
+});

@@ -17,21 +17,32 @@ const positiveId = z.number().int().positive();
 
 export const emailSchema = z.string('Indica o email').trim().toLowerCase().pipe(z.email('Email inválido').max(254));
 
+const newPasswordSchema = z
+  .string('Indica a palavra-passe')
+  .min(MIN_PASSWORD_LENGTH, `A palavra-passe deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres`)
+  .max(200, 'A palavra-passe é demasiado longa');
+const currentPasswordSchema = z.string('Indica a palavra-passe').min(1, 'Indica a palavra-passe').max(200);
+
 export const registerSchema = z.strictObject({
   name: z.string('Indica o nome').trim().min(2, 'O nome deve ter pelo menos 2 caracteres').max(80),
   email: emailSchema,
-  password: z
-    .string('Indica a palavra-passe')
-    .min(MIN_PASSWORD_LENGTH, `A palavra-passe deve ter pelo menos ${MIN_PASSWORD_LENGTH} caracteres`)
-    .max(200, 'A palavra-passe é demasiado longa'),
+  password: newPasswordSchema,
 });
 
 export const loginSchema = z.strictObject({
   email: emailSchema,
-  password: z.string('Indica a palavra-passe').min(1, 'Indica a palavra-passe').max(200),
+  password: currentPasswordSchema,
 });
 
-export const deleteAccountSchema = z.strictObject({ confirmEmail: emailSchema });
+export const changePasswordSchema = z
+  .strictObject({ currentPassword: currentPasswordSchema, newPassword: newPasswordSchema })
+  .refine((d) => d.newPassword !== d.currentPassword, {
+    message: 'A nova palavra-passe tem de ser diferente da atual',
+    path: ['newPassword'],
+  });
+
+/** Eliminar a conta exige o email e a palavra-passe: um cookie roubado não chega para apagar tudo. */
+export const deleteAccountSchema = z.strictObject({ confirmEmail: emailSchema, password: currentPasswordSchema });
 
 export const semesterCreateSchema = z
   .strictObject({

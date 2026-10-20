@@ -1,13 +1,14 @@
+import { MIN_PASSWORD_LENGTH } from '@studentos/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { SessionsCard } from '../components/SessionsCard';
 import { Button, Card, FormError, PageHeader, TextField } from '../components/ui';
 import { useMe } from '../hooks/useAuth';
-import { api, errorMessage } from '../lib/api';
+import { ApiError, api, errorMessage } from '../lib/api';
 import { formatDate } from '../lib/format';
 
-/** Conta: sessões, exportação e eliminação de dados (RF11 / RF12, RGPD). */
+/** Conta: palavra-passe, sessões, exportação e eliminação de dados (RF11 / RF12, RGPD). */
 export function AccountPage() {
   const { data } = useMe();
   const queryClient = useQueryClient();
@@ -15,6 +16,7 @@ export function AccountPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState<'export' | 'logout-all' | 'delete' | null>(null);
   const [confirmEmail, setConfirmEmail] = useState('');
+  const [deletePassword, setDeletePassword] = useState('');
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   if (!data) return null;
@@ -58,12 +60,12 @@ export function AccountPage() {
     setDeleteError(null);
     setBusy('delete');
     try {
-      await api('/me', { method: 'DELETE', body: { confirmEmail } });
+      await api('/me', { method: 'DELETE', body: { confirmEmail, password: deletePassword } });
       queryClient.clear();
       queryClient.setQueryData(['me'], null);
       navigate('/login');
     } catch (err) {
-      setDeleteError(errorMessage(err));
+      setDeleteError(err instanceof ApiError ? (err.fieldErrors().password ?? err.message) : errorMessage(err));
       setBusy(null);
     }
   }
@@ -88,6 +90,8 @@ export function AccountPage() {
             </div>
           </dl>
         </Card>
+
+        <PasswordCard />
 
         <SessionsCard />
 
@@ -123,11 +127,19 @@ export function AccountPage() {
               onChange={(e) => setConfirmEmail(e.target.value)}
               className="max-w-sm"
             />
+            <TextField
+              label="Palavra-passe"
+              type="password"
+              autoComplete="current-password"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              className="max-w-sm"
+            />
             <FormError message={deleteError} />
             <Button
               type="submit"
               variant="danger"
-              disabled={confirmEmail.trim().toLowerCase() !== user.email}
+              disabled={confirmEmail.trim().toLowerCase() !== user.email || !deletePassword}
               loading={busy === 'delete'}
             >
               Eliminar conta permanentemente
@@ -142,5 +154,85 @@ export function AccountPage() {
         </p>
       </div>
     </>
+  );
+}
+
+/** Mudar a palavra-passe: termina as sessões nos outros dispositivos (esta continua com uma sessão nova). */
+function PasswordCard() {
+  const queryClient = useQueryClient();
+  const [current, setCurrent] = useState('');
+  const [next, setNext] = useState('');
+  const [repeat, setRepeat] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    setDone(false);
+    setFormError(null);
+    if (next !== repeat) {
+      setErrors({ repeat: 'As palavras-passe não coincidem' });
+      return;
+    }
+    setErrors({});
+    setSaving(true);
+    try {
+      await api('/me/password', { method: 'POST', body: { currentPassword: current, newPassword: next } });
+      setCurrent('');
+      setNext('');
+      setRepeat('');
+      setDone(true);
+      void queryClient.invalidateQueries({ queryKey: ['sessions'] });
+    } catch (err) {
+      if (err instanceof ApiError && err.details.length) setErrors(err.fieldErrors());
+      else setFormError(errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Card title="Palavra-passe">
+      <form onSubmit={submit} className="space-y-3" noValidate>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <TextField
+            label="Palavra-passe atual"
+            type="password"
+            autoComplete="current-password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            error={errors.currentPassword}
+          />
+          <TextField
+            label="Nova palavra-passe"
+            type="password"
+            autoComplete="new-password"
+            value={next}
+            onChange={(e) => setNext(e.target.value)}
+            error={errors.newPassword}
+            hint={`Pelo menos ${MIN_PASSWORD_LENGTH} caracteres.`}
+          />
+          <TextField
+            label="Repetir a nova"
+            type="password"
+            autoComplete="new-password"
+            value={repeat}
+            onChange={(e) => setRepeat(e.target.value)}
+            error={errors.repeat}
+          />
+        </div>
+        <FormError message={formError} />
+        {done && (
+          <p role="status" className="text-sm text-green-800">
+            Palavra-passe alterada. As sessões nos outros dispositivos foram terminadas.
+          </p>
+        )}
+        <Button type="submit" variant="secondary" loading={saving} disabled={!current || !next || !repeat}>
+          Mudar palavra-passe
+        </Button>
+      </form>
+    </Card>
   );
 }

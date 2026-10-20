@@ -52,7 +52,9 @@ test.describe('acessibilidade (axe)', () => {
 
   test('painel', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('Fichas de exercícios')).toBeVisible();
+    await expect(page.getByText('Fichas de exercícios', { exact: true })).toBeVisible();
+    // A sugestão inclui a tarefa mesmo sem duração estimada e pede a duração (inclui o link na verificação axe)
+    await expect(page.getByRole('link', { name: 'Indicar duração' })).toBeVisible();
     await expectNoSeriousViolations(page);
   });
 
@@ -102,6 +104,7 @@ test.describe('acessibilidade (axe)', () => {
     ['preferências', '/preferencias', 'Preferências de estudo'],
     ['integrações', '/integracoes', 'Integrações'],
     ['modo foco', '/sessoes', 'Sessões de estudo'],
+    ['conta', '/conta', 'Conta'],
   ] as const) {
     test(name, async ({ page }) => {
       await page.goto(path);

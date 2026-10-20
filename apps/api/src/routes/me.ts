@@ -1,8 +1,9 @@
 import { Router } from 'express';
-import { deleteAccountSchema, idParamSchema } from '@studentos/shared';
-import { clearSessionCookie } from '../lib/auth.js';
-import { HttpError, notFound, parse } from '../lib/http.js';
+import { changePasswordSchema, deleteAccountSchema, idParamSchema } from '@studentos/shared';
+import { clearSessionCookie, hashPassword, isCommonPassword, verifyPassword } from '../lib/auth.js';
+import { HttpError, notFound, parse, validationError } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
+import { startSession } from '../lib/sessions.js';
 
 export const meRouter = Router();
 
@@ -65,12 +66,35 @@ meRouter.get('/export', async (req, res) => {
   res.json({ exportedAt: new Date().toISOString(), ...data });
 });
 
-// RF12 / HU06 — eliminação da conta e de todos os dados (cascata, incluindo sessões e importações)
+// Mudar a palavra-passe: exige a atual; termina todas as sessões (outros dispositivos incluídos)
+// e abre uma nova neste, para um cookie eventualmente roubado deixar de servir.
+meRouter.post('/password', async (req, res) => {
+  const { currentPassword, newPassword } = parse(changePasswordSchema, req.body);
+  const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
+  if (!(await verifyPassword(currentPassword, user.passwordHash))) {
+    throw validationError([{ path: 'currentPassword', message: 'A palavra-passe atual está incorreta' }]);
+  }
+  if (isCommonPassword(newPassword)) {
+    throw validationError([{ path: 'newPassword', message: 'Esta palavra-passe é demasiado comum' }]);
+  }
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: user.id }, data: { passwordHash: await hashPassword(newPassword) } }),
+    prisma.userSession.deleteMany({ where: { userId: user.id } }),
+  ]);
+  await startSession(req, res, user.id);
+  res.status(204).end();
+});
+
+// RF12 / HU06 — eliminação da conta e de todos os dados (cascata, incluindo sessões e importações).
+// Pede o email e a palavra-passe: é irreversível.
 meRouter.delete('/', async (req, res) => {
-  const { confirmEmail } = parse(deleteAccountSchema, req.body);
+  const { confirmEmail, password } = parse(deleteAccountSchema, req.body);
   const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId } });
   if (user.email !== confirmEmail) {
     throw new HttpError(400, 'CONFIRMATION_MISMATCH', 'O email de confirmação não corresponde à conta');
+  }
+  if (!(await verifyPassword(password, user.passwordHash))) {
+    throw validationError([{ path: 'password', message: 'A palavra-passe está incorreta' }]);
   }
   await prisma.user.delete({ where: { id: user.id } });
   clearSessionCookie(res);

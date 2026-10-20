@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../src/app.js';
-import { createUserAndLogin, resetDb } from './helpers.js';
+import { PASSWORD, createUserAndLogin, resetDb } from './helpers.js';
 
 let cookie: string[];
 let disciplineId: number;
@@ -96,10 +96,16 @@ describe('conta (RF11, RF12)', () => {
     expect(res.body.disciplines).toHaveLength(1);
   });
 
-  it('elimina a conta só com o email certo (HU06)', async () => {
-    const wrong = await request(app).delete('/api/me').set('Cookie', cookie).send({ confirmEmail: 'x@exemplo.pt' });
-    expect(wrong.status).toBe(400);
-    const ok = await request(app).delete('/api/me').set('Cookie', cookie).send({ confirmEmail: 'ines@exemplo.pt' });
+  it('elimina a conta só com o email e a palavra-passe certos (HU06)', async () => {
+    const del = (body: object) => request(app).delete('/api/me').set('Cookie', cookie).send(body);
+    expect((await del({ confirmEmail: 'x@exemplo.pt', password: PASSWORD })).status).toBe(400);
+    // um cookie roubado não chega: sem a palavra-passe a conta não é eliminada
+    expect((await del({ confirmEmail: 'ines@exemplo.pt' })).status).toBe(400);
+    const wrongPassword = await del({ confirmEmail: 'ines@exemplo.pt', password: 'outra-coisa-qualquer' });
+    expect(wrongPassword.status).toBe(400);
+    expect(wrongPassword.body.error.details[0].path).toBe('password');
+    expect((await request(app).get('/api/me').set('Cookie', cookie)).status).toBe(200);
+    const ok = await del({ confirmEmail: 'ines@exemplo.pt', password: PASSWORD });
     expect(ok.status).toBe(204);
     expect((await request(app).get('/api/me').set('Cookie', cookie)).status).toBe(401);
   });
