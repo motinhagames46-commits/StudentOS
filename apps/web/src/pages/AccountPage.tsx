@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router';
 import { SessionsCard } from '../components/SessionsCard';
 import { Button, Card, FormError, PageHeader, TextField } from '../components/ui';
 import { useMe } from '../hooks/useAuth';
-import { ApiError, api, errorMessage } from '../lib/api';
+import { ApiError, api, downloadFile, errorMessage } from '../lib/api';
 import { formatDate } from '../lib/format';
 
 /** Conta: palavra-passe, sessões, exportação e eliminação de dados (RF11 / RF12, RGPD). */
@@ -26,15 +26,7 @@ export function AccountPage() {
     setBusy('export');
     setMessage(null);
     try {
-      const res = await fetch('/api/me/export', { credentials: 'include' });
-      if (!res.ok) throw new Error('Não foi possível exportar os dados');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `studentos-export-${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
+      await downloadFile('/me/export', `studentos-export-${new Date().toISOString().slice(0, 10)}.json`);
     } catch (err) {
       setMessage(errorMessage(err));
     } finally {

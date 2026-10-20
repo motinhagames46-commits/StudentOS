@@ -1,11 +1,18 @@
-import { DEFAULT_TIMEZONE, addDaysToKey, startOfZonedDay, zonedDayKey } from '@studentos/shared';
-import { CalendarPlus, Clock, FileUp, ListPlus, Sparkles } from 'lucide-react';
+import {
+  DEFAULT_TIMEZONE,
+  addDaysToKey,
+  startOfZonedDay,
+  zonedDayKey,
+  type StudySessionStartInput,
+} from '@studentos/shared';
+import { CalendarPlus, Clock, FileUp, ListPlus, Play, Sparkles } from 'lucide-react';
 import { useMemo } from 'react';
-import { Link } from 'react-router';
-import { usePlannerSessions, useSuggestion } from '../hooks/queries';
-import { errorMessage } from '../lib/api';
+import { Link, useNavigate } from 'react-router';
+import { usePlannerSessions, useStartStudySession, useSuggestion } from '../hooks/queries';
+import { ApiError, errorMessage } from '../lib/api';
 import { formatTime, studyTitle } from '../lib/format';
-import { Badge, Card, EmptyState, ErrorState, Skeleton } from './ui';
+import type { Suggestion } from '../lib/types';
+import { Badge, Button, Card, EmptyState, ErrorState, FormError, Skeleton } from './ui';
 
 const statusLabels = { PLANNED: 'Planeada', COMPLETED: 'Concluída', MISSED: 'Falhada', CANCELLED: 'Retirada' } as const;
 
@@ -97,32 +104,76 @@ export function TodayPlan() {
               ))}
             </ul>
           )}
-          {suggestion.data && (
-            <p className="flex gap-2 rounded-lg bg-accent-soft px-3 py-2 text-sm text-blue-950">
-              <Sparkles aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
-              <span>
-                <strong>O que estudar agora: </strong>
-                {suggestion.data.message}
-                {suggestion.data.kind === 'item' && suggestion.data.needsEstimate && (
-                  <>
-                    {' '}
-                    <Link
-                      to={
-                        suggestion.data.item.type === 'assessment' && suggestion.data.item.disciplineId
-                          ? `/disciplinas/${suggestion.data.item.disciplineId}`
-                          : '/tarefas'
-                      }
-                      className="font-medium text-accent underline"
-                    >
-                      Indicar duração
-                    </Link>
-                  </>
-                )}
-              </span>
-            </p>
-          )}
+          {suggestion.data && <SuggestionBox suggestion={suggestion.data} />}
         </div>
       )}
     </Card>
+  );
+}
+
+/**
+ * Sessão de foco que «Começar agora» inicia (spec §11.7: aceitar a recomendação). Uma sessão planeada
+ * fica ligada ao foco, como em «Começar foco» no plano; um item leva a sua disciplina, se tiver.
+ */
+export function focusStartFor(suggestion: Suggestion): StudySessionStartInput | null {
+  if (suggestion.kind === 'session') return { plannedSessionId: suggestion.session.id };
+  if (suggestion.kind === 'item')
+    return suggestion.item.disciplineId ? { disciplineId: suggestion.item.disciplineId } : {};
+  return null;
+}
+
+function SuggestionBox({ suggestion }: { suggestion: Suggestion }) {
+  const navigate = useNavigate();
+  const start = useStartStudySession();
+  const focus = focusStartFor(suggestion);
+  const inProgress = start.error instanceof ApiError && start.error.code === 'STUDY_SESSION_IN_PROGRESS';
+
+  return (
+    <div className="space-y-2 rounded-lg bg-accent-soft px-3 py-2 text-sm text-blue-950">
+      <p className="flex gap-2">
+        <Sparkles aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
+        <span>
+          <strong>O que estudar agora: </strong>
+          {suggestion.message}
+          {suggestion.kind === 'item' && suggestion.needsEstimate && (
+            <>
+              {' '}
+              <Link
+                to={
+                  suggestion.item.type === 'assessment' && suggestion.item.disciplineId
+                    ? `/disciplinas/${suggestion.item.disciplineId}`
+                    : '/tarefas'
+                }
+                className="font-medium text-accent underline"
+              >
+                Indicar duração
+              </Link>
+            </>
+          )}
+        </span>
+      </p>
+      {focus && (
+        <div className="pl-6">
+          <Button
+            variant="secondary"
+            loading={start.isPending}
+            onClick={() => start.mutate(focus, { onSuccess: () => navigate('/sessoes') })}
+          >
+            <Play aria-hidden="true" className="size-4" />
+            Começar agora
+          </Button>
+        </div>
+      )}
+      {inProgress ? (
+        <p role="alert" className="pl-6 text-sm text-stone-700">
+          Já tens uma sessão de estudo em curso.{' '}
+          <Link to="/sessoes" className="font-medium text-accent underline">
+            Ver sessão
+          </Link>
+        </p>
+      ) : (
+        <FormError message={start.error ? errorMessage(start.error) : null} />
+      )}
+    </div>
   );
 }

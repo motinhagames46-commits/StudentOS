@@ -1,4 +1,5 @@
-import { CalendarDays, FileUp, Plus, Rows3 } from 'lucide-react';
+import { DEFAULT_TIMEZONE, zonedDayKey } from '@studentos/shared';
+import { CalendarArrowDown, CalendarDays, FileUp, Plus, Rows3 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { BlockForm } from '../components/BlockForm';
@@ -7,7 +8,7 @@ import { WeekView } from '../components/WeekView';
 import { Badge, Button, Card, FormError } from '../components/ui';
 import { PageHeader } from '../components/ui';
 import { useDeleteBlock, useSkipOccurrence, useUpdateBlock } from '../hooks/queries';
-import { errorMessage } from '../lib/api';
+import { downloadFile, errorMessage } from '../lib/api';
 import { blockKindLabels, formatDate, formatTime, originLabels } from '../lib/format';
 import type { BlockOccurrence, CalendarData } from '../lib/types';
 
@@ -71,7 +72,53 @@ export function CalendarPage() {
       </Card>
 
       {selected && view === 'week' && <BlockDetails occurrence={selected} onClose={() => setSelected(null)} />}
+
+      <ExportCalendarCard />
     </>
+  );
+}
+
+/** Exportação .ics do plano (GET /api/me/calendar.ics): ficheiro descarregado com a sessão, sem link público. */
+function ExportCalendarCard() {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function exportCalendar() {
+    setBusy(true);
+    setError(null);
+    try {
+      await downloadFile('/me/calendar.ics', `studentos-calendario-${zonedDayKey(new Date(), DEFAULT_TIMEZONE)}.ics`);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card title="Levar o plano para outro calendário" className="mt-4">
+      <div className="space-y-3 text-sm text-stone-600">
+        <p>
+          Descarrega um ficheiro .ics com as sessões de estudo planeadas, as avaliações e os prazos das tarefas por
+          fazer, de hoje em diante, para importares no Google Calendar, no Calendário da Apple ou no Outlook. Cada
+          evento traz um lembrete. É uma cópia deste momento: o que mudares depois no StudentOS não aparece sozinho no
+          outro calendário.
+        </p>
+        <p>
+          O ficheiro é gerado agora e não fica guardado no StudentOS; o serviço onde o importares passa a ter uma cópia.
+          Vê a{' '}
+          <Link to="/privacidade" className="font-medium text-accent underline">
+            página de privacidade
+          </Link>
+          .
+        </p>
+        <Button variant="secondary" onClick={exportCalendar} loading={busy}>
+          <CalendarArrowDown aria-hidden="true" className="size-4" />
+          Exportar para o meu calendário
+        </Button>
+        <FormError message={error} />
+      </div>
+    </Card>
   );
 }
 

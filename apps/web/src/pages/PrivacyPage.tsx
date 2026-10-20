@@ -58,6 +58,16 @@ export function PrivacyPage() {
           partilhados com mais ninguém, e nenhum dado é enviado a serviços de inteligência artificial.
         </p>
 
+        <h2 className="pt-2 text-base font-semibold text-stone-900">Exportar para outro calendário</h2>
+        <p>
+          Na página Calendário podes descarregar um ficheiro .ics com as sessões de estudo planeadas, as avaliações e os
+          prazos das tarefas por fazer (títulos, siglas e nomes das disciplinas, datas e horas). O ficheiro é gerado a
+          pedido, só com a sessão iniciada, e não fica guardado no StudentOS; não existe nenhum link público para ele.
+          Se o importares no Google Calendar, no Calendário da Apple ou no Outlook, esse serviço passa a ter uma cópia
+          desses dados, tratada segundo as regras dele. Eliminar a conta no StudentOS não apaga essa cópia: apaga-a no
+          próprio calendário.
+        </p>
+
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os teus direitos</h2>
         <p>
           Exerces os teus direitos diretamente na aplicação, sem pedires a ninguém: corriges os dados editando-os, na

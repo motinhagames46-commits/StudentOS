@@ -46,8 +46,21 @@ O campo `details` só aparece em erros de validação. Nunca contém stack trace
 | GET    | `/api/me/sessions`     | Sessões ativas (dispositivos), sem o hash do token.                                                                                    |
 | DELETE | `/api/me/sessions/:id` | Revoga uma sessão.                                                                                                                     |
 | GET    | `/api/me/export`       | Exportação de todos os dados em JSON (RGPD), sem hashes nem tokens.                                                                    |
+| GET    | `/api/me/calendar.ics` | Plano em iCalendar para importar no Google, Apple ou Outlook (ver abaixo). Descarregado como ficheiro, só com a sessão iniciada.       |
 | POST   | `/api/me/password`     | Muda a palavra-passe. Corpo: `{ "currentPassword", "newPassword" }`. Termina todas as sessões e abre uma nova neste dispositivo (204). |
 | DELETE | `/api/me`              | Elimina a conta e todos os dados. Corpo: `{ "confirmEmail", "password" }`.                                                             |
+
+### Exportação para calendário (`GET /api/me/calendar.ics`)
+
+Gera a pedido um ficheiro `text/calendar` (RFC 5545) com `Content-Disposition: attachment` e `Cache-Control: no-store`. Não fica guardado no servidor e não existe link público nem token de subscrição: o ficheiro só se obtém com a sessão iniciada. Contém apenas os dados do próprio utilizador, de hoje em diante (dia civil de Lisboa):
+
+| Evento                     | Critério                                                                 | Forma                                                      | Lembrete (`VALARM`)         | `UID`                            |
+| -------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------- | --------------------------- | -------------------------------- |
+| `Estudar · PW · Relatório` | Sessões planeadas que ainda não acabaram, sem as retiradas (`CANCELLED`) | Hora exata, `DTSTART;TZID=Europe/Lisbon`                   | 30 min antes (`-PT30M`)     | `planned-session-<id>@studentos` |
+| `Avaliação · PW · Exame`   | Avaliações com data                                                      | Dia inteiro (`VALUE=DATE`, dia de Lisboa), não ocupa o dia | Véspera às 09:00 (`-PT15H`) | `assessment-<id>@studentos`      |
+| `Prazo · PW · Relatório`   | Tarefas por fazer (`TODO`) com prazo                                     | Dia inteiro, como as avaliações                            | Véspera às 09:00 (`-PT15H`) | `task-<id>@studentos`            |
+
+Avaliações e prazos são de dia inteiro porque os formulários só pedem a data (a hora guardada é técnica). O ficheiro inclui o `VTIMEZONE` de `Europe/Lisbon`; o texto é escapado (`\\`, `\;`, `\,`, `\n`) e as linhas são dobradas a 75 octetos sem partir caracteres UTF-8. O `UID` é estável, por isso os calendários que o respeitam atualizam o evento em vez de o duplicar quando o ficheiro é importado outra vez. Gerador: `apps/api/src/lib/ics-export.ts`; testes: `apps/api/test/calendar-export.test.ts`.
 
 ## Semestres, disciplinas e avaliações
 
@@ -122,6 +135,8 @@ O tempo de foco de uma sessão é `endedAt − startedAt − pausedSeconds`. Ao 
 | POST    | `/api/planned-sessions/:id/complete` | Concluir a sessão, com `actualMinutes` opcional. Não conclui a tarefa associada.                                                                                                                                       |
 | POST    | `/api/planned-sessions/:id/miss`     | Marcar como falhada. Uma sessão que ainda não começou responde 409 `NOT_STARTED`.                                                                                                                                      |
 | DELETE  | `/api/planned-sessions/:id`          | Retirar do plano.                                                                                                                                                                                                      |
+
+No painel, «Começar agora» aceita a sugestão (spec §11.7): chama `POST /api/study-sessions/start` com o `plannedSessionId` quando a sugestão é uma sessão planeada, ou com o `disciplineId` do item (tarefa ou avaliação), e abre as Sessões. Se já houver uma sessão em curso, o 409 leva a essa sessão em vez de criar outra.
 
 > **Diferença em relação ao spec §13:** o spec sugere `/api/study-sessions/:id/complete` e `/miss`. Aqui, `/api/study-sessions` regista o tempo real de foco e as sessões **planeadas** ficam em `/api/planned-sessions`. A confirmação do plano é `/api/planner/:id/confirm`, porque cada proposta tem identificador próprio.
 

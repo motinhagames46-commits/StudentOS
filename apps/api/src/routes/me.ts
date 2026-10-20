@@ -1,7 +1,15 @@
 import { Router } from 'express';
-import { changePasswordSchema, deleteAccountSchema, idParamSchema } from '@studentos/shared';
+import {
+  DEFAULT_TIMEZONE,
+  changePasswordSchema,
+  deleteAccountSchema,
+  idParamSchema,
+  startOfZonedDay,
+  zonedDayKey,
+} from '@studentos/shared';
 import { clearSessionCookie, hashPassword, isCommonPassword, verifyPassword } from '../lib/auth.js';
 import { HttpError, notFound, parse, validationError } from '../lib/http.js';
+import { buildCalendar, type ExportEvent } from '../lib/ics-export.js';
 import { prisma } from '../lib/prisma.js';
 import { startSession } from '../lib/sessions.js';
 
@@ -64,6 +72,67 @@ meRouter.get('/export', async (req, res) => {
   const date = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Disposition', `attachment; filename="studentos-export-${date}.json"`);
   res.json({ exportedAt: new Date().toISOString(), ...data });
+});
+
+// Exportar o plano para o calendário pessoal (.ics). Só com a sessão iniciada e descarregado como ficheiro:
+// não há link público nem token de subscrição. É gerado a pedido e não fica guardado.
+// Inclui, a partir de hoje (Lisboa): sessões planeadas (exceto retiradas), avaliações com data e prazos por fazer.
+meRouter.get('/calendar.ics', async (req, res) => {
+  const now = new Date();
+  const todayKey = zonedDayKey(now, DEFAULT_TIMEZONE);
+  const today = startOfZonedDay(todayKey, DEFAULT_TIMEZONE);
+  const discipline = { select: { name: true, code: true } } as const;
+  const [sessions, assessments, tasks] = await Promise.all([
+    prisma.plannedSession.findMany({
+      where: { userId: req.userId, status: { not: 'CANCELLED' }, endAt: { gt: now } },
+      include: { task: { select: { title: true } }, assessment: { select: { name: true } }, discipline },
+      orderBy: { startAt: 'asc' },
+    }),
+    prisma.assessment.findMany({
+      where: { discipline: { userId: req.userId }, date: { gte: today } },
+      include: { discipline },
+      orderBy: { date: 'asc' },
+    }),
+    prisma.task.findMany({
+      where: { userId: req.userId, status: 'TODO', dueDate: { gte: today } },
+      include: { discipline },
+      orderBy: { dueDate: 'asc' },
+    }),
+  ]);
+
+  const title = (...parts: (string | null | undefined)[]) => parts.filter(Boolean).join(' · ');
+  const percent = new Intl.NumberFormat('pt-PT', { maximumFractionDigits: 2 });
+  const events: ExportEvent[] = [
+    ...sessions.map((s) => ({
+      uid: `planned-session-${s.id}@studentos`,
+      summary: title('Estudar', s.discipline?.code, s.task?.title ?? s.assessment?.name),
+      description: title(`Sessão de estudo planeada no StudentOS (${s.plannedMinutes} min)`, s.discipline?.name),
+      lastModified: s.updatedAt,
+      when: { start: s.startAt, end: s.endAt },
+      alarmMinutesBefore: 30,
+    })),
+    ...assessments.map((a) => ({
+      uid: `assessment-${a.id}@studentos`,
+      summary: title('Avaliação', a.discipline.code, a.name),
+      description: title(a.discipline.name, `vale ${percent.format(a.weight)}% da nota`),
+      lastModified: a.updatedAt,
+      when: { day: zonedDayKey(a.date!, DEFAULT_TIMEZONE) },
+      alarmMinutesBefore: 15 * 60, // véspera, às 09:00
+    })),
+    ...tasks.map((t) => ({
+      uid: `task-${t.id}@studentos`,
+      summary: title('Prazo', t.discipline?.code, t.title),
+      description: title('Tarefa por fazer no StudentOS', t.discipline?.name),
+      lastModified: t.updatedAt,
+      when: { day: zonedDayKey(t.dueDate!, DEFAULT_TIMEZONE) },
+      alarmMinutesBefore: 15 * 60,
+    })),
+  ];
+
+  res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="studentos-calendario-${todayKey}.ics"`);
+  res.setHeader('Cache-Control', 'no-store');
+  res.send(buildCalendar(events, now));
 });
 
 // Mudar a palavra-passe: exige a atual; termina todas as sessões (outros dispositivos incluídos)

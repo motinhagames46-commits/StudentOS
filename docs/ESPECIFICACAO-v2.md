@@ -1113,3 +1113,5 @@ As decisões técnicas e as diferenças em relação a esta especificação est�
 - **«O que estudar agora»** é recalculado no momento do pedido e inclui tarefas sem duração estimada (pede a duração em vez de as ignorar).
 - **Atalho do painel** «Definir disponibilidade» em vez de «Ligar calendário», enquanto as integrações Outlook/Moodle não estiverem disponíveis.
 - **«Em risco»:** disciplina em curso cuja média atual, arredondada como a nota final, fica abaixo da nota de aprovação.
+- **«Começar agora»** aceita a sugestão e inicia logo uma sessão de foco (ligada à sessão planeada, quando a há).
+- **Exportar para o meu calendário** (`.ics`): ficheiro descarregado com a sessão, sem link público de subscrição; avaliações e prazos como eventos de dia inteiro, porque os formulários só pedem a data.

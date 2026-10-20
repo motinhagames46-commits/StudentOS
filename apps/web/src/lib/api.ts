@@ -40,18 +40,37 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
   }
 
   if (res.status === 204) return undefined as T;
-  const data: unknown = await res.json().catch(() => null);
+  if (!res.ok) throw await toApiError(res);
+  return (await res.json().catch(() => null)) as T;
+}
 
-  if (!res.ok) {
-    const error = (data as { error?: { code?: string; message?: string; details?: ApiErrorDetail[] } } | null)?.error;
-    throw new ApiError(
-      res.status,
-      error?.code ?? 'UNKNOWN',
-      error?.message ?? 'Ocorreu um erro inesperado',
-      error?.details,
-    );
+/** Erro uniforme a partir de uma resposta da API ({ error: { code, message, details } }). */
+async function toApiError(res: Response): Promise<ApiError> {
+  const data: unknown = await res.json().catch(() => null);
+  const error = (data as { error?: { code?: string; message?: string; details?: ApiErrorDetail[] } } | null)?.error;
+  return new ApiError(
+    res.status,
+    error?.code ?? 'UNKNOWN',
+    error?.message ?? 'Ocorreu um erro inesperado',
+    error?.details,
+  );
+}
+
+/** Descarrega um ficheiro da API (com o cookie de sessão) e entrega-o ao browser com o nome indicado. */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  let res: Response;
+  try {
+    res = await fetch(`/api${path}`, { credentials: 'include' });
+  } catch {
+    throw new ApiError(0, 'NETWORK_ERROR', 'Sem ligação ao servidor. Verifica a tua ligação.');
   }
-  return data as T;
+  if (!res.ok) throw await toApiError(res);
+  const url = URL.createObjectURL(await res.blob());
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 export function errorMessage(error: unknown): string {
