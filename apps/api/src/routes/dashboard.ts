@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { globalAverage } from '@studentos/shared';
+import { DEFAULT_TIMEZONE, globalAverage, startOfZonedDay, zonedDayKey } from '@studentos/shared';
 import { gradeSummary } from '../lib/grades.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -12,8 +12,8 @@ const disciplineSelect = { select: { id: true, name: true, code: true, color: tr
 dashboardRouter.get('/', async (req, res) => {
   const now = new Date();
   const in7Days = new Date(now.getTime() + 7 * DAY);
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
+  // Meia-noite de Lisboa (o servidor corre em UTC).
+  const startOfToday = startOfZonedDay(zonedDayKey(now, DEFAULT_TIMEZONE), DEFAULT_TIMEZONE);
 
   const activeSemester = await prisma.semester.findFirst({
     where: { userId: req.userId, isActive: true },

@@ -252,7 +252,7 @@ export function WeekView({
               ))}
             </div>
             <DeadlineRow items={deadlinesByDay(days.includes(mobileDay) ? mobileDay : days[0]!)} />
-            <div className="grid grid-cols-[2.5rem_1fr] overflow-hidden rounded-lg border border-stone-200 bg-white">
+            <div className="grid grid-cols-[2.5rem_minmax(0,1fr)] overflow-hidden rounded-lg border border-stone-200 bg-white">
               <HourGutter hours={hours} />
               {dayColumn(days.includes(mobileDay) ? mobileDay : days[0]!)}
             </div>
@@ -260,7 +260,7 @@ export function WeekView({
 
           {/* Desktop: semana completa */}
           <div className="hidden overflow-hidden rounded-lg border border-stone-200 bg-white md:block">
-            <div className="grid grid-cols-[3rem_repeat(7,1fr)] border-b border-stone-200 bg-stone-50">
+            <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] border-b border-stone-200 bg-stone-50">
               <div />
               {days.map((key, i) => (
                 <div
@@ -271,15 +271,15 @@ export function WeekView({
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-[3rem_repeat(7,1fr)] border-b border-stone-200">
+            <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))] border-b border-stone-200">
               <div className="px-1 py-1 text-right text-[10px] text-stone-500">prazos</div>
               {days.map((key) => (
-                <div key={key} className="min-h-8 border-l border-stone-100 p-1">
+                <div key={key} className="min-h-8 min-w-0 border-l border-stone-100 p-1">
                   <DeadlineList items={deadlinesByDay(key)} />
                 </div>
               ))}
             </div>
-            <div className="grid grid-cols-[3rem_repeat(7,1fr)]">
+            <div className="grid grid-cols-[3rem_repeat(7,minmax(0,1fr))]">
               <HourGutter hours={hours} />
               {days.map(dayColumn)}
             </div>
@@ -330,7 +330,7 @@ function DeadlineList({ items }: { items: Deadline[] }) {
             className="size-1.5 shrink-0 rounded-full"
             style={{ backgroundColor: d.color ?? '#a8a29e' }}
           />
-          <span className="truncate">{d.label}</span>
+          <span className="min-w-0 truncate">{d.label}</span>
         </li>
       ))}
     </ul>

@@ -1,6 +1,7 @@
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { app } from '../src/app.js';
+import { prisma } from '../src/lib/prisma.js';
 import { createUserAndLogin, resetDb } from './helpers.js';
 
 let alice: string[];
@@ -93,6 +94,35 @@ describe('GET /api/dashboard (HU04)', () => {
     expect(res.body.upcomingTasks.map((t: { title: string }) => t.title)).toEqual(['Hoje', 'Daqui a 5 dias']);
     expect(res.body.overdueTasks.map((t: { title: string }) => t.title)).toEqual(['Ontem']);
     expect(res.body.disciplines).toHaveLength(1);
+  });
+});
+
+describe('GET /api/dashboard — "hoje" é o dia de Lisboa, não o do servidor', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('às 00:30 de Lisboa (23:30 UTC no verão) já não mostra as avaliações de ontem', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-07-15T23:30:00Z')); // 16/07, 00:30 em Lisboa
+    await prisma.assessment.createMany({
+      data: [
+        {
+          disciplineId: aliceDisciplineId,
+          name: 'Ontem',
+          type: 'TEST',
+          weight: 10,
+          date: new Date('2026-07-15T10:00:00Z'),
+        },
+        {
+          disciplineId: aliceDisciplineId,
+          name: 'Hoje',
+          type: 'TEST',
+          weight: 10,
+          date: new Date('2026-07-16T09:00:00Z'),
+        },
+      ],
+    });
+    const res = await request(app).get('/api/dashboard').set('Cookie', alice);
+    expect(res.body.upcomingAssessments.map((a: { name: string }) => a.name)).toEqual(['Hoje']);
   });
 });
 
