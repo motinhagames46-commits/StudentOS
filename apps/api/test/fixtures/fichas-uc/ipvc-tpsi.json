@@ -2,7 +2,7 @@
   "version": 1,
   "description": "Conjunto de avaliação «Colar ficha da UC → proposta de avaliações». Resultado esperado anotado a partir das fichas públicas (PUC) do CTeSP TPSI do IPVC. Os textos das fichas não estão no repositório: obtêm-se com scripts/fetch-fichas-uc.mjs.",
   "createdAt": "2026-10-21",
-  "reviewedByHuman": false,
+  "reviewedByHuman": true,
   "source": {
     "institution": "Instituto Politécnico de Viana do Castelo (IPVC)",
     "school": "ESTG — Escola Superior de Tecnologia e Gestão",

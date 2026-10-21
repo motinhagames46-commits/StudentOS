@@ -53,6 +53,5 @@ O script faz o mesmo pedido que o botão «Consultar» da página do curso, dent
 
 ## Estado
 
-`reviewedByHuman` está a `false`: os resultados esperados foram anotados por Claude a partir das fichas. Antes de usar os números na defesa, confirma cada caso contra a ficha (sobretudo os `difícil`) e passa para `true`. As fichas mudam de ano para ano: se voltares a descarregá-las e o texto mudar, revê o esperado.
-
+`reviewedByHuman` está a `true`: os resultados esperados foram anotados por Claude a partir das fichas e revistos à mão pelo autor a 2026-10-21, caso a caso, contra a secção «Avaliação» de cada ficha. As 18 bateram certo sem correções. As fichas mudam de ano para ano: se voltares a descarregá-las e o texto mudar, revê o esperado e volta a pôr `false` até o confirmares.
 O teste [`../../fichas-uc-dataset.test.ts`](../../fichas-uc-dataset.test.ts) garante que o esperado é algo que o StudentOS aceita gravar, com pesos a somar 100 e sem datas.
