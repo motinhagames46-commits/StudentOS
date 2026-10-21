@@ -22,6 +22,9 @@ apps/api/src/generated/
 *.log
 .DS_Store
 
+# Textos das fichas de UC descarregados para o conjunto de avaliação (scripts/fetch-fichas-uc.mjs)
+apps/api/test/fixtures/fichas-uc/.cache/
+
 # Playwright (testes E2E)
 test-results/
 playwright-report/

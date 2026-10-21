@@ -1,0 +1,604 @@
+{
+  "version": 1,
+  "description": "Conjunto de avaliação «Colar ficha da UC → proposta de avaliações». Resultado esperado anotado a partir das fichas públicas (PUC) do CTeSP TPSI do IPVC. Os textos das fichas não estão no repositório: obtêm-se com scripts/fetch-fichas-uc.mjs.",
+  "createdAt": "2026-10-21",
+  "reviewedByHuman": false,
+  "source": {
+    "institution": "Instituto Politécnico de Viana do Castelo (IPVC)",
+    "school": "ESTG — Escola Superior de Tecnologia e Gestão",
+    "course": "CTeSP em Tecnologias e Programação de Sistemas de Informação",
+    "coursePage": "https://www.ipvc.pt/cursos/tecnologias-e-programacao-de-sistemas-de-informacao-2/?mp=603&mc=598&tab=tab-planoestudos",
+    "puc": {
+      "url": "https://www.ipvc.pt/wp-admin/admin-ajax.php",
+      "method": "POST",
+      "action": "open_puc",
+      "cd_curso": "5014",
+      "cd_plano": "2",
+      "cd_ramo": "0"
+    },
+    "retrievedAt": "2026-10-21"
+  },
+  "cases": [
+    {
+      "id": "algoritmia-e-programacao",
+      "cdDiscip": "3010301",
+      "uc": "Algoritmia e Programação",
+      "year": 1,
+      "semester": 1,
+      "academicYear": "2026/27",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Algoritmia e Programação", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Frequência 1", "type": "TEST", "weight": 25, "minScore": 8, "date": null },
+          { "name": "Frequência 2", "type": "TEST", "weight": 25, "minScore": 8, "date": null },
+          {
+            "name": "Trabalho prático",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 50,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Exame teórico global", "type": "EXAM", "weight": 50, "minScore": 8 },
+          { "name": "Trabalho prático", "type": "ASSIGNMENT", "weight": 50, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["Apresentação e defesa obrigatórias do trabalho prático"]
+      },
+      "traps": [
+        "Os pesos aparecem duas vezes: na lista e na fórmula da nota final.",
+        "Há dois regimes (período letivo e épocas de exame); a proposta é a do período letivo."
+      ]
+    },
+    {
+      "id": "ingles-tecnico",
+      "cdDiscip": "3010304",
+      "uc": "Inglês Técnico",
+      "year": 1,
+      "semester": 1,
+      "academicYear": "2026/27",
+      "available": true,
+      "difficulty": "médio",
+      "expected": {
+        "discipline": { "name": "Inglês Técnico", "ects": 3, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Momento 1 — teste", "type": "TEST", "weight": 50, "minScore": 8, "date": null },
+          {
+            "name": "Momento 2 — apresentação de trabalho em inglês",
+            "type": "PRESENTATION",
+            "acceptTypes": ["ASSIGNMENT"],
+            "weight": 50,
+            "minScore": null,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Prova escrita", "type": "EXAM", "weight": 50, "minScore": null },
+          { "name": "Prova oral", "type": "EXAM", "acceptTypes": ["PRESENTATION"], "weight": 50, "minScore": null }
+        ],
+        "attendanceMinPercent": null,
+        "unrepresentable": ["O estudante escolhe a modalidade (contínua ou exame) no início do semestre"]
+      },
+      "traps": [
+        "A nota mínima de 8 só é indicada para o teste do momento 1.",
+        "No regime de exame falta o símbolo de percentagem num dos pesos.",
+        "O texto tem a palavra «Avaliação» noutras secções antes da secção de avaliação."
+      ]
+    },
+    {
+      "id": "tecnicas-de-expressao-oral-e-escrita",
+      "cdDiscip": "3010305",
+      "uc": "Técnicas de Expressão Oral e Escrita",
+      "year": 1,
+      "semester": 1,
+      "academicYear": "2026/27",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Técnicas de Expressão Oral e Escrita", "ects": 3, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Frequência escrita individual", "type": "TEST", "weight": 60, "minScore": 8, "date": null },
+          { "name": "Apresentação oral individual", "type": "PRESENTATION", "weight": 40, "minScore": 8, "date": null }
+        ],
+        "examRegime": null,
+        "attendanceMinPercent": 80,
+        "unrepresentable": []
+      },
+      "traps": ["A ficha não descreve o regime de exame: examRegime fica vazio, não se inventa."]
+    },
+    {
+      "id": "topicos-de-matematica",
+      "cdDiscip": "3010307",
+      "uc": "Tópicos de Matemática",
+      "year": 1,
+      "semester": 1,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "médio",
+      "expected": {
+        "discipline": { "name": "Tópicos de Matemática", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Teste 1", "type": "TEST", "weight": 50, "minScore": null, "date": null },
+          { "name": "Teste 2", "type": "TEST", "weight": 50, "minScore": null, "date": null }
+        ],
+        "examRegime": [{ "name": "Exame", "type": "EXAM", "weight": 100, "minScore": null }],
+        "attendanceMinPercent": 80,
+        "unrepresentable": []
+      },
+      "traps": [
+        "Os pesos só aparecem na fórmula, com vírgula decimal e o símbolo ×.",
+        "Não há nota mínima por elemento: minScore fica null, não 8."
+      ]
+    },
+    {
+      "id": "matematica-formacao-complementar",
+      "cdDiscip": "3010319",
+      "uc": "Matemática (CTeSP Formação Complementar)",
+      "year": null,
+      "semester": null,
+      "academicYear": null,
+      "available": false,
+      "difficulty": "negativo",
+      "expected": null,
+      "traps": ["O programa não está disponível: a resposta certa é dizer que não há dados, sem inventar avaliações."]
+    },
+    {
+      "id": "fundamentos-de-sistemas-informaticos",
+      "cdDiscip": "3010322",
+      "uc": "Fundamentos de Sistemas Informáticos",
+      "year": 1,
+      "semester": 1,
+      "academicYear": "2026/27",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Fundamentos de Sistemas Informáticos", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Avaliação teórica", "type": "TEST", "weight": 50, "minScore": 8, "date": null },
+          {
+            "name": "Avaliação prática (trabalhos e ficha prática)",
+            "type": "ASSIGNMENT",
+            "weight": 50,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Avaliação teórica", "type": "EXAM", "weight": 50, "minScore": 8 },
+          { "name": "Avaliação prática", "type": "ASSIGNMENT", "acceptTypes": ["EXAM"], "weight": 50, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["A componente prática aprovada no período letivo dispensa o exame prático"]
+      },
+      "traps": ["Três épocas descritas com regras quase iguais."]
+    },
+    {
+      "id": "redes-de-computadores",
+      "cdDiscip": "3010323",
+      "uc": "Redes de Computadores",
+      "year": 1,
+      "semester": 1,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "difícil",
+      "expected": {
+        "discipline": { "name": "Redes de Computadores", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Componente teórica (2 testes)", "type": "TEST", "weight": 40, "minScore": null, "date": null },
+          {
+            "name": "Componente prática (trabalhos, relatórios e laboratório)",
+            "type": "ASSIGNMENT",
+            "weight": 60,
+            "minScore": null,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Exame global (componente teórica)", "type": "EXAM", "weight": 40, "minScore": null },
+          { "name": "Componente prática", "type": "ASSIGNMENT", "weight": 60, "minScore": null }
+        ],
+        "attendanceMinPercent": null,
+        "ambiguities": ["A divisão dos 40 % da componente teórica entre os dois testes não é indicada"],
+        "unrepresentable": []
+      },
+      "traps": [
+        "Não inventar 20 % + 20 % para os dois testes: a divisão não está na ficha e deve ser assinalada.",
+        "Não há notas mínimas."
+      ]
+    },
+    {
+      "id": "arquitetura-e-desenho-de-software",
+      "cdDiscip": "3010308",
+      "uc": "Arquitetura e Desenho de Software",
+      "year": 1,
+      "semester": 2,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "médio",
+      "expected": {
+        "discipline": { "name": "Arquitetura e Desenho de Software", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          {
+            "name": "Trabalho prático 1",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 30,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Trabalho prático 2",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 30,
+            "minScore": 8,
+            "date": null
+          },
+          { "name": "Teste escrito", "type": "TEST", "weight": 40, "minScore": 8, "date": null }
+        ],
+        "examRegime": [
+          { "name": "Exame teórico global", "type": "EXAM", "weight": 50, "minScore": 8 },
+          { "name": "Trabalho prático", "type": "ASSIGNMENT", "weight": 50, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": []
+      },
+      "traps": [
+        "Os percentuais vêm escritos como «30 \\%» (barra invertida antes do símbolo).",
+        "A fórmula mistura ponto e vírgula decimais (0.3 e 0,4).",
+        "As horas dos conteúdos programáticos (7, 25, 16, 8) aparecem antes e não são pesos."
+      ]
+    },
+    {
+      "id": "bases-de-dados",
+      "cdDiscip": "3010309",
+      "uc": "Bases de Dados",
+      "year": 1,
+      "semester": 2,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Bases de Dados", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Frequência", "type": "TEST", "weight": 40, "minScore": 8, "date": null },
+          {
+            "name": "Trabalho prático 1",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 30,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Trabalho prático 2",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 30,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Exame teórico global", "type": "EXAM", "weight": 50, "minScore": 8 },
+          { "name": "Trabalho prático", "type": "ASSIGNMENT", "weight": 50, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["Apresentação e defesa obrigatórias dos trabalhos práticos"]
+      },
+      "traps": []
+    },
+    {
+      "id": "programacao-orientada-por-objetos",
+      "cdDiscip": "3010310",
+      "uc": "Programação Orientada por Objetos",
+      "year": 1,
+      "semester": 2,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "médio",
+      "expected": {
+        "discipline": { "name": "Programação Orientada por Objetos", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Frequência", "type": "TEST", "weight": 50, "minScore": 8, "date": null },
+          {
+            "name": "Avaliação contínua",
+            "type": "OTHER",
+            "acceptTypes": ["ASSIGNMENT"],
+            "weight": 25,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Trabalho prático",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 25,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Exame escrito", "type": "EXAM", "weight": 50, "minScore": 8 },
+          { "name": "Trabalho prático", "type": "ASSIGNMENT", "weight": 50, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["Nas épocas de recurso e especial a nota é 100 % exame escrito"]
+      },
+      "traps": ["Os pesos só aparecem na fórmula.", "A nota mínima é dita uma vez para todos os elementos."]
+    },
+    {
+      "id": "programacao-web",
+      "cdDiscip": "3010311",
+      "uc": "Programação Web",
+      "year": 1,
+      "semester": 2,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Programação Web", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Teste teórico", "type": "TEST", "weight": 40, "minScore": 8, "date": null },
+          {
+            "name": "Trabalho prático",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 60,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Exame teórico global", "type": "EXAM", "weight": 40, "minScore": 8 },
+          { "name": "Trabalho prático", "type": "ASSIGNMENT", "weight": 60, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": []
+      },
+      "traps": [
+        "A aprovação é «maior ou igual a 10», escrita de forma diferente das outras fichas (≥ 9,5); no StudentOS ambas dão passingGrade 10."
+      ]
+    },
+    {
+      "id": "seguranca-de-redes-e-sistemas-de-informacao",
+      "cdDiscip": "3010324",
+      "uc": "Segurança de Redes e Sistemas de Informação",
+      "year": 1,
+      "semester": 2,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "difícil",
+      "expected": {
+        "discipline": { "name": "Segurança de Redes e Sistemas de Informação", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Teste (componente teórica)", "type": "TEST", "weight": 20, "minScore": 8, "date": null },
+          { "name": "Assiduidade (componente prática)", "type": "OTHER", "weight": 16, "minScore": null, "date": null },
+          { "name": "Trabalhos práticos", "type": "ASSIGNMENT", "weight": 64, "minScore": 8, "date": null }
+        ],
+        "examRegime": [
+          { "name": "Teste escrito (componente teórica)", "type": "EXAM", "weight": 20, "minScore": 8 },
+          { "name": "Assiduidade (componente prática)", "type": "OTHER", "weight": 16, "minScore": null },
+          { "name": "Trabalhos práticos", "type": "ASSIGNMENT", "weight": 64, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["A nota mínima de 8 é por cada trabalho prático, e a ficha não diz quantos trabalhos há"]
+      },
+      "traps": [
+        "Pesos encaixados: a componente prática (80 %) divide-se em assiduidade (20 %) e trabalhos (80 %). Os pesos globais são 16 % e 64 %, não 20 % e 80 %.",
+        "A assiduidade aparece duas vezes: como regra de aprovação (80 % de presenças) e como componente da nota."
+      ]
+    },
+    {
+      "id": "gestao-de-projetos",
+      "cdDiscip": "3010313",
+      "uc": "Gestão de Projetos",
+      "year": 2,
+      "semester": 1,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Gestão de Projetos", "ects": 3, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Teste teórico", "type": "TEST", "weight": 50, "minScore": null, "date": null },
+          {
+            "name": "Trabalho prático",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 50,
+            "minScore": null,
+            "date": null
+          }
+        ],
+        "examRegime": [{ "name": "Teste escrito", "type": "EXAM", "weight": 100, "minScore": null }],
+        "attendanceMinPercent": null,
+        "unrepresentable": []
+      },
+      "traps": ["Não há notas mínimas por elemento."]
+    },
+    {
+      "id": "programacao-movel-e-ubiqua",
+      "cdDiscip": "3010314",
+      "uc": "Programação Móvel e Ubíqua",
+      "year": 2,
+      "semester": 1,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "médio",
+      "expected": {
+        "discipline": { "name": "Programação Móvel e Ubíqua", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          {
+            "name": "Trabalho individual",
+            "type": "ASSIGNMENT",
+            "acceptTypes": ["PROJECT"],
+            "weight": 70,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Exame teórico",
+            "type": "EXAM",
+            "acceptTypes": ["TEST"],
+            "weight": 30,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": [
+          { "name": "Trabalho individual", "type": "ASSIGNMENT", "weight": 70, "minScore": 8 },
+          { "name": "Exame teórico", "type": "EXAM", "weight": 30, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": []
+      },
+      "traps": ["Há um «exame teórico» dentro da avaliação contínua; os dois regimes têm a mesma fórmula."]
+    },
+    {
+      "id": "projeto-de-sistemas-de-informacao",
+      "cdDiscip": "3010315",
+      "uc": "Projeto de Sistemas de Informação",
+      "year": 2,
+      "semester": 1,
+      "academicYear": "2026/27",
+      "available": true,
+      "difficulty": "fácil",
+      "expected": {
+        "discipline": { "name": "Projeto de Sistemas de Informação", "ects": 9, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Especificação do projeto", "type": "PROJECT", "weight": 30, "minScore": null, "date": null },
+          { "name": "Implementação do projeto", "type": "PROJECT", "weight": 70, "minScore": null, "date": null }
+        ],
+        "examRegime": [
+          { "name": "Especificação do projeto", "type": "PROJECT", "weight": 30, "minScore": null },
+          { "name": "Implementação do projeto", "type": "PROJECT", "weight": 70, "minScore": null }
+        ],
+        "attendanceMinPercent": null,
+        "unrepresentable": []
+      },
+      "traps": ["Sem testes: não acrescentar um exame que a ficha não tem."]
+    },
+    {
+      "id": "servicos-distribuidos",
+      "cdDiscip": "3010316",
+      "uc": "Serviços Distribuídos",
+      "year": 2,
+      "semester": 1,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "difícil",
+      "expected": {
+        "discipline": { "name": "Serviços Distribuídos", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Frequência", "type": "TEST", "weight": 30, "minScore": 8, "date": null },
+          { "name": "Participação nas aulas", "type": "OTHER", "weight": 20, "minScore": null, "date": null },
+          {
+            "name": "Apresentações orais em grupo",
+            "type": "PRESENTATION",
+            "weight": 30,
+            "minScore": null,
+            "date": null
+          },
+          { "name": "Trabalhos práticos em grupo", "type": "ASSIGNMENT", "weight": 10, "minScore": null, "date": null },
+          {
+            "name": "Trabalhos práticos individuais",
+            "type": "ASSIGNMENT",
+            "weight": 10,
+            "minScore": null,
+            "date": null
+          }
+        ],
+        "examRegime": [{ "name": "Exame teórico-prático", "type": "EXAM", "weight": 100, "minScore": null }],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["A nota prática (média das três componentes práticas) tem mínimo de 8"]
+      },
+      "traps": [
+        "Parece encaixado (NT 50 % e NP 50 %), mas as percentagens das subcomponentes já são globais: 30 + 20 = 50 e 30 + 10 + 10 = 50. Multiplicar por 50 % dá pesos a somar 50.",
+        "O mínimo de 8 da parte prática aplica-se à média, não a cada subcomponente."
+      ]
+    },
+    {
+      "id": "gestao-de-redes-e-sistemas",
+      "cdDiscip": "3010325",
+      "uc": "Gestão de Redes e Sistemas",
+      "year": 2,
+      "semester": 1,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "difícil",
+      "expected": {
+        "discipline": { "name": "Gestão de Redes e Sistemas", "ects": 6, "passingGrade": 10 },
+        "assessments": [
+          { "name": "Teste (componente teórica)", "type": "TEST", "weight": 20, "minScore": 8, "date": null },
+          { "name": "Assiduidade (componente prática)", "type": "OTHER", "weight": 16, "minScore": null, "date": null },
+          { "name": "Trabalhos práticos", "type": "ASSIGNMENT", "weight": 64, "minScore": 8, "date": null }
+        ],
+        "examRegime": [
+          { "name": "Teste escrito (componente teórica)", "type": "EXAM", "weight": 20, "minScore": 8 },
+          { "name": "Assiduidade (componente prática)", "type": "OTHER", "weight": 16, "minScore": null },
+          { "name": "Trabalhos práticos", "type": "ASSIGNMENT", "weight": 64, "minScore": 8 }
+        ],
+        "attendanceMinPercent": 80,
+        "unrepresentable": ["A nota mínima de 8 é por cada trabalho prático, e a ficha não diz quantos trabalhos há"]
+      },
+      "traps": [
+        "A secção de avaliação tem o mesmo texto que a de Segurança de Redes e Sistemas de Informação: serve para verificar que o resultado é consistente."
+      ]
+    },
+    {
+      "id": "estagio",
+      "cdDiscip": "3010318",
+      "uc": "Estágio",
+      "year": 2,
+      "semester": 2,
+      "academicYear": "2025/26",
+      "available": true,
+      "difficulty": "difícil",
+      "expected": {
+        "discipline": { "name": "Estágio", "ects": 30, "passingGrade": 10 },
+        "assessments": [
+          {
+            "name": "Avaliação do desempenho pela empresa",
+            "type": "OTHER",
+            "weight": 50,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Relatório de estágio — entrega intermédia",
+            "type": "ASSIGNMENT",
+            "weight": 10,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Relatório de estágio — entrega final",
+            "type": "ASSIGNMENT",
+            "weight": 25,
+            "minScore": 8,
+            "date": null
+          },
+          {
+            "name": "Apresentação e defesa do estágio",
+            "type": "PRESENTATION",
+            "weight": 15,
+            "minScore": 8,
+            "date": null
+          }
+        ],
+        "examRegime": null,
+        "attendanceMinPercent": null,
+        "unrepresentable": []
+      },
+      "traps": [
+        "Os mesmos pesos são descritos três vezes com níveis diferentes (50/50, depois 50/35/15, depois o relatório em 10 + 25): não somar em duplicado.",
+        "O mínimo de 8 aplica-se a todas as componentes."
+      ]
+    }
+  ]
+}
