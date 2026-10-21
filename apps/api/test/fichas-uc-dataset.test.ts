@@ -20,6 +20,7 @@ interface Case {
   cdDiscip: string;
   available: boolean;
   difficulty: string;
+  split: 'afinacao' | 'retida';
   expected: {
     discipline: { name: string; ects: number; passingGrade: number };
     assessments: ExpectedAssessment[];
@@ -38,6 +39,23 @@ describe.each(datasets)('conjunto $file', ({ cases }) => {
   it('tem identificadores e códigos de UC únicos', () => {
     expect(new Set(cases.map((c) => c.id)).size).toBe(cases.length);
     expect(new Set(cases.map((c) => c.cdDiscip)).size).toBe(cases.length);
+  });
+
+  it('a divisão fixada tem 5 retidas, com pelo menos 2 difíceis e nenhum caso negativo', () => {
+    expect(cases.every((c) => c.split === 'afinacao' || c.split === 'retida')).toBe(true);
+    const heldOut = cases.filter((c) => c.split === 'retida');
+    expect(heldOut).toHaveLength(5);
+    expect(heldOut.filter((c) => c.difficulty === 'difícil').length).toBeGreaterThanOrEqual(2);
+    expect(heldOut.every((c) => c.available)).toBe(true);
+  });
+
+  it('casos com o mesmo esperado ficam na mesma divisão (senão a medição das retidas é contaminada)', () => {
+    const bySameAssessments = new Map<string, Set<string>>();
+    for (const c of cases.filter((c) => c.expected)) {
+      const key = JSON.stringify(c.expected!.assessments.map(({ weight, minScore, type }) => [weight, minScore, type]));
+      bySameAssessments.set(key, (bySameAssessments.get(key) ?? new Set()).add(c.split));
+    }
+    for (const splits of bySameAssessments.values()) expect(splits.size).toBe(1);
   });
 
   it('só os casos negativos não têm resultado esperado', () => {

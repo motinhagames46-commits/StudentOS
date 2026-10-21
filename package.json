@@ -16,6 +16,7 @@
     "start": "npm run start -w @studentos/api",
     "test": "npm run test --workspaces --if-present",
     "test:e2e": "npm run build && playwright test -c e2e/playwright.config.ts",
+    "eval:fichas": "npm run eval:fichas -w @studentos/api --",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc -p e2e/tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write .",

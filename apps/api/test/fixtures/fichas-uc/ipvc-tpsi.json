@@ -18,6 +18,11 @@
     },
     "retrievedAt": "2026-10-21"
   },
+  "evaluation": {
+    "fixedAt": "2026-10-21",
+    "split": "Sorteio estratificado por dificuldade, antes de existir qualquer extrator: ids ordenados, baralhados com mulberry32 (semente 20261021), 2 difíceis + 1 médio + 2 fáceis ficam retidos. Segurança de Redes e Gestão de Redes e Sistemas têm a mesma secção de avaliação e ficam ambas na afinação. O caso negativo fica na afinação.",
+    "threshold": { "heldOutMinCorrect": 4, "heldOutMaxConfidentErrors": 0, "negativesMustBeRefused": true }
+  },
   "cases": [
     {
       "id": "algoritmia-e-programacao",
@@ -28,6 +33,7 @@
       "academicYear": "2026/27",
       "available": true,
       "difficulty": "fácil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Algoritmia e Programação", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -63,6 +69,7 @@
       "academicYear": "2026/27",
       "available": true,
       "difficulty": "médio",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Inglês Técnico", "ects": 3, "passingGrade": 10 },
         "assessments": [
@@ -98,6 +105,7 @@
       "academicYear": "2026/27",
       "available": true,
       "difficulty": "fácil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Técnicas de Expressão Oral e Escrita", "ects": 3, "passingGrade": 10 },
         "assessments": [
@@ -119,6 +127,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "médio",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Tópicos de Matemática", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -143,6 +152,7 @@
       "academicYear": null,
       "available": false,
       "difficulty": "negativo",
+      "split": "afinacao",
       "expected": null,
       "traps": ["O programa não está disponível: a resposta certa é dizer que não há dados, sem inventar avaliações."]
     },
@@ -155,6 +165,7 @@
       "academicYear": "2026/27",
       "available": true,
       "difficulty": "fácil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Fundamentos de Sistemas Informáticos", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -185,6 +196,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "difícil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Redes de Computadores", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -219,6 +231,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "médio",
+      "split": "retida",
       "expected": {
         "discipline": { "name": "Arquitetura e Desenho de Software", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -262,6 +275,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "fácil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Bases de Dados", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -301,6 +315,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "médio",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Programação Orientada por Objetos", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -340,6 +355,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "fácil",
+      "split": "retida",
       "expected": {
         "discipline": { "name": "Programação Web", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -373,6 +389,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "difícil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Segurança de Redes e Sistemas de Informação", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -402,6 +419,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "fácil",
+      "split": "retida",
       "expected": {
         "discipline": { "name": "Gestão de Projetos", "ects": 3, "passingGrade": 10 },
         "assessments": [
@@ -430,6 +448,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "médio",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Programação Móvel e Ubíqua", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -468,6 +487,7 @@
       "academicYear": "2026/27",
       "available": true,
       "difficulty": "fácil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Projeto de Sistemas de Informação", "ects": 9, "passingGrade": 10 },
         "assessments": [
@@ -492,6 +512,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "difícil",
+      "split": "retida",
       "expected": {
         "discipline": { "name": "Serviços Distribuídos", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -531,6 +552,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "difícil",
+      "split": "afinacao",
       "expected": {
         "discipline": { "name": "Gestão de Redes e Sistemas", "ects": 6, "passingGrade": 10 },
         "assessments": [
@@ -559,6 +581,7 @@
       "academicYear": "2025/26",
       "available": true,
       "difficulty": "difícil",
+      "split": "retida",
       "expected": {
         "discipline": { "name": "Estágio", "ects": 30, "passingGrade": 10 },
         "assessments": [

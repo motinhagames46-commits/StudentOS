@@ -9,6 +9,7 @@
     "start": "node dist/server.js",
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "eval:fichas": "tsx scripts/eval-fichas/main.ts",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:deploy": "prisma migrate deploy"

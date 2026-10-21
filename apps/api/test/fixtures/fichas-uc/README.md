@@ -46,12 +46,40 @@ O script faz o mesmo pedido que o botão «Consultar» da página do curso, dent
 
 ## Como pontuar
 
-- **Caso certo:** mesmo número de avaliações, os mesmos pesos (como multiconjunto), todos os `minScore` certos e nenhuma data. Num caso negativo, nenhuma avaliação proposta.
-- **Por campo:** `weight` e `minScore` exatos; `type` certo se for `type` ou um dos `acceptTypes`.
-- **Assinalar:** proporção das `ambiguities` e das `unrepresentable` que o extrator mostra ao estudante.
-- Relatar por `difficulty` e comparar o parser determinístico com o LLM no mesmo conjunto.
+Cada caso dá um de três resultados:
+
+- **certo:** há um emparelhamento um-para-um entre o proposto e o esperado em que cada par tem o mesmo peso, a mesma nota mínima e um tipo aceite (`type` ou um dos `acceptTypes`), e nenhuma avaliação traz data. Os nomes não se comparam. Num caso negativo, certo é recusar.
+- **errado:** o extrator propôs avaliações e não estão certas. É o pior resultado: uma proposta errada com ar de certa.
+- **recusado:** o extrator devolveu falha. Não é erro, mas também não conta como resolvido.
+
+Comparar só os pesos como conjunto não chega: um 40/60 trocado entre o teste e o trabalho soma 100 e tem os mesmos pesos. Por isso o peso tem de vir emparelhado com o tipo e a nota mínima certos. Além do resultado, o relatório mostra os acertos por campo (peso, nota mínima e tipo). As `ambiguities`, as `unrepresentable` e o `examRegime` ainda não são medidos automaticamente.
+
+## Divisão e limiar (fixados a 2026-10-21, antes de existir extrator)
+
+- **Afinação (13):** as 12 fichas com que se desenvolve o extrator e o caso negativo.
+- **Retidas (5):** Serviços Distribuídos e Estágio (difíceis), Arquitetura e Desenho de Software (médio), Programação Web e Gestão de Projetos (fáceis). Saíram de um sorteio estratificado por dificuldade, com semente fixa, descrito em `evaluation.split` no JSON. Segurança de Redes e Gestão de Redes e Sistemas têm a mesma secção de avaliação e ficam juntas na afinação.
+- **Limiar** (`evaluation.threshold`): nas retidas, pelo menos 4 de 5 certas e nenhuma errada; e todos os casos negativos recusados.
+
+As retidas só se correm na medição final. Correr o extrator contra elas durante o desenvolvimento e ajustá-lo ao que falha transforma-as em fichas de afinação, e o número deixa de valer.
+
+## Como medir
+
+Depois de descarregar os textos com o script acima:
+
+```bash
+npm run eval:fichas
+```
+
+Corre só a afinação, com o extrator vazio (linha de base: 1/13, só o caso negativo bem recusado). Para a medição final, com outro extrator:
+
+```bash
+npm run eval:fichas -- --extrator=vazio --retidas
+```
+
+O contrato que os extratores implementam está em `apps/api/src/lib/fichas-uc/extractor.ts`. A pontuação está em `apps/api/scripts/eval-fichas/score.ts` e tem testes em `apps/api/test/fichas-uc-score.test.ts`.
 
 ## Estado
 
 `reviewedByHuman` está a `true`: os resultados esperados foram anotados por Claude a partir das fichas e revistos à mão pelo autor a 2026-10-21, caso a caso, contra a secção «Avaliação» de cada ficha. As 18 bateram certo sem correções. As fichas mudam de ano para ano: se voltares a descarregá-las e o texto mudar, revê o esperado e volta a pôr `false` até o confirmares.
-O teste [`../../fichas-uc-dataset.test.ts`](../../fichas-uc-dataset.test.ts) garante que o esperado é algo que o StudentOS aceita gravar, com pesos a somar 100 e sem datas.
+
+O teste [`../../fichas-uc-dataset.test.ts`](../../fichas-uc-dataset.test.ts) garante que o esperado é algo que o StudentOS aceita gravar, com pesos a somar 100 e sem datas, e que a divisão respeita as regras acima.

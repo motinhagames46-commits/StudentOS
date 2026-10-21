@@ -5,5 +5,5 @@
     "types": ["node"],
     "paths": { "@studentos/shared": ["../../packages/shared/src/index.ts"] }
   },
-  "include": ["src", "test", "prisma", "prisma.config.ts", "vitest.config.ts"]
+  "include": ["src", "test", "scripts", "prisma", "prisma.config.ts", "vitest.config.ts"]
 }
