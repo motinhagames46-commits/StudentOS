@@ -66,7 +66,7 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
                     <span>Peso {formatGrade(a.weight)}%</span>
                     {a.date && <span>{formatDate(a.date)}</span>}
                     {a.minScore !== null && <span>Mínimo {formatGrade(a.minScore)}</span>}
-                    {a.prepMinutes !== null && <span>Preparação ~{a.prepMinutes} min</span>}
+                    {a.prepMinutes !== null && <span>Tempo de estudo ~{a.prepMinutes} min</span>}
                   </p>
                 </div>
                 <div className="text-right">
@@ -220,7 +220,7 @@ function AssessmentForm({
         />
       </div>
       <TextField
-        label="Preparação estimada (min)"
+        label="Tempo de estudo estimado (min)"
         type="number"
         inputMode="numeric"
         min={5}
@@ -229,7 +229,7 @@ function AssessmentForm({
         value={prep}
         onChange={(e) => setPrep(e.target.value)}
         error={errors.prepMinutes}
-        hint="Usado pelo plano de estudo. Opcional."
+        hint="Opcional. Se ficar vazio, o plano usa o ritmo pelos ECTS da disciplina."
         className="sm:max-w-xs"
       />
       <FormError message={formError} />

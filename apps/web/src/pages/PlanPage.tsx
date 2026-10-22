@@ -193,6 +193,7 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
     byDay.set(key, [...(byDay.get(key) ?? []), s]);
   }
   const noEstimate = p.unplanned.filter((u) => u.reason === 'NO_ESTIMATE');
+  const ectsItems = new Set(p.sessions.filter((s) => s.estimateSource === 'ects').map((s) => `${s.type}${s.itemId}`));
   const later = p.unplanned.filter((u) => u.reason === 'BEYOND_HORIZON');
   const other = p.unplanned.filter((u) => u.reason === 'NO_SPACE' || u.reason === 'PAST_DEADLINE');
 
@@ -207,11 +208,22 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
             {p.sessions.length} sessões novas · {total} min
           </Badge>
           {p.removals.length > 0 && <Badge tone="amber">{p.removals.length} sessões futuras substituídas</Badge>}
+          {ectsItems.size > 0 && <Badge>{ectsItems.size} com tempo estimado pelos ECTS</Badge>}
           <Badge>Válida até {formatTime(draft.expiresAt)}</Badge>
         </div>
         <p className="text-xs text-stone-500">
           Sessões concluídas, fixadas e a decorrer ficam protegidas. As aulas e eventos ocupados nunca são usados.
         </p>
+        {p.sessions.length === 0 && (
+          <p role="status" className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-stone-800">
+            <strong className="font-medium">Não foi possível marcar sessões de estudo neste período.</strong>{' '}
+            {noEstimate.length > 0
+              ? `Falta informação em ${noEstimate.length} ${noEstimate.length === 1 ? 'item' : 'itens'}: vê abaixo o que indicar.`
+              : p.warnings.length > 0
+                ? 'Vê o aviso abaixo.'
+                : 'Não há trabalho por planear neste período.'}
+          </p>
+        )}
         {p.warnings.map((w) => (
           <p key={w} className="flex gap-2 rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
             <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
@@ -239,19 +251,22 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
           </div>
         )}
         {noEstimate.length > 0 && (
-          <details className="rounded-lg bg-stone-50 p-3">
-            <summary className="cursor-pointer text-stone-700">
-              {noEstimate.length} item(s) sem duração estimada — não entram no plano
-            </summary>
-            <ul className="mt-2 list-disc space-y-1 pl-5 text-stone-600">
+          <div className="rounded-lg bg-stone-50 p-3">
+            <p className="font-medium text-stone-800">Sem tempo de estudo — não entram no plano</p>
+            <ul className="mt-2 space-y-1.5 text-stone-700">
               {noEstimate.map((u) => (
-                <li key={`${u.type}${u.itemId}`}>{u.title}</li>
+                <li key={`${u.type}${u.itemId}`} className="flex flex-wrap items-baseline justify-between gap-x-3">
+                  <span>{u.message}</span>
+                  <Link
+                    to={u.type === 'assessment' && u.disciplineId ? `/disciplinas/${u.disciplineId}` : '/tarefas'}
+                    className="text-xs font-medium whitespace-nowrap text-accent hover:underline"
+                  >
+                    {u.type === 'assessment' ? 'Abrir disciplina' : 'Abrir tarefas'}
+                  </Link>
+                </li>
               ))}
             </ul>
-            <Link to="/tarefas" className="mt-2 inline-block text-xs font-medium text-accent hover:underline">
-              Indicar durações nas tarefas
-            </Link>
-          </details>
+          </div>
         )}
         {[...byDay.entries()].map(([key, list]) => (
           <div key={key}>

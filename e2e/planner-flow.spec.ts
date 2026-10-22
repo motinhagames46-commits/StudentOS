@@ -55,9 +55,9 @@ test('importar horário, definir disponibilidade e confirmar um plano sem confli
   await assessmentForm.getByLabel('Nome').fill('Teste 1');
   await assessmentForm.getByLabel('Peso (%)').fill('40');
   await assessmentForm.getByLabel('Data').fill(lisbonDay(6));
-  await assessmentForm.getByLabel('Preparação estimada (min)').fill('120');
+  await assessmentForm.getByLabel('Tempo de estudo estimado (min)').fill('120');
   await assessmentForm.getByRole('button', { name: 'Adicionar' }).click();
-  await expect(page.getByText('Preparação ~120 min')).toBeVisible();
+  await expect(page.getByText('Tempo de estudo ~120 min')).toBeVisible();
 
   // Tarefa com duração estimada
   await page.goto('/tarefas');

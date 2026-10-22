@@ -563,6 +563,8 @@ O planeador tem de funcionar sem IA e produzir sempre um resultado coerente a pa
 
 Se um campo não existir, usar um valor predefinido documentado ou pedir ao utilizador para o indicar. Não inventar que o estudante tem uma avaliação num determinado dia.
 
+> **Nota de implementação (outubro de 2026).** Valor predefinido documentado para o tempo de preparação em falta: ritmo pelos ECTS (DL 42/2005, 25 h por ECTS, descontadas as aulas, repartido pelo peso da avaliação até à sua data ou ao fim do semestre). Nunca é gravado nem cria datas; sem ECTS, o plano diz o que falta. Fórmula e decisões em `docs/ARCHITECTURE.md`.
+
 ## 11.3. Restrições obrigatórias
 
 O algoritmo não pode:

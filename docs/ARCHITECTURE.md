@@ -102,6 +102,15 @@ Fluxo obrigatório do spec §8.2: **ficheiro → validação → pré-visualiza�
 
 **«O que estudar agora»** (`GET /api/planner/suggestion`): se houver uma sessão planeada a decorrer (ou a começar nos próximos 30 minutos), sugere-a; caso contrário, o item com maior pontuação. A explicação é **sempre recalculada no momento do pedido**, porque o texto guardado no plano fica desatualizado. Os itens sem duração estimada também contam: uma tarefa urgente não desaparece por não ter estimativa; a resposta traz `needsEstimate` e a interface pede a duração.
 
+**Tempo de estudo em falta: ritmo pelos ECTS** (`packages/shared/src/workload.ts`). Uma avaliação sem tempo de estudo indicado (o caso normal no início do semestre: as fichas de UC dão pesos, mas não datas) recebe uma quota calculada — o «valor predefinido documentado» do spec §11.2:
+
+- horas autónomas da UC = ECTS × **25 h** − horas de aula da UC no semestre (DL 42/2005, art. 5.º: 1 ECTS = 25 a 28 h de trabalho; usa-se o limite inferior);
+- orçamento da avaliação = horas autónomas × peso da avaliação;
+- ritmo diário = orçamento ÷ dias desde o início do semestre até à data da avaliação ou, sem data, até ao fim do semestre;
+- quota do período = ritmo × dias do período (a partir de agora) − o que já foi estudado nesse período, sem ultrapassar o orçamento. O ritmo é fixo: semanas sem estudo não se acumulam na semana atual.
+
+A quota nunca é gravada (`prepMinutes` continua a ser só do estudante), o prazo continua a ser a data real ou nenhum (nunca «daqui a N dias» inventado) e a explicação mostra a conta, por exemplo «6 ECTS × 25 h − ~84 h de aulas = 66 h; 25 % → 16 h 30 até 31/01 ≈ 45 min/semana». As aulas sem disciplina associada (a importação nem sempre as liga) repartem-se pela fração de ECTS de cada disciplina, assinaladas com «~». Avaliações do tipo «Outra» (participação, assiduidade) não pedem sessões. Sem ECTS ou sem semestre, a avaliação fica «sem tempo de estudo» com a mensagem do que falta («Falta o ECTS de TDM — indica-o na disciplina»). O que não cabe na disponibilidade é falta de espaço, com aviso e números. Um tempo de estudo indicado pelo estudante tem prioridade e mantém o comportamento anterior.
+
 **Valores por omissão** (`DEFAULT_PLANNER_PREFERENCES`, editáveis em `/preferencias`): sessões de 50 minutos (mínimo 25), pausa de 10 minutos e limite diário de 180 minutos. O horizonte é de 7 dias (máximo 28).
 
 **Ciclo de vida:**

@@ -371,12 +371,48 @@ it('a exportação inclui preferências, disponibilidade e sessões planeadas', 
 // fichas (pesos a 100 %, sem datas nem tempo de estudo) e o horário importado sem ligação às disciplinas.
 describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)', () => {
   const UCS: { code: string; ects: number; assessments: [string, string, number][] }[] = [
-    { code: 'TDM', ects: 6, assessments: [['Frequência 1', 'TEST', 25], ['Frequência 2', 'TEST', 25], ['Projeto', 'PROJECT', 50]] },
-    { code: 'IT', ects: 6, assessments: [['Exame', 'EXAM', 60], ['Trabalhos práticos', 'ASSIGNMENT', 40]] },
-    { code: 'RDC', ects: 6, assessments: [['Teste', 'TEST', 50], ['Laboratórios', 'ASSIGNMENT', 50]] },
-    { code: 'AEP', ects: 3, assessments: [['Teste', 'TEST', 70], ['Relatório', 'ASSIGNMENT', 30]] },
+    {
+      code: 'TDM',
+      ects: 6,
+      assessments: [
+        ['Frequência 1', 'TEST', 25],
+        ['Frequência 2', 'TEST', 25],
+        ['Projeto', 'PROJECT', 50],
+      ],
+    },
+    {
+      code: 'IT',
+      ects: 6,
+      assessments: [
+        ['Exame', 'EXAM', 60],
+        ['Trabalhos práticos', 'ASSIGNMENT', 40],
+      ],
+    },
+    {
+      code: 'RDC',
+      ects: 6,
+      assessments: [
+        ['Teste', 'TEST', 50],
+        ['Laboratórios', 'ASSIGNMENT', 50],
+      ],
+    },
+    {
+      code: 'AEP',
+      ects: 3,
+      assessments: [
+        ['Teste', 'TEST', 70],
+        ['Relatório', 'ASSIGNMENT', 30],
+      ],
+    },
     { code: 'FDSI', ects: 3, assessments: [['Exame', 'EXAM', 100]] },
-    { code: 'TDE', ects: 3, assessments: [['Participação', 'OTHER', 10], ['Exame', 'EXAM', 90]] },
+    {
+      code: 'TDE',
+      ects: 3,
+      assessments: [
+        ['Participação', 'OTHER', 10],
+        ['Exame', 'EXAM', 90],
+      ],
+    },
   ];
 
   async function setupRealAccount(withEcts: boolean) {
@@ -476,4 +512,3 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     expect(mine.every((s: { reason: string }) => !/ECTS/.test(s.reason))).toBe(true);
   });
 });
-

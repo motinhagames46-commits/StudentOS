@@ -1115,3 +1115,4 @@ As decisões técnicas e as diferenças em relação a esta especificação est�
 - **«Em risco»:** disciplina em curso cuja média atual, arredondada como a nota final, fica abaixo da nota de aprovação.
 - **«Começar agora»** aceita a sugestão e inicia logo uma sessão de foco (ligada à sessão planeada, quando a há).
 - **Exportar para o meu calendário** (`.ics`): ficheiro descarregado com a sessão, sem link público de subscrição; avaliações e prazos como eventos de dia inteiro, porque os formulários só pedem a data.
+- **Plano automático com avaliações sem datas nem tempo de estudo** (outubro de 2026): ritmo pelos ECTS (DL 42/2005, 25 h/ECTS − aulas, × peso), calculado e nunca gravado; sem ECTS, o plano diz o que falta.

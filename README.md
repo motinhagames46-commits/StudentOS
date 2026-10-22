@@ -93,22 +93,22 @@ Cada linha só está marcada como **Testado** se tiver testes automáticos que p
 
 ### Implementado e testado
 
-| Funcionalidade                                                                                                                                                                        | Testes                       |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Registo, login, logout, terminar todas as sessões, revogar dispositivos (sessões no servidor), mudar a palavra-passe                                                                  | API + E2E                    |
-| Semestres e disciplinas (criar, editar, arquivar ou reativar, eliminar)                                                                                                               | API + E2E + axe              |
-| Tarefas: filtros, ordenação, pesquisa sem acentos, prioridade e duração estimada                                                                                                      | API + componente + E2E       |
-| Avaliações com pesos, médias e simulador de nota necessária                                                                                                                           | unitários + componente + E2E |
-| Painel, estatísticas, calendário (semana e mês) e alertas a 48 h; aviso «Em risco» nas disciplinas                                                                                    | unitários + API + E2E + axe  |
-| Exportar dados (JSON) e eliminar conta (pede email e palavra-passe)                                                                                                                   | API + E2E                    |
-| Exportar o plano para o calendário pessoal (`.ics`): sessões planeadas, avaliações e prazos, com lembretes, UID estável e fuso de Lisboa; descarregado com a sessão, sem link público | API + E2E                    |
-| Horário: aulas manuais e séries semanais com exceções, corretas na mudança de hora                                                                                                    | API + unitários + E2E        |
-| Importação `.ics`/`.csv` com pré-visualização editável, duplicados, datas ambíguas e anulação                                                                                         | API + E2E                    |
-| Planeador determinístico: proposta → confirmação, replaneamento, sessões fixadas, concluídas e falhadas, "o que estudar agora" (recalculado no momento, inclui tarefas sem duração)   | unitários + API + E2E        |
-| Modo foco: presets 25/5, 50/10 e personalizado; pausar e retomar no servidor; estatísticas sem pausas; «Começar agora» no painel inicia o foco a partir da sugestão                   | API + componente + E2E + axe |
-| Isolamento entre utilizadores (404), erros com `requestId` e limites de pedidos (429 em JSON)                                                                                         | API                          |
-| Página de privacidade fiel ao tratamento real (alojamento, conservação, direitos na própria app, cópia ao exportar `.ics`)                                                            | E2E                          |
-| Acessibilidade (axe, sem violações sérias nem críticas) nas páginas principais                                                                                                        | E2E                          |
+| Funcionalidade                                                                                                                                                                                            | Testes                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
+| Registo, login, logout, terminar todas as sessões, revogar dispositivos (sessões no servidor), mudar a palavra-passe                                                                                      | API + E2E                    |
+| Semestres e disciplinas (criar, editar, arquivar ou reativar, eliminar)                                                                                                                                   | API + E2E + axe              |
+| Tarefas: filtros, ordenação, pesquisa sem acentos, prioridade e duração estimada                                                                                                                          | API + componente + E2E       |
+| Avaliações com pesos, médias e simulador de nota necessária                                                                                                                                               | unitários + componente + E2E |
+| Painel, estatísticas, calendário (semana e mês) e alertas a 48 h; aviso «Em risco» nas disciplinas                                                                                                        | unitários + API + E2E + axe  |
+| Exportar dados (JSON) e eliminar conta (pede email e palavra-passe)                                                                                                                                       | API + E2E                    |
+| Exportar o plano para o calendário pessoal (`.ics`): sessões planeadas, avaliações e prazos, com lembretes, UID estável e fuso de Lisboa; descarregado com a sessão, sem link público                     | API + E2E                    |
+| Horário: aulas manuais e séries semanais com exceções, corretas na mudança de hora                                                                                                                        | API + unitários + E2E        |
+| Importação `.ics`/`.csv` com pré-visualização editável, duplicados, datas ambíguas e anulação                                                                                                             | API + E2E                    |
+| Planeador determinístico: proposta → confirmação, replaneamento, sessões fixadas, concluídas e falhadas, "o que estudar agora"; avaliações sem tempo de estudo planeadas pelo ritmo dos ECTS (DL 42/2005) | unitários + API + E2E        |
+| Modo foco: presets 25/5, 50/10 e personalizado; pausar e retomar no servidor; estatísticas sem pausas; «Começar agora» no painel inicia o foco a partir da sugestão                                       | API + componente + E2E + axe |
+| Isolamento entre utilizadores (404), erros com `requestId` e limites de pedidos (429 em JSON)                                                                                                             | API                          |
+| Página de privacidade fiel ao tratamento real (alojamento, conservação, direitos na própria app, cópia ao exportar `.ics`)                                                                                | E2E                          |
+| Acessibilidade (axe, sem violações sérias nem críticas) nas páginas principais                                                                                                                            | E2E                          |
 
 ### Pendente por credenciais ou autorização
 
