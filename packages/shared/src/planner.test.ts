@@ -302,3 +302,62 @@ describe('prioridades e distribuição (spec §11.4–11.5)', () => {
     expect(warnings).toEqual([]);
   });
 });
+
+describe('itens com estimativa pelo ritmo dos ECTS', () => {
+  const ects = (id: number, minutes: number, overrides: Partial<WorkItem> = {}) =>
+    task(id, {
+      type: 'assessment',
+      label: 'Teste',
+      title: `Teste ${id}`,
+      weightPercent: 40,
+      remainingMinutes: minutes,
+      estimateSource: 'ects',
+      estimateNote: '6 ECTS × 25 h − 60 h de aulas = 90 h; 40 % → 36 h até 31/01 ≈ 1 h 39/semana',
+      ...overrides,
+    });
+
+  it('a explicação mostra a conta e, sem data, nunca fala em dias até ao prazo', () => {
+    const { sessions } = planStudy(input({ items: [ects(1, 99)] }));
+    expect(sessions.length).toBeGreaterThan(0);
+    expect(sessions[0]!.reason).toMatch(/sem prazo definido; vale 40% da nota; ritmo pelos ECTS: 6 ECTS × 25 h/);
+    expect(sessions[0]!.reason).not.toMatch(/daqui a|faltam cerca/);
+    expect(sessions[0]!.estimateSource).toBe('ects');
+  });
+
+  it('o que não cabe é falta de espaço (com aviso e números), não «fica para depois»', () => {
+    // 3 dias úteis × 3 h; 6 quotas de 300 min não cabem
+    const items = [1, 2, 3, 4, 5, 6].map((id) => ects(id, 300));
+    const result = planStudy(input({ items, to: new Date('2026-10-22T07:00:00Z') }));
+    const left = result.unplanned.filter((u) => u.missingMinutes);
+    expect(left.length).toBeGreaterThan(0);
+    expect(left.every((u) => u.reason === 'NO_SPACE')).toBe(true);
+    expect(result.warnings.join(' ')).toMatch(
+      /O ritmo pelos ECTS pede cerca de 30 h de estudo neste período e só cabem/,
+    );
+  });
+
+  it('sem estimativa, diz exatamente o que falta', () => {
+    const result = planStudy(
+      input({
+        items: [ects(1, 0, { remainingMinutes: null, missingInfo: 'Falta o ECTS de D1 — indica-o na disciplina.' })],
+      }),
+    );
+    expect(result.unplanned[0]).toMatchObject({
+      reason: 'NO_ESTIMATE',
+      disciplineId: 1,
+      message: 'Falta o ECTS de D1 — indica-o na disciplina.',
+    });
+  });
+
+  it('regressão: itens com estimativa do estudante dão exatamente o mesmo plano', () => {
+    const items = [
+      task(1, { remainingMinutes: 240 }),
+      task(2, { remainingMinutes: 90, deadline: new Date('2026-10-23T20:00:00Z') }),
+    ];
+    const plain = planStudy(input({ items }));
+    const marked = planStudy(input({ items: items.map((i) => ({ ...i, estimateSource: 'user' as const })) }));
+    const strip = (r: typeof plain) => ({ ...r, sessions: r.sessions.map(({ estimateSource: _e, ...rest }) => rest) });
+    expect(strip(marked)).toEqual(strip(plain));
+    expect(plain.sessions.some((s) => 'estimateSource' in s)).toBe(false);
+  });
+});

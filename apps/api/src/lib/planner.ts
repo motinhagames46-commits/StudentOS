@@ -3,7 +3,10 @@
 import {
   DEFAULT_PLANNER_PREFERENCES,
   DEFAULT_TIMEZONE,
+  ectsPace,
+  ectsPaceNote,
   minutesByDay,
+  type EctsPaceMissing,
   type Interval,
   type PlannerInput,
   type PlannerPreferences,
@@ -74,7 +77,7 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
     }),
     prisma.assessment.findMany({
       where: { discipline: { userId, archivedAt: null }, score: null, OR: [{ date: null }, { date: { gt: now } }] },
-      include: { discipline: { select: { id: true, code: true } } },
+      include: { discipline: { select: { id: true, code: true, ects: true, semesterId: true } } },
     }),
   ]);
 
@@ -85,8 +88,9 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
     ...protectedSessions.filter(inRange).map((s) => ({ start: s.startAt, end: s.endAt })),
   ];
 
-  // Trabalho já feito ou já reservado por sessões protegidas, por item.
+  // Trabalho já feito ou já reservado por sessões protegidas, por item (no total e dentro do período).
   const doneMinutes = new Map<string, number>();
+  const doneInRange = new Map<string, number>();
   const missed = new Map<string, number>();
   for (const s of sessions) {
     const key = s.taskId ? `task:${s.taskId}` : s.assessmentId ? `assessment:${s.assessmentId}` : null;
@@ -95,8 +99,13 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
     if (isProtected(s, now)) {
       const minutes = s.status === 'COMPLETED' ? (s.actualMinutes ?? s.plannedMinutes) : s.plannedMinutes;
       doneMinutes.set(key, (doneMinutes.get(key) ?? 0) + minutes);
+      if (inRange(s)) doneInRange.set(key, (doneInRange.get(key) ?? 0) + minutes);
     }
   }
+  const pace = await ectsPaceContext(
+    userId,
+    assessments.filter((a) => a.prepMinutes === null && a.type !== 'OTHER').map((a) => a.discipline),
+  );
   const remaining = (key: string, estimate: number | null) =>
     estimate === null ? null : Math.max(0, estimate - (doneMinutes.get(key) ?? 0));
 
@@ -114,22 +123,61 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       missedCount: missed.get(`task:${t.id}`) ?? 0,
       label: 'Tarefa',
     })),
-    ...assessments
-      // Só entram no plano avaliações com tempo de preparação indicado ou com data marcada.
-      .filter((a) => a.prepMinutes !== null || a.date !== null)
-      .map((a): WorkItem => ({
+    ...assessments.map((a): WorkItem => {
+      const key = `assessment:${a.id}`;
+      const item: WorkItem = {
         type: 'assessment',
         id: a.id,
         title: a.name,
         disciplineId: a.disciplineId,
         disciplineCode: a.discipline.code,
         deadline: a.date,
-        remainingMinutes: remaining(`assessment:${a.id}`, a.prepMinutes),
+        remainingMinutes: remaining(key, a.prepMinutes),
         priority: a.weight >= 30 ? 'HIGH' : a.weight >= 15 ? 'MEDIUM' : 'LOW',
         weightPercent: a.weight,
-        missedCount: missed.get(`assessment:${a.id}`) ?? 0,
+        missedCount: missed.get(key) ?? 0,
         label: ASSESSMENT_LABELS[a.type] ?? 'Avaliação',
-      })),
+      };
+      // Tempo de estudo indicado pelo estudante: usa-se tal como está.
+      if (a.prepMinutes !== null) return item;
+      // Participação, assiduidade… não pedem sessões de estudo, salvo indicação do estudante.
+      if (a.type === 'OTHER') {
+        return {
+          ...item,
+          missingInfo: `Indica o tempo de estudo de «${a.name}» (${a.discipline.code}) se precisar de preparação.`,
+        };
+      }
+      // Sem tempo indicado: quota deste período pelo ritmo dos ECTS (spec §11.2, valor predefinido documentado).
+      const semester = pace.semesterOf(a.discipline);
+      const contact = pace.contactOf(a.discipline, semester);
+      const result = ectsPace({
+        ects: a.discipline.ects,
+        contactMinutes: contact.minutes,
+        weightPercent: a.weight,
+        semester,
+        assessmentDate: a.date,
+        window: { from, to },
+        now,
+        doneTotalMinutes: doneMinutes.get(key) ?? 0,
+        doneInWindowMinutes: doneInRange.get(key) ?? 0,
+      });
+      if (!result.ok) return { ...item, missingInfo: missingMessage(result.missing, a.name, a.discipline.code) };
+      return {
+        ...item,
+        remainingMinutes: result.quotaMinutes,
+        estimateSource: 'ects',
+        estimateNote: ectsPaceNote(
+          {
+            ects: a.discipline.ects,
+            contactMinutes: contact.minutes,
+            weightPercent: a.weight,
+            contactEstimated: contact.estimated,
+          },
+          result,
+          DEFAULT_TIMEZONE,
+        ),
+      };
+    }),
   ];
 
   const protectedIntervals = protectedSessions.filter(inRange).map((s) => ({ start: s.startAt, end: s.endAt }));
@@ -150,4 +198,72 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       .map((s) => ({ id: s.id, startAt: s.startAt, endAt: s.endAt, reason: s.reason })),
     busy,
   };
+}
+
+function missingMessage(missing: EctsPaceMissing, name: string, code: string): string {
+  switch (missing) {
+    case 'ECTS':
+      return `Falta o ECTS de ${code} — indica-o na disciplina, ou indica o tempo de estudo de «${name}».`;
+    case 'SEMESTER':
+      return `A disciplina ${code} não tem semestre com datas: escolhe o semestre, ou indica o tempo de estudo de «${name}».`;
+    case 'SEMESTER_OVER':
+      return `O semestre de ${code} já terminou: indica a data ou o tempo de estudo de «${name}».`;
+  }
+}
+
+type SemesterDates = { start: Date; end: Date };
+
+/**
+ * Dados para o ritmo pelos ECTS: o semestre de cada disciplina (o ativo, se não tiver) e os minutos de aula
+ * de cada disciplina nesse semestre. Aulas sem disciplina associada (a importação nem sempre as liga)
+ * repartem-se pela fração de ECTS de cada disciplina do semestre — e a explicação assinala-o com «~».
+ */
+async function ectsPaceContext(userId: number, needed: { id: number; semesterId: number | null }[]) {
+  const [semesters, disciplines] = needed.length
+    ? await Promise.all([
+        prisma.semester.findMany({ where: { userId } }),
+        prisma.discipline.findMany({
+          where: { userId, archivedAt: null },
+          select: { id: true, ects: true, semesterId: true },
+        }),
+      ])
+    : [[], []];
+  const active = semesters.find((s) => s.isActive) ?? null;
+  const byId = new Map(semesters.map((s) => [s.id, s]));
+  const semesterRow = (d: { semesterId: number | null }) => (d.semesterId ? byId.get(d.semesterId) : active) ?? null;
+  const semesterOf = (d: { semesterId: number | null }): SemesterDates | null => {
+    const s = semesterRow(d);
+    return s ? { start: s.startDate, end: s.endDate } : null;
+  };
+
+  // Minutos de aula por disciplina, por semestre (calculado uma vez por semestre).
+  const contact = new Map<number, { linked: Map<number, number>; unlinked: number; ectsTotal: number }>();
+  for (const s of new Set(needed.map((d) => semesterRow(d)).filter((s) => s !== null))) {
+    const occurrences = await blockOccurrences(
+      userId,
+      s.startDate,
+      new Date(s.endDate.getTime() + 24 * 60 * 60 * 1000),
+    );
+    const linked = new Map<number, number>();
+    let unlinked = 0;
+    for (const o of occurrences) {
+      if (o.kind !== 'CLASS' || !o.isBusy || o.allDay) continue;
+      const minutes = (o.end.getTime() - o.start.getTime()) / 60_000;
+      if (o.discipline) linked.set(o.discipline.id, (linked.get(o.discipline.id) ?? 0) + minutes);
+      else unlinked += minutes;
+    }
+    const ectsTotal = disciplines.filter((d) => semesterRow(d)?.id === s.id).reduce((sum, d) => sum + (d.ects ?? 0), 0);
+    contact.set(s.id, { linked, unlinked, ectsTotal });
+  }
+  const contactOf = (
+    d: { id: number; ects?: number | null; semesterId: number | null },
+    semester: SemesterDates | null,
+  ) => {
+    const row = semesterRow(d);
+    const c = row && semester ? contact.get(row.id) : undefined;
+    if (!c) return { minutes: 0, estimated: false };
+    const share = c.unlinked > 0 && c.ectsTotal > 0 && d.ects ? (c.unlinked * d.ects) / c.ectsTotal : 0;
+    return { minutes: Math.round((c.linked.get(d.id) ?? 0) + share), estimated: share > 0 };
+  };
+  return { semesterOf, contactOf };
 }

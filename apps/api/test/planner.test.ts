@@ -2,7 +2,7 @@ import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
-import { DEFAULT_TIMEZONE, addDaysToKey, zonedDayKey } from '@studentos/shared';
+import { DEFAULT_TIMEZONE, addDaysToKey, weekdayOfKey, zonedDayKey, zonedToInstant } from '@studentos/shared';
 import { createUserAndLogin, resetDb } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
@@ -366,3 +366,114 @@ it('a exportação inclui preferências, disponibilidade e sessões planeadas', 
   expect(res.body.plannedSessions.length).toBeGreaterThan(0);
   expect(res.body.studyPlans.length).toBeGreaterThan(0);
 });
+
+// Queixa real: «não é possível criar plano de estudo automático». A conta tem 6 UC com as avaliações das
+// fichas (pesos a 100 %, sem datas nem tempo de estudo) e o horário importado sem ligação às disciplinas.
+describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)', () => {
+  const UCS: { code: string; ects: number; assessments: [string, string, number][] }[] = [
+    { code: 'TDM', ects: 6, assessments: [['Frequência 1', 'TEST', 25], ['Frequência 2', 'TEST', 25], ['Projeto', 'PROJECT', 50]] },
+    { code: 'IT', ects: 6, assessments: [['Exame', 'EXAM', 60], ['Trabalhos práticos', 'ASSIGNMENT', 40]] },
+    { code: 'RDC', ects: 6, assessments: [['Teste', 'TEST', 50], ['Laboratórios', 'ASSIGNMENT', 50]] },
+    { code: 'AEP', ects: 3, assessments: [['Teste', 'TEST', 70], ['Relatório', 'ASSIGNMENT', 30]] },
+    { code: 'FDSI', ects: 3, assessments: [['Exame', 'EXAM', 100]] },
+    { code: 'TDE', ects: 3, assessments: [['Participação', 'OTHER', 10], ['Exame', 'EXAM', 90]] },
+  ];
+
+  async function setupRealAccount(withEcts: boolean) {
+    const ids: Record<string, number> = {};
+    for (const uc of UCS) {
+      const { body: d } = await request(app)
+        .post('/api/disciplines')
+        .set('Cookie', ines)
+        .send({ name: `UC ${uc.code}`, code: uc.code, ...(withEcts ? { ects: uc.ects } : {}) });
+      for (const [name, type, weight] of uc.assessments) {
+        const { body: a } = await request(app)
+          .post(`/api/disciplines/${d.id}/assessments`)
+          .set('Cookie', ines)
+          .send({ name, type, weight });
+        ids[`${uc.code}:${name}`] = a.id;
+      }
+    }
+    // 9 aulas semanais de 2 h desde o início do semestre, sem disciplina associada (como na importação CSV).
+    const { body: me } = await request(app).get('/api/me').set('Cookie', ines);
+    const startKey = me.activeSemester.startDate.slice(0, 10);
+    const untilKey = me.activeSemester.endDate.slice(0, 10);
+    for (let i = 0; i < 9; i++) {
+      const key = addDaysToKey(startKey, i % 5);
+      const [y, m, dd] = key.split('-').map(Number) as [number, number, number];
+      const hour = 9 + 2 * Math.floor(i / 5) + (weekdayOfKey(key) % 2);
+      const res = await request(app)
+        .post('/api/schedule-blocks')
+        .set('Cookie', ines)
+        .send({
+          title: `Aula ${i + 1}`,
+          kind: 'CLASS',
+          startAt: zonedToInstant(y, m, dd, hour, 0, DEFAULT_TIMEZONE).toISOString(),
+          endAt: zonedToInstant(y, m, dd, hour + 2, 0, DEFAULT_TIMEZONE).toISOString(),
+          repeatWeeklyUntil: untilKey,
+        });
+      expect(res.status).toBe(201);
+    }
+    await setAvailability(ines);
+    return { ids, semester: me.activeSemester as { startDate: string; endDate: string } };
+  }
+
+  it('gera sessões para todas as avaliações de estudo, dentro do ritmo, sem inventar prazos', async () => {
+    const { ids, semester } = await setupRealAccount(true);
+    const { body: plan } = await preview(ines);
+    const { sessions, unplanned } = plan.proposal as {
+      sessions: { itemId: number; type: string; minutes: number; reason: string }[];
+      unplanned: { itemId: number; reason: string; message: string }[];
+    };
+    expect(sessions.length).toBeGreaterThan(0);
+
+    const semesterDays = (Date.parse(semester.endDate) - Date.parse(semester.startDate)) / DAY + 1;
+    for (const uc of UCS) {
+      for (const [name, type, weight] of uc.assessments) {
+        const id = ids[`${uc.code}:${name}`]!;
+        const mine = sessions.filter((s) => s.type === 'assessment' && s.itemId === id);
+        if (type === 'OTHER') {
+          // Participação/assiduidade não pede estudo: fica a pedir o tempo, se precisar.
+          expect(mine).toHaveLength(0);
+          expect(unplanned.find((u) => u.itemId === id)?.reason).toBe('NO_ESTIMATE');
+          continue;
+        }
+        expect(mine.length, `${uc.code} ${name} sem sessões`).toBeGreaterThan(0);
+        // Nunca mais do que o ritmo pelos ECTS (limite superior: sem descontar as aulas) para ~8 dias.
+        const bound = Math.ceil(((uc.ects * 25 * 60 * weight) / 100 / semesterDays) * 8);
+        expect(mine.reduce((sum, s) => sum + s.minutes, 0)).toBeLessThanOrEqual(bound);
+        for (const s of mine) {
+          expect(s.reason).toMatch(/ECTS/);
+          expect(s.reason).not.toMatch(/daqui a|é amanhã|é hoje/);
+        }
+      }
+    }
+    const suggestion = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
+    expect(suggestion.body.kind).not.toBe('missing');
+  });
+
+  it('sem ECTS não inventa: diz o que falta, sem sessões nem «Não há trabalho pendente»', async () => {
+    await setupRealAccount(false);
+    const { body: plan } = await preview(ines);
+    expect(plan.proposal.sessions).toHaveLength(0);
+    const messages = plan.proposal.unplanned.map((u: { message: string }) => u.message).join('\n');
+    expect(messages).toMatch(/Falta o ECTS de TDM/);
+    const suggestion = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
+    expect(suggestion.body.message).not.toMatch(/Não há trabalho pendente/);
+    expect(suggestion.body.message).toMatch(/ECTS/);
+  });
+
+  it('regressão: um tempo de estudo indicado pelo estudante continua a ser usado tal como está', async () => {
+    await setAvailability(ines);
+    const { body: a } = await request(app)
+      .post(`/api/disciplines/${disciplineId}/assessments`)
+      .set('Cookie', ines)
+      .send({ name: 'Teste escrito', type: 'TEST', weight: 60, prepMinutes: 240 });
+    expect(a.prepMinutes).toBe(240);
+    const { body: plan } = await preview(ines);
+    const mine = plan.proposal.sessions.filter((s: { itemId: number }) => s.itemId === a.id);
+    expect(mine.reduce((sum: number, s: { minutes: number }) => sum + s.minutes, 0)).toBe(240);
+    expect(mine.every((s: { reason: string }) => !/ECTS/.test(s.reason))).toBe(true);
+  });
+});
+

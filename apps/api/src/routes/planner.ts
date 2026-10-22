@@ -241,7 +241,8 @@ plannerRouter.get('/sessions', async (req, res) => {
 plannerRouter.get('/suggestion', async (req, res) => {
   const now = new Date();
   const soon = new Date(now.getTime() + 30 * 60 * 1000);
-  const end = startOfZonedDay(addDaysToKey(zonedDayKey(now, DEFAULT_TIMEZONE), 1), DEFAULT_TIMEZONE);
+  // Mesmo período que «Gerar plano», para a urgência e a quota pelos ECTS coincidirem com as do plano.
+  const end = startOfZonedDay(addDaysToKey(zonedDayKey(now, DEFAULT_TIMEZONE), DEFAULT_DAYS), DEFAULT_TIMEZONE);
   const [current, { input }] = await Promise.all([
     prisma.plannedSession.findFirst({
       where: { userId: req.userId, status: 'PLANNED', startAt: { lt: soon }, endAt: { gt: now } },
@@ -264,7 +265,12 @@ plannerRouter.get('/suggestion', async (req, res) => {
   // Itens sem duração estimada também contam: uma tarefa urgente não pode desaparecer só por não ter estimativa.
   const candidates = input.items.filter((i) => i.remainingMinutes === null || i.remainingMinutes > 0);
   if (candidates.length === 0) {
-    res.json({ kind: 'missing', message: 'Não há trabalho pendente. Adiciona tarefas ou avaliações.' });
+    res.json({
+      kind: 'missing',
+      message: input.items.length
+        ? 'Esta semana já cumpriste o ritmo de estudo previsto. Bom trabalho!'
+        : 'Não há trabalho pendente. Adiciona tarefas ou avaliações.',
+    });
     return;
   }
   const ranked = candidates
@@ -276,6 +282,8 @@ plannerRouter.get('/suggestion', async (req, res) => {
     kind: 'item',
     item: { type: top.type, id: top.id, title: top.title, disciplineId: top.disciplineId },
     needsEstimate,
-    message: describe(top) + (needsEstimate ? ' Indica a duração estimada para o planeador lhe reservar tempo.' : ''),
+    message:
+      describe(top) +
+      (needsEstimate ? ` ${top.missingInfo ?? 'Indica a duração estimada para o planeador lhe reservar tempo.'}` : ''),
   });
 });

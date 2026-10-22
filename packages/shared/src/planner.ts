@@ -14,6 +14,7 @@ import {
   zonedDayKey,
   zonedToInstant,
 } from './timezone.js';
+import { formatStudyMinutes } from './workload.js';
 
 export interface PlannerPreferences {
   sessionMinutes: number;
@@ -59,6 +60,15 @@ export interface WorkItem {
   missedCount: number;
   /** "tarefa", "teste", "exame", "trabalho"… (para as explicações). */
   label: string;
+  /**
+   * De onde vem `remainingMinutes`: indicado pelo estudante (omissão) ou calculado pelo ritmo dos ECTS
+   * (ver workload.ts). Um valor calculado é a quota do período e nunca é gravado.
+   */
+  estimateSource?: 'user' | 'ects';
+  /** Conta do ritmo pelos ECTS, para a explicação (só com números do sistema). */
+  estimateNote?: string | null;
+  /** O que falta para o poder planear (quando `remainingMinutes` é null), dito ao estudante. */
+  missingInfo?: string | null;
 }
 
 export interface PlannerInput {
@@ -85,6 +95,7 @@ export interface ProposedSession {
   disciplineId: number | null;
   disciplineCode: string | null;
   reason: string;
+  estimateSource?: 'user' | 'ects';
 }
 
 export type UnplannedReason = 'NO_ESTIMATE' | 'NO_SPACE' | 'PAST_DEADLINE' | 'BEYOND_HORIZON';
@@ -93,6 +104,8 @@ export interface UnplannedItem {
   type: WorkRefType;
   itemId: number;
   title: string;
+  /** Para a interface ligar à disciplina certa (avaliações). */
+  disciplineId?: number | null;
   reason: UnplannedReason;
   missingMinutes: number | null;
   message: string;
@@ -168,7 +181,8 @@ export function explain(item: WorkItem, p: PriorityBreakdown, now: Date, timeZon
   if (item.deadline) parts.push(`${what} ${relativeDays(item.deadline, now, timeZone)}`);
   else parts.push(`${what} sem prazo definido`);
   if (item.weightPercent !== null) parts.push(`vale ${item.weightPercent}% da nota`);
-  if (item.remainingMinutes !== null) parts.push(`faltam cerca de ${item.remainingMinutes} min`);
+  if (item.estimateSource === 'ects' && item.estimateNote) parts.push(`ritmo pelos ECTS: ${item.estimateNote}`);
+  else if (item.remainingMinutes !== null) parts.push(`faltam cerca de ${item.remainingMinutes} min`);
   if (item.missedCount > 0) parts.push(`${item.missedCount} sessão(ões) falhada(s)`);
   return `${level}: ${parts.join('; ')}.`;
 }
@@ -248,9 +262,10 @@ export function planStudy(input: PlannerInput): PlanResult {
         type: item.type,
         itemId: item.id,
         title: item.title,
+        disciplineId: item.disciplineId,
         reason: 'NO_ESTIMATE',
         missingMinutes: null,
-        message: `Indica a duração estimada de «${item.title}» para a poder planear.`,
+        message: item.missingInfo ?? `Indica a duração estimada de «${item.title}» para a poder planear.`,
       });
       continue;
     }
@@ -260,6 +275,7 @@ export function planStudy(input: PlannerInput): PlanResult {
         type: item.type,
         itemId: item.id,
         title: item.title,
+        disciplineId: item.disciplineId,
         reason: 'PAST_DEADLINE',
         missingMinutes: item.remainingMinutes,
         message: `A avaliação «${item.title}» já passou.`,
@@ -289,6 +305,7 @@ export function planStudy(input: PlannerInput): PlanResult {
   const slots = freeSlots(input);
   // Fração útil de uma janela livre (descontando as pausas entre sessões).
   const efficiency = prefs.sessionMinutes / (prefs.sessionMinutes + prefs.breakMinutes);
+  const ectsDemand = work.filter((w) => w.item.estimateSource === 'ects').reduce((sum, w) => sum + w.remaining, 0);
 
   /** Minutos de estudo ainda possíveis entre dois instantes (janelas livres, pausas e limite diário). */
   const capacityBetween = (fromMs: number, toMs: number): number => {
@@ -380,6 +397,7 @@ export function planStudy(input: PlannerInput): PlanResult {
         disciplineId: chosen.item.disciplineId,
         disciplineCode: chosen.item.disciplineCode,
         reason: chosen.reason,
+        ...(chosen.item.estimateSource ? { estimateSource: chosen.item.estimateSource } : {}),
       });
       chosen.remaining -= minutes;
       usedByDay[slot.dayKey] = (usedByDay[slot.dayKey] ?? 0) + minutes;
@@ -391,13 +409,31 @@ export function planStudy(input: PlannerInput): PlanResult {
   }
 
   const shortDate = new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: '2-digit', timeZone: input.timeZone });
+  let ectsShortfall = 0;
+  let outOfSpace = false;
   for (const w of work) {
     if (w.remaining <= 0) continue;
+    if (w.item.estimateSource === 'ects') {
+      // A quota pelos ECTS é só deste período: o que não coube é falta de espaço, não «fica para depois».
+      ectsShortfall += w.remaining;
+      unplanned.push({
+        type: w.item.type,
+        itemId: w.item.id,
+        title: w.item.title,
+        disciplineId: w.item.disciplineId,
+        reason: 'NO_SPACE',
+        missingMinutes: w.remaining,
+        message: `Faltam ${w.remaining} min do ritmo de «${w.item.title}» neste período: não há espaço livre suficiente.`,
+      });
+      continue;
+    }
     const beyond = w.item.deadline === null || w.item.deadline.getTime() > input.to.getTime();
+    if (!beyond) outOfSpace = true;
     unplanned.push({
       type: w.item.type,
       itemId: w.item.id,
       title: w.item.title,
+      disciplineId: w.item.disciplineId,
       reason: beyond ? 'BEYOND_HORIZON' : 'NO_SPACE',
       missingMinutes: w.remaining,
       message: beyond
@@ -407,9 +443,16 @@ export function planStudy(input: PlannerInput): PlanResult {
         : `Faltam ${w.remaining} min para «${w.item.title}» antes do prazo: não há espaço livre suficiente.`,
     });
   }
-  if (unplanned.some((u) => u.reason === 'NO_SPACE')) {
+  if (outOfSpace) {
     warnings.push(
       'Não há tempo suficiente para todo o trabalho. Podes aumentar a disponibilidade ou o limite diário, reduzir as estimativas, ou aceitar que algumas tarefas fiquem sem sessão.',
+    );
+  }
+  if (ectsShortfall > 0) {
+    warnings.push(
+      `O ritmo pelos ECTS pede cerca de ${formatStudyMinutes(ectsDemand)} de estudo neste período e só cabem ` +
+        `${formatStudyMinutes(ectsDemand - ectsShortfall)}. Podes aumentar a disponibilidade ou o limite diário, ` +
+        'ou indicar o tempo de estudo de cada avaliação.',
     );
   }
 
