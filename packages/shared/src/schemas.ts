@@ -321,6 +321,19 @@ export const gradesQuerySchema = z.object({
 
 export const idParamSchema = z.coerce.number().int().positive();
 
+// Transferência de disciplinas entre contas do mesmo estudante (código de uso único).
+export const transferCreateSchema = z.strictObject({
+  disciplineIds: z
+    .array(positiveId)
+    .min(1, 'Escolhe pelo menos uma disciplina')
+    .max(50)
+    .refine((ids) => new Set(ids).size === ids.length, 'Disciplinas repetidas'),
+  includeUnlinkedBlocks: z.boolean().optional(),
+});
+export const transferCodeSchema = z.strictObject({
+  code: z.string('Indica o código').trim().min(8, 'O código tem 8 caracteres').max(20),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type DisciplineCreateInput = z.infer<typeof disciplineCreateSchema>;

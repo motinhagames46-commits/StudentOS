@@ -140,6 +140,14 @@ No painel, «Começar agora» aceita a sugestão (spec §11.7): chama `POST /api
 
 > **Diferença em relação ao spec §13:** o spec sugere `/api/study-sessions/:id/complete` e `/miss`. Aqui, `/api/study-sessions` regista o tempo real de foco e as sessões **planeadas** ficam em `/api/planned-sessions`. A confirmação do plano é `/api/planner/:id/confirm`, porque cada proposta tem identificador próprio.
 
+## Transferir disciplinas para outra conta
+
+| Método | Caminho                  | Descrição                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| ------ | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/transfers`         | Na conta de origem: `{ disciplineIds, includeUnlinkedBlocks? }` → `{ code, expiresAt, disciplines }` (201). Código de 8 caracteres, válido 30 minutos, de uso único; só o SHA-256 fica guardado.                                                                                                                                                                                                                          |
+| POST   | `/api/transfers/preview` | Na conta de destino: `{ code }` → nome da conta de origem, disciplinas, contagens, duplicados e conflitos. Não grava nada.                                                                                                                                                                                                                                                                                                |
+| POST   | `/api/transfers/accept`  | Na conta de destino: transfere numa transação. As avaliações acompanham as disciplinas; tarefas, aulas, sessões planeadas e de estudo ligadas mudam de conta; semestre emparelhado pelo nome (ou criado). 409 `TRANSFER_CONFLICT` se já houver a mesma sigla no mesmo semestre; 409 `TRANSFER_SAME_ACCOUNT`; 404 se o código for inválido, usado ou expirado. As tentativas falhadas contam para o limite de credenciais. |
+
 ## Integrações
 
 | Método | Caminho             | Descrição                                                                                                                               |

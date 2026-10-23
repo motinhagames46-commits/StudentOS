@@ -89,6 +89,7 @@ model User {
   availabilityRules AvailabilityRule[]
   studyPlans        StudyPlan[]
   plannedSessions   PlannedSession[]
+  transfersSent     DisciplineTransfer[]
 }
 
 // Sessão de autenticação no servidor (spec §14.1). O cookie leva um token opaco aleatório;
@@ -332,3 +333,21 @@ model PlannedSession {
 
   @@index([userId, startAt])
 }
+
+// Transferência de disciplinas entre contas do mesmo estudante: a conta de origem gera um código de uso
+// único (só o SHA-256 fica guardado), que é aceite com sessão iniciada na conta de destino.
+model DisciplineTransfer {
+  id                    Int       @id @default(autoincrement())
+  codeHash              String    @unique
+  disciplineIds         Int[]
+  includeUnlinkedBlocks Boolean   @default(false) // aulas do horário sem disciplina associada
+  expiresAt             DateTime
+  usedAt                DateTime?
+  toUserId              Int? // conta que aceitou (sem relação: a conta de destino pode ser eliminada)
+  createdAt             DateTime  @default(now())
+  fromUserId            Int
+  fromUser              User      @relation(fields: [fromUserId], references: [id], onDelete: Cascade)
+
+  @@index([fromUserId])
+}
+

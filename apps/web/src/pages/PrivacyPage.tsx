@@ -68,6 +68,14 @@ export function PrivacyPage() {
           próprio calendário.
         </p>
 
+        <h2 className="pt-2 text-base font-semibold text-stone-900">Transferir para outra conta</h2>
+        <p>
+          Na página Conta podes transferir disciplinas (com as avaliações, notas, tarefas, aulas e sessões de estudo
+          ligadas a elas) para outra conta tua. A transferência só acontece com um código gerado por ti, válido durante
+          30 minutos e uma única vez (só guardamos o hash do código), e depois de confirmares na conta de destino, que
+          vê o nome da conta de origem. Os dados saem da conta de origem.
+        </p>
+
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os teus direitos</h2>
         <p>
           Exerces os teus direitos diretamente na aplicação, sem pedires a ninguém: corriges os dados editando-os, na

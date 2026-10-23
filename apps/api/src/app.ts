@@ -21,6 +21,7 @@ import { scheduleBlocksRouter } from './routes/schedule-blocks.js';
 import { semestersRouter } from './routes/semesters.js';
 import { studySessionsRouter } from './routes/study-sessions.js';
 import { tasksRouter } from './routes/tasks.js';
+import { transfersRouter } from './routes/transfers.js';
 
 const WEB_DIST = path.resolve(import.meta.dirname, '../../web/dist');
 
@@ -46,7 +47,8 @@ export function createApp() {
   if (!env.isTest) {
     api.use(generalLimiter(env.RATE_LIMIT_PER_15_MIN));
     const credentials = credentialLimiter();
-    api.use(['/auth/login', '/auth/register', '/me/password'], credentials);
+    // Inclui os códigos de transferência: só as tentativas falhadas contam (adivinhar códigos).
+    api.use(['/auth/login', '/auth/register', '/me/password', '/transfers/preview', '/transfers/accept'], credentials);
     api.delete('/me', credentials);
   }
 
@@ -55,6 +57,7 @@ export function createApp() {
   });
   api.use('/auth', authRouter);
   api.use('/me', requireAuth, meRouter);
+  api.use('/transfers', requireAuth, transfersRouter);
   api.use('/semesters', requireAuth, semestersRouter);
   api.use('/disciplines', requireAuth, disciplinesRouter);
   api.use('/assessments', requireAuth, assessmentsRouter);

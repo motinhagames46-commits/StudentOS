@@ -142,6 +142,10 @@ A quota nunca é gravada (`prepMinutes` continua a ser só do estudante), o praz
 - **Lembretes:** 30 minutos antes de cada sessão; na véspera às 09:00 nas avaliações e prazos.
 - **UID estável** (`planned-session-<id>@studentos`, `assessment-<id>@studentos`, `task-<id>@studentos`): ao importar de novo, os calendários que respeitam o UID atualizam o evento em vez de o duplicar.
 
+## Transferir disciplinas entre contas
+
+Para um estudante passar os dados para outra conta sua (por exemplo, outro email) sem acesso direto à base de dados: a conta de origem gera um código de uso único (8 caracteres sem 0/O e 1/I, válido 30 minutos, guardado só em SHA-256 na tabela `DisciplineTransfer`); a conta de destino, com sessão iniciada, vê a pré-visualização e confirma. A transferência corre numa transação: as disciplinas mudam de `userId` (as avaliações acompanham), e também as tarefas, aulas, sessões planeadas e sessões de estudo ligadas a elas; as ligações a importações e propostas da conta de origem são cortadas. O semestre é emparelhado pelo nome ou criado com as mesmas datas. Uma disciplina com a mesma sigla no mesmo semestre bloqueia a transferência (sem gastar o código); itens importados que já existam no destino não são duplicados.
+
 ## Integrações (Moodle e Outlook)
 
 - O contrato está em `apps/api/src/integrations/types.ts`:

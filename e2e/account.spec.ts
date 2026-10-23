@@ -52,6 +52,9 @@ test('a página de privacidade é pública e descreve o tratamento real dos dado
   expect(text).not.toMatch(/\[preencher|cifrada/);
   for (const fact of ['hash', 'Render', 'Neon', 'user-agent', 'exportas', 'eliminas a conta'])
     expect(text).toContain(fact);
+  // Transferência entre contas: só com código de uso único e confirmação no destino
+  await expect(page.getByRole('heading', { level: 2, name: 'Transferir para outra conta' })).toBeVisible();
+  expect(text).toMatch(/uma única vez/);
   // Exportação .ics: gerada a pedido, sem link público, e o calendário onde se importa fica com uma cópia
   await expect(page.getByRole('heading', { level: 2, name: 'Exportar para outro calendário' })).toBeVisible();
   for (const fact of [
