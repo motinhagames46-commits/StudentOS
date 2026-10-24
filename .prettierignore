@@ -8,3 +8,10 @@ apps/api/prisma/migrations
 package-lock.json
 test-results
 playwright-report
+
+# Conteúdo de terceiros copiado tal como está (skills, regras do toolkit) e artefactos gerados
+.claude/skills
+eslint-rules
+scripts/verify-quality-rules.mjs
+skills-lock.json
+graphify-out

@@ -32,6 +32,8 @@ jobs:
       - run: npm run build -w @studentos/shared
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run lint:typed
+      - run: npm run lint:rules
       - run: npm test
       - run: npm run build
       - run: npm audit --audit-level=high

@@ -19,9 +19,12 @@
     "eval:fichas": "npm run eval:fichas -w @studentos/api --",
     "typecheck": "npm run typecheck --workspaces --if-present && tsc -p e2e/tsconfig.json",
     "lint": "eslint .",
+    "lint:typed": "eslint --config eslint.typed.config.js .",
+    "lint:rules": "node scripts/verify-quality-rules.mjs ./eslint-rules/index.cjs",
     "format": "prettier --write .",
     "db:migrate": "npm run db:migrate -w @studentos/api",
-    "db:seed": "npm run db:seed -w @studentos/api"
+    "db:seed": "npm run db:seed -w @studentos/api",
+    "check": "npm run typecheck && npm run lint && npm run lint:typed && npm run lint:rules && npm test && npm run build"
   },
   "allowScripts": {
     "@prisma/engines@7.10.1": true,
