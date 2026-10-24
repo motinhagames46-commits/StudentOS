@@ -6,6 +6,12 @@ Organizador académico pessoal para estudantes de TPSI (IPVC). Reúne disciplina
 
 Documentação:
 
+- [`PRODUCT.md`](PRODUCT.md) — produto, público, âmbito e critérios;
+- [`AGENTS.md`](AGENTS.md) — instruções para agentes (o `CLAUDE.md` importa-as);
+- [`docs/onboarding.md`](docs/onboarding.md) — preparação local, base de dados e problemas conhecidos;
+- [`docs/quality.md`](docs/quality.md) — o que cada verificação prova, revisão e segurança;
+- [`docs/design.md`](docs/design.md) — interface, tokens e acessibilidade;
+- [`docs/setup.md`](docs/setup.md) — ferramentas de agentes (toolkit), versões e evidência;
 - [`docs/STUDENTOS_IMPLEMENTATION_SPEC.md`](docs/STUDENTOS_IMPLEMENTATION_SPEC.md) — especificação de implementação;
 - [`docs/ESPECIFICACAO-v2.md`](docs/ESPECIFICACAO-v2.md) — especificação funcional;
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — decisões técnicas, planeador e diferenças em relação ao spec;
@@ -138,11 +144,4 @@ Render (serviço web, Frankfurt) + Neon (PostgreSQL, UE), em plano gratuito. O p
 
 ## Resolução de problemas
 
-| Sintoma                                 | Causa provável e solução                                                                         |
-| --------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `ECONNREFUSED 127.0.0.1:54329`          | A base de dados local não está a correr: `npm run db` noutro terminal.                           |
-| `npm: command not found`                | Falta o Node no PATH: `export PATH="$PWD/.tools/node/bin:$PATH"`.                                |
-| Erros do Prisma depois de um `git pull` | Há migrações novas por aplicar: `npm run db:deploy -w @studentos/api`.                           |
-| `test:e2e` falha a abrir o browser      | `npx playwright install chromium`.                                                               |
-| A versão publicada demora a responder   | É o plano gratuito do Render: o primeiro pedido acorda o serviço (até 1 minuto).                 |
-| "Demasiadas tentativas" no login        | Limite de 10 tentativas falhadas a cada 15 minutos. Espera ou reinicia a API em desenvolvimento. |
+Ver [`docs/onboarding.md#problemas-conhecidos`](docs/onboarding.md#problemas-conhecidos).
