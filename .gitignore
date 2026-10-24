@@ -28,3 +28,6 @@ apps/api/test/fixtures/fichas-uc/.cache/
 # Playwright (testes E2E)
 test-results/
 playwright-report/
+
+# Grafo do Graphify (gerado localmente: graphify extract . --code-only --no-cluster)
+graphify-out/

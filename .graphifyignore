@@ -1,0 +1,24 @@
+# Exclusões do Graphify (baseadas em templates/project/.graphifyignore.example do toolkit, adaptadas).
+# Nunca indexar segredos, dependências, código gerado, skills de terceiros nem dados locais.
+.git/
+node_modules/
+dist/
+coverage/
+graphify-out/
+.agents/
+.claude/
+.tools/
+.pgdata/
+.vite/
+apps/api/src/generated/
+apps/api/test/fixtures/fichas-uc/.cache/
+test-results/
+playwright-report/
+.env
+.env.*
+*.pem
+*.key
+*.log
+*.tsbuildinfo
+package-lock.json
+skills-lock.json
