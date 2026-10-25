@@ -15,12 +15,12 @@ Recolhida a 2026-10-25. Gentelella ([ColorlibHQ/gentelella](https://github.com/C
 
 ## Acessibilidade (contrastes calculados)
 
-| Par | Rácio | WCAG AA |
-|---|---|---|
-| `#73879C` sobre `#F7F7F7` / `#fff` (texto principal) | 3,45 / 3,70 | falha |
-| `#1ABB9C` sobre `#fff` | 2,43 | falha |
-| Branco sobre `#1ABB9C` / `#3498DB` / `#E74C3C` | 2,43 / 3,15 / 3,82 | falha |
-| `#E7E7E7` / `#C4CFDA` sobre `#2A3F54` (barra lateral) | 8,77 / 6,86 | passa |
+| Par                                                   | Rácio              | WCAG AA |
+| ----------------------------------------------------- | ------------------ | ------- |
+| `#73879C` sobre `#F7F7F7` / `#fff` (texto principal)  | 3,45 / 3,70        | falha   |
+| `#1ABB9C` sobre `#fff`                                | 2,43               | falha   |
+| Branco sobre `#1ABB9C` / `#3498DB` / `#E74C3C`        | 2,43 / 3,15 / 3,82 | falha   |
+| `#E7E7E7` / `#C4CFDA` sobre `#2A3F54` (barra lateral) | 8,77 / 6,86        | passa   |
 
 Ajustes verificados (≥ 4,5:1): texto `#566A80`; verde para texto/botões `#0F7F6B` (manter `#1ABB9C` só em preenchimentos decorativos e no indicador ativo, ≥ 3:1 sobre `#2A3F54`); vermelho `#C0392B`; azul `#2874A6`; ícones ≥ 3:1 (ex. `#7B8794`). O original remove o contorno de foco (`outline: 0`): é preciso `:focus-visible`, e as setas ▲/▼ não podem depender só da cor.
 

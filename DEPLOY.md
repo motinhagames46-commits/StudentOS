@@ -39,7 +39,8 @@ Cada `git push` para `main` faz um novo deploy automaticamente.
 ## Notas
 
 - **Plano gratuito do Render:** o serviço adormece após cerca de 15 minutos sem pedidos, e o primeiro pedido seguinte pode demorar até 1 minuto. Para a defesa, abre a app uns minutos antes.
+- **Cache e domínio:** os ficheiros `/assets/*` têm o hash no nome e ficam em cache no browser durante um ano, por isso as visitas seguintes só esperam pelo servidor. O `apps/web/index.html` tem o endereço publicado (`https://studentos-7axk.onrender.com`) nas etiquetas Open Graph (`og:url` e `og:image`, pré-visualização ao partilhar a ligação): se o domínio mudar, atualiza-as.
 - **Dados de demonstração:** em produção não há seed. Cria uma conta na própria app. Se quiseres a conta demo, corre localmente `DATABASE_URL="<url do Neon>" npm run db:seed`. A palavra-passe da conta demo é pública (está no código), por isso não a uses com dados reais.
 - **Segredos:** nunca faças commit do `apps/api/.env`. Em produção, os segredos ficam só nas variáveis de ambiente do Render.
-- **Backup antes da defesa:** `pg_dump "<url do Neon>" > backup.sql`. O Neon também guarda histórico com *point-in-time restore*.
+- **Backup antes da defesa:** `pg_dump "<url do Neon>" > backup.sql`. O Neon também guarda histórico com _point-in-time restore_.
 - **Limites:** confirma os limites atuais dos planos gratuitos do Render e do Neon, porque mudam com frequência.

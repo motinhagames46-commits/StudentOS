@@ -1,6 +1,6 @@
 # StudentOS
 
-Organizador académico pessoal para estudantes de TPSI (IPVC). Reúne disciplinas, tarefas e avaliações com pesos, com o cálculo das médias e o simulador "quanto preciso no exame?". Inclui também horário com importação CSV/ICS, um planeador de estudo determinístico (sem IA) e o modo foco.
+Organizador académico pessoal para estudantes de TPSI (IPVC). Reúne disciplinas, tarefas e avaliações com pesos, com o cálculo das médias e o simulador "quanto preciso no exame?". Inclui também horário com importação CSV/ICS, um planeador de estudo determinístico (sem IA) e o modo foco. Quem visita sem sessão vê uma página de entrada com o simulador; depois do registo, um questionário de quatro passos monta a primeira semana de estudo.
 
 **Versão publicada:** <https://studentos-7axk.onrender.com> (plano gratuito: o primeiro acesso após inatividade pode demorar até 1 minuto).
 
@@ -87,7 +87,7 @@ Abre <http://localhost:5173>. Conta de demonstração do seed: `demo@studentos.t
 
 Os testes da API usam a base de dados `studentos_test`, que o `npm run db` cria automaticamente. Com Docker, `docker compose up -d` é uma alternativa ao `npm run db` (usa a mesma porta).
 
-Os testes E2E (`e2e/`) fazem o build, arrancam o `npm start` na porta 4100 com a base de dados `studentos_test` e correm no Chromium: o fluxo principal (registo → disciplina → avaliações do exemplo 4.1 → «Para passar precisas de 8,0» → tarefa concluída) e a verificação axe do painel, das tarefas e do detalhe da disciplina (falham com violações sérias ou críticas). Se o PostgreSQL local não estiver a correr, o Playwright arranca o `npm run db`. Na primeira vez é preciso descarregar o browser:
+Os testes E2E (`e2e/`) fazem o build, arrancam o `npm start` na porta 4100 com a base de dados `studentos_test` e correm no Chromium: o fluxo principal (registo → disciplina → avaliações do exemplo 4.1 → «Para passar precisas de 8,0» → tarefa concluída) o questionário de boas-vindas, a página de entrada e a verificação axe das páginas principais (falham com violações sérias ou críticas). Se o PostgreSQL local não estiver a correr, o Playwright arranca o `npm run db`. Na primeira vez é preciso descarregar o browser:
 
 ```bash
 npx playwright install chromium
@@ -106,6 +106,9 @@ Cada linha só está marcada como **Testado** se tiver testes automáticos que p
 | Tarefas: filtros, ordenação, pesquisa sem acentos, prioridade e duração estimada                                                                                                                          | API + componente + E2E       |
 | Avaliações com pesos, médias e simulador de nota necessária                                                                                                                                               | unitários + componente + E2E |
 | Painel, estatísticas, calendário (semana e mês) e alertas a 48 h; aviso «Em risco» nas disciplinas                                                                                                        | unitários + API + E2E + axe  |
+| Painel ao estilo Gentelella: barra lateral escura, painéis que se recolhem, linha de estatísticas e «Continuar configuração»                                                                              | componente + E2E + axe       |
+| Página de entrada para visitantes, com o simulador a correr só no browser                                                                                                                                 | E2E + axe                    |
+| Questionário de boas-vindas (disciplinas e ECTS, avaliações por modelo, horas livres, sessões) até ao plano real dos próximos 7 dias, confirmado pelo estudante                                           | unitários + E2E + axe        |
 | Exportar dados (JSON) e eliminar conta (pede email e palavra-passe)                                                                                                                                       | API + E2E                    |
 | Transferir disciplinas para outra conta (código de uso único, pré-visualização e confirmação)                                                                                                             | API + E2E                    |
 | Exportar o plano para o calendário pessoal (`.ics`): sessões planeadas, avaliações e prazos, com lembretes, UID estável e fuso de Lisboa; descarregado com a sessão, sem link público                     | API + E2E                    |

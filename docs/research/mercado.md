@@ -22,23 +22,23 @@ Recolhida a 2026-10-25 (pesquisa web; fontes ligadas). O Reddit não estava aces
 
 ## Funcionalidades em falta, por relevância
 
-| # | Funcionalidade | Porquê | Quem tem | Tamanho |
-|---|---|---|---|---|
-| 1 | Notificações (PWA instalável + push/email) | lembretes são o motivo de uso n.º 1 | MSL, Power Planner, Egenda, Structured, Todoist | M |
-| 2 | Tarefas recorrentes e subtarefas | ausência é queixa recorrente | MSL, Structured, Todoist, TickTick | S/M |
-| 3 | Faltas/assiduidade por UC com limite | regras de frequência [INF] | Agenda do Universitário | S |
-| 4 | Média do curso e histórico por semestre (ponderada por ECTS, projeções) | visão do percurso | Power Planner, iStudiez, Studo | M |
-| 5 | Indicador de carga/folga semanal (horas necessárias vs. livres) | aproveita o planeador; núcleo do Shovel | Shovel, Studyo | S/M |
-| 6 | Compromissos fixos recorrentes (trabalho, desporto) como ocupado | trabalhadores-estudantes [INF] | MSL, Reclaim, Structured | S/M |
-| 7 | Calendário externo subscrito (feed .ics com token; Google/Outlook) | menos trabalho manual | MSL, Power Planner, Reclaim | M/L |
-| 8 | Estatísticas de foco por UC e "streak" leve | motivação | MSL, Forest, Shovel | S/M |
-| 9 | Quick-add em português ("relatório BD sexta 23h") | rapidez | Todoist, Motion, Structured | S/M |
-| 10 | Calendário académico (épocas normal/recurso/especial, interrupções) | específico de Portugal [INF] | — | M |
-| 11 | Replanear sessões falhadas com um clique | já existe base no planeador | Structured, Motion | S/M |
-| 12 | Links/anexos por UC e tarefa | materiais num só sítio | myHomework, Notion | S (links) |
-| 13 | Importar ficha de UC / sílabo com pré-visualização | app vazia é o maior atrito | Shovel, Coursicle, StudySmarter | L |
-| 14 | Personalização e acessibilidade (tema escuro, fonte para dislexia) | conforto | MSL (pago), Structured | S |
-| 15 | Partilha em trabalhos de grupo | colaboração | iStudiez, MSL Family, Studyo | M/L |
+| #   | Funcionalidade                                                          | Porquê                                  | Quem tem                                        | Tamanho   |
+| --- | ----------------------------------------------------------------------- | --------------------------------------- | ----------------------------------------------- | --------- |
+| 1   | Notificações (PWA instalável + push/email)                              | lembretes são o motivo de uso n.º 1     | MSL, Power Planner, Egenda, Structured, Todoist | M         |
+| 2   | Tarefas recorrentes e subtarefas                                        | ausência é queixa recorrente            | MSL, Structured, Todoist, TickTick              | S/M       |
+| 3   | Faltas/assiduidade por UC com limite                                    | regras de frequência [INF]              | Agenda do Universitário                         | S         |
+| 4   | Média do curso e histórico por semestre (ponderada por ECTS, projeções) | visão do percurso                       | Power Planner, iStudiez, Studo                  | M         |
+| 5   | Indicador de carga/folga semanal (horas necessárias vs. livres)         | aproveita o planeador; núcleo do Shovel | Shovel, Studyo                                  | S/M       |
+| 6   | Compromissos fixos recorrentes (trabalho, desporto) como ocupado        | trabalhadores-estudantes [INF]          | MSL, Reclaim, Structured                        | S/M       |
+| 7   | Calendário externo subscrito (feed .ics com token; Google/Outlook)      | menos trabalho manual                   | MSL, Power Planner, Reclaim                     | M/L       |
+| 8   | Estatísticas de foco por UC e "streak" leve                             | motivação                               | MSL, Forest, Shovel                             | S/M       |
+| 9   | Quick-add em português ("relatório BD sexta 23h")                       | rapidez                                 | Todoist, Motion, Structured                     | S/M       |
+| 10  | Calendário académico (épocas normal/recurso/especial, interrupções)     | específico de Portugal [INF]            | —                                               | M         |
+| 11  | Replanear sessões falhadas com um clique                                | já existe base no planeador             | Structured, Motion                              | S/M       |
+| 12  | Links/anexos por UC e tarefa                                            | materiais num só sítio                  | myHomework, Notion                              | S (links) |
+| 13  | Importar ficha de UC / sílabo com pré-visualização                      | app vazia é o maior atrito              | Shovel, Coursicle, StudySmarter                 | L         |
+| 14  | Personalização e acessibilidade (tema escuro, fonte para dislexia)      | conforto                                | MSL (pago), Structured                          | S         |
+| 15  | Partilha em trabalhos de grupo                                          | colaboração                             | iStudiez, MSL Family, Studyo                    | M/L       |
 
 Deixado de fora de propósito: flashcards (ligar ao Anki), digitalizar horário por foto (o .ics/.csv cobre), chat/coach de IA (valor não demonstrado nas reviews e contrário ao planeador determinístico).
 

@@ -30,7 +30,7 @@ Testes isolados: `npm test -w @studentos/api -- test/planner.test.ts`. Os testes
 - Regras de domínio (médias, planeador, ritmo pelos ECTS, fusos) em unitários puros no `shared`.
 - API: integração com BD real, incluindo isolamento entre utilizadores, erros com `requestId`, limites de pedidos e casos de regressão escritos a falhar antes da correção.
 - Web: componentes críticos com Testing Library.
-- E2E: percursos críticos (registo → médias, planeador, importação, conta/transferência) e axe (sem violações sérias/críticas). Não há testes de carga nem cobertura medida.
+- E2E: percursos críticos (registo → questionário de boas-vindas → plano confirmado, registo → médias, planeador, importação, conta/transferência, página de entrada sem pedidos à API, cache dos ficheiros) e axe (sem violações sérias/críticas). Não há testes de carga nem cobertura medida.
 - Capacidades adotadas sem execução própria aqui: `supabase-postgres-best-practices` (usar com BD descartável; `EXPLAIN ANALYZE` executa a consulta), `web-design-guidelines` (revisão de UI), `differential-review` (diffs sensíveis).
 
 ## Revisão depois de implementar ou corrigir
