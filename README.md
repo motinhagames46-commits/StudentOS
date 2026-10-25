@@ -16,7 +16,9 @@ Documentação:
 - [`docs/ESPECIFICACAO-v2.md`](docs/ESPECIFICACAO-v2.md) — especificação funcional;
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — decisões técnicas, planeador e diferenças em relação ao spec;
 - [`docs/API.md`](docs/API.md) — endpoints;
-- [`DEPLOY.md`](DEPLOY.md) — publicação.
+- [`DEPLOY.md`](DEPLOY.md) — publicação;
+- [`docs/decisoes-pendentes.md`](docs/decisoes-pendentes.md) — decisões do dono do produto e o que ficou adiado;
+- [`docs/guiao-teste-colegas.md`](docs/guiao-teste-colegas.md) — guião de 20 minutos para testar com colegas.
 
 ## Stack
 
