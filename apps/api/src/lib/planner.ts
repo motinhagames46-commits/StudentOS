@@ -26,11 +26,10 @@ const ASSESSMENT_LABELS: Record<string, string> = {
 };
 
 export async function getPreferences(userId: number) {
-  const preferences = await prisma.studyPreferences.upsert({
-    where: { userId },
-    create: { userId },
-    update: {},
-  });
+  // Criação idempotente (ON CONFLICT DO NOTHING): o painel pede sessões e sugestão em simultâneo e o
+  // upsert do Prisma colidia na conta nova (409 num dos pedidos).
+  await prisma.studyPreferences.createMany({ data: [{ userId }], skipDuplicates: true });
+  const preferences = await prisma.studyPreferences.findUniqueOrThrow({ where: { userId } });
   const availability = await prisma.availabilityRule.findMany({
     where: { userId },
     orderBy: [{ weekday: 'asc' }, { startMinute: 'asc' }],

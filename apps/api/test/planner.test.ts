@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
 import { DEFAULT_TIMEZONE, addDaysToKey, weekdayOfKey, zonedDayKey, zonedToInstant } from '@studentos/shared';
-import { createUserAndLogin, resetDb } from './helpers.js';
+import { createUserAndLogin, registerUser, resetDb } from './helpers.js';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
@@ -297,6 +297,23 @@ describe('isolamento por utilizador', () => {
 });
 
 describe('sugestão "o que devo estudar agora?" (spec §11.7)', () => {
+  it('pedidos simultâneos de uma conta nova não falham ao criar as preferências', async () => {
+    // O painel pede as sessões e a sugestão ao mesmo tempo; ambos criam as preferências em falta.
+    // Várias contas novas em paralelo, para a corrida acontecer de forma reprodutível.
+    const users = await Promise.all(['ana', 'bea', 'caio', 'duda', 'edu'].map((name) => registerUser(name)));
+    const sessions = `/api/planner/sessions?from=${iso(0)}&to=${iso(DAY)}`;
+    const responses = await Promise.all(
+      users.flatMap(({ cookie }) =>
+        Array.from({ length: 6 }, (_, i) =>
+          request(app)
+            .get(i % 2 ? '/api/planner/suggestion' : sessions)
+            .set('Cookie', cookie),
+        ),
+      ),
+    );
+    expect(responses.filter((r) => r.status !== 200).map((r) => r.body)).toEqual([]);
+  });
+
   it('sem trabalho pendente diz o que fazer', async () => {
     const res = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
     expect(res.body.kind).toBe('missing');
