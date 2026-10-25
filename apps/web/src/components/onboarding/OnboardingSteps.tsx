@@ -16,7 +16,7 @@ export function WelcomeStep({ name, onStart }: { name: string; onStart: () => vo
   const items: { icon: ReactNode; text: string }[] = [
     {
       icon: <BookOpen aria-hidden="true" className="size-5" />,
-      text: 'As tuas disciplinas e os ECTS — para saber quanto tempo cada uma pede.',
+      text: 'As tuas disciplinas e os créditos ECTS de cada uma — para saber quanto tempo pedem.',
     },
     {
       icon: <ClipboardList aria-hidden="true" className="size-5" />,
@@ -136,7 +136,7 @@ export function DisciplinesStep({
       <StepHeader
         headingRef={headingRef}
         title="Que disciplinas tens este semestre?"
-        why="Os ECTS dizem quanto trabalho cada disciplina pede (1 ECTS corresponde a 25–28 h). Estão na ficha de cada UC."
+        why="Os ECTS são os créditos de cada unidade curricular (UC): 1 ECTS corresponde a 25–28 horas de trabalho. Encontra-los na ficha da UC ou no plano de estudos do curso; se não souberes, deixa em branco."
       />
       {semester && (
         <fieldset className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -238,7 +238,7 @@ export function AssessmentsStep({ headingRef, onDone }: { headingRef: HeadingRef
       <StepHeader
         headingRef={headingRef}
         title="Como é avaliada cada disciplina?"
-        why="Escolhe o modelo mais parecido. Com isto calculamos a tua média e a nota de que precisas; acertas pesos e datas depois, na disciplina."
+        why="Escolhe o modelo mais parecido. Com isto calculamos a tua média de 0 a 20 (a nota final arredonda às unidades: 9,5 já é 10) e a nota de que precisas; acertas pesos e datas depois, na disciplina."
       />
       {disciplines.isPending ? (
         <LoadingList rows={3} />

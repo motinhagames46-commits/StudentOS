@@ -12,7 +12,10 @@ export function LandingDemo() {
     <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-xl shadow-stone-900/5 md:p-6">
       <p className="text-xs font-medium tracking-wide text-accent uppercase">Experimenta já</p>
       <h2 className="mt-1 text-lg font-semibold text-stone-900">Quanto precisas no exame?</h2>
-      <p className="mt-1 text-sm text-stone-600">Disciplina de exemplo: teste com 40 % e exame com 60 % (mínimo 8).</p>
+      <p className="mt-1 text-sm text-stone-600">
+        Disciplina de exemplo: teste com 40 % e exame com 60 % (mínimo 8). A nota final arredonda às unidades, por isso
+        passar é chegar a 9,5.
+      </p>
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <label htmlFor={testId} className="text-sm font-medium text-stone-700">

@@ -22,7 +22,7 @@ const secondaryCta =
   'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50';
 
 const PAINS = [
-  'As datas estão espalhadas pelo Moodle, pelos emails e pelas fichas das UC.',
+  'As datas estão espalhadas pelo Moodle, pelos emails e pelas fichas das unidades curriculares (UC).',
   'Não sabes se um 8 no teste ainda te deixa passar — nem quanto precisas no exame.',
   'Estudas quando sobra tempo, e o tempo sobra quase sempre na véspera.',
 ];
@@ -31,7 +31,7 @@ const BENEFITS: { icon: LucideIcon; title: string; text: string }[] = [
   {
     icon: Calculator,
     title: 'Sabes sempre a nota de que precisas',
-    text: 'Médias ponderadas na escala 0–20, com a nota mínima de cada componente. O simulador diz-te quanto precisas para passar, para um 14 ou para um 16 — e avisa quando já não dá.',
+    text: 'Médias ponderadas na escala 0–20, com a nota mínima de cada componente. A nota final arredonda às unidades, por isso 9,5 já é 10 — e o simulador faz essas contas: diz-te quanto precisas para passar, para um 14 ou para um 16, e avisa quando já não dá.',
   },
   {
     icon: CalendarCheck,
@@ -41,7 +41,7 @@ const BENEFITS: { icon: LucideIcon; title: string; text: string }[] = [
   {
     icon: Gauge,
     title: 'O ritmo certo, pelos ECTS',
-    text: 'Cada ECTS corresponde a 25–28 horas de trabalho. O StudentOS reparte esse tempo até à avaliação, para não ficar tudo para a última semana.',
+    text: 'Os ECTS são os créditos de cada disciplina (estão na ficha da UC): cada um corresponde a 25–28 horas de trabalho. O StudentOS reparte esse tempo até à avaliação, para não ficar tudo para a última semana.',
   },
   {
     icon: CalendarRange,
@@ -72,7 +72,11 @@ const FAQ = [
   },
   {
     q: 'Como é calculada a nota de que preciso?',
-    a: 'Com a média ponderada das avaliações (pesos que somam 100 %) e as notas mínimas de cada componente. Se for impossível atingir a nota, o StudentOS diz-to.',
+    a: 'Com a média ponderada das avaliações (pesos que somam 100 %) e as notas mínimas de cada componente. A nota final arredonda às unidades, como nas pautas: 9,5 já conta como 10. Se for impossível atingir a nota, o StudentOS diz-to.',
+  },
+  {
+    q: 'Funciona com outras escalas de notas?',
+    a: 'Por agora só com a escala portuguesa de 0 a 20 e os créditos ECTS. Outras escalas e línguas ficam para quando houver estudantes de outros países a usar a app.',
   },
   {
     q: 'O que acontece aos meus dados?',
@@ -254,7 +258,8 @@ export function LandingPage() {
               </ul>
               <h3 className="mt-8 text-lg font-semibold">Quem fez</h3>
               <p className="mt-2 text-stone-200">
-                Um estudante de TPSI no IPVC, a partir dos problemas reais de quem estuda no ensino superior.
+                Um estudante que conhece o problema por dentro, a partir das regras reais de avaliação do ensino
+                superior português.
               </p>
             </div>
           </div>
