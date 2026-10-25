@@ -35,8 +35,10 @@ export function PrivacyPage() {
         </ul>
         <p>
           Usamos um único cookie, de sessão, necessário para manteres a sessão iniciada. Não há cookies de publicidade
-          nem de análise. O endereço IP é usado apenas em memória, durante 15 minutos, para limitar tentativas de
-          acesso; não fica guardado na base de dados.
+          nem de análise. No armazenamento local do browser ficam só preferências de visualização (painéis do painel que
+          recolheste) e uma marca técnica para recarregar a app uma vez depois de uma atualização; não saem do teu
+          dispositivo. O simulador da página de entrada calcula tudo no browser e não envia nada. O endereço IP é usado
+          apenas em memória, durante 15 minutos, para limitar tentativas de acesso; não fica guardado na base de dados.
         </p>
 
         <h2 className="pt-2 text-base font-semibold text-stone-900">Quanto tempo</h2>

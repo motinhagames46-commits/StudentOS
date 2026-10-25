@@ -78,8 +78,18 @@ export function createApp() {
 
   // Produção: uma só origem — o Express serve também o frontend (secção 8.1).
   if (existsSync(WEB_DIST)) {
+    // Ficheiros com hash no nome nunca mudam: cache longa. Um ficheiro em falta (versão antiga) dá 404, não o HTML.
+    app.use(
+      '/assets',
+      express.static(path.join(WEB_DIST, 'assets'), { immutable: true, maxAge: '1y' }),
+      (_req, res) => {
+        res.status(404).end();
+      },
+    );
     app.use(express.static(WEB_DIST, { index: false, maxAge: '1h' }));
     app.get('/{*path}', (_req, res) => {
+      // O HTML revalida sempre, para cada publicação chegar logo ao browser.
+      res.setHeader('Cache-Control', 'no-cache');
       res.sendFile(path.join(WEB_DIST, 'index.html'));
     });
   }

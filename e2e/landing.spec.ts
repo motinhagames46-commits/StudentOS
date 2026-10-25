@@ -47,3 +47,19 @@ test('outras rotas sem sessão continuam a pedir o login', async ({ page }) => {
   await page.goto('/tarefas');
   await expect(page).toHaveURL(/\/login$/);
 });
+
+test('ficheiros com hash ficam em cache longa e o HTML revalida a cada visita', async ({ page }) => {
+  const assetHeaders: string[] = [];
+  page.on('response', (r) => {
+    if (new URL(r.url()).pathname.startsWith('/assets/')) assetHeaders.push(r.headers()['cache-control'] ?? '');
+  });
+  const html = await page.goto('/');
+  expect(html?.headers()['cache-control']).toBe('no-cache');
+  await expect(page.getByRole('heading', { level: 1, name: /Organiza o semestre/ })).toBeVisible();
+  expect(assetHeaders.length).toBeGreaterThan(0);
+  for (const h of assetHeaders) expect(h).toContain('immutable');
+
+  // Um ficheiro de uma versão antiga dá 404 (não o HTML), para a app recarregar a versão nova
+  const missing = await page.request.get('/assets/nao-existe-abc123.js');
+  expect(missing.status()).toBe(404);
+});

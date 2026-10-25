@@ -1,20 +1,24 @@
+import { Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router';
 import { AppLayout } from './components/AppLayout';
-import { RequireAuth } from './components/RequireAuth';
-import { AccountPage } from './pages/AccountPage';
-import { CalendarPage } from './pages/CalendarPage';
+import { FullPageSpinner, RequireAuth } from './components/RequireAuth';
+import { lazyPage } from './lib/lazyPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
-import { DashboardPage } from './pages/DashboardPage';
-import { DisciplineDetailPage } from './pages/DisciplineDetailPage';
-import { DisciplinesPage } from './pages/DisciplinesPage';
-import { ImportPage } from './pages/ImportPage';
-import { IntegrationsPage } from './pages/IntegrationsPage';
-import { OnboardingPage } from './pages/OnboardingPage';
-import { PlanPage } from './pages/PlanPage';
-import { PreferencesPage } from './pages/PreferencesPage';
 import { PrivacyPage } from './pages/PrivacyPage';
-import { StudySessionsPage } from './pages/StudySessionsPage';
-import { TasksPage } from './pages/TasksPage';
+
+// Páginas da app carregadas à parte: quem só vê a página de entrada ou o login descarrega menos.
+const AccountPage = lazyPage(() => import('./pages/AccountPage'), 'AccountPage');
+const CalendarPage = lazyPage(() => import('./pages/CalendarPage'), 'CalendarPage');
+const DashboardPage = lazyPage(() => import('./pages/DashboardPage'), 'DashboardPage');
+const DisciplineDetailPage = lazyPage(() => import('./pages/DisciplineDetailPage'), 'DisciplineDetailPage');
+const DisciplinesPage = lazyPage(() => import('./pages/DisciplinesPage'), 'DisciplinesPage');
+const ImportPage = lazyPage(() => import('./pages/ImportPage'), 'ImportPage');
+const IntegrationsPage = lazyPage(() => import('./pages/IntegrationsPage'), 'IntegrationsPage');
+const OnboardingPage = lazyPage(() => import('./pages/OnboardingPage'), 'OnboardingPage');
+const PlanPage = lazyPage(() => import('./pages/PlanPage'), 'PlanPage');
+const PreferencesPage = lazyPage(() => import('./pages/PreferencesPage'), 'PreferencesPage');
+const StudySessionsPage = lazyPage(() => import('./pages/StudySessionsPage'), 'StudySessionsPage');
+const TasksPage = lazyPage(() => import('./pages/TasksPage'), 'TasksPage');
 
 function NotFound() {
   return (
@@ -34,7 +38,14 @@ export function App() {
       <Route path="/registo" element={<RegisterPage />} />
       <Route path="/privacidade" element={<PrivacyPage />} />
       <Route element={<RequireAuth />}>
-        <Route path="boas-vindas" element={<OnboardingPage />} />
+        <Route
+          path="boas-vindas"
+          element={
+            <Suspense fallback={<FullPageSpinner />}>
+              <OnboardingPage />
+            </Suspense>
+          }
+        />
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="calendario" element={<CalendarPage />} />

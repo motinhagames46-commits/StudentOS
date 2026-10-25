@@ -3,13 +3,40 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="StudentOS — organizador académico: tarefas, disciplinas, avaliações e médias." />
+    <title>StudentOS</title>
+    <meta
+      name="description"
+      content="Organiza o semestre, sabe a nota de que precisas em cada avaliação e estuda com um plano. Grátis, para estudantes do ensino superior."
+    />
     <meta name="theme-color" content="#ffffff" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>StudentOS</title>
+    <!-- Pré-visualização ao partilhar a ligação (WhatsApp, Discord…). A imagem precisa de URL absoluto: muda-o se o domínio mudar (DEPLOY.md). -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="StudentOS" />
+    <meta property="og:locale" content="pt_PT" />
+    <meta property="og:title" content="StudentOS — organiza o semestre e estuda com um plano" />
+    <meta
+      property="og:description"
+      content="Disciplinas, avaliações, prazos e horário num só sítio, com a nota de que precisas e um plano de estudo semanal. Grátis."
+    />
+    <meta property="og:url" content="https://studentos-7axk.onrender.com/" />
+    <meta property="og:image" content="https://studentos-7axk.onrender.com/landing/painel.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="800" />
+    <meta property="og:image:alt" content="Painel do StudentOS com dados de exemplo" />
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Mostrado enquanto o JavaScript carrega; o React substitui-o. -->
+      <div
+        style="min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; font-family: system-ui, sans-serif; color: #57534e"
+      >
+        <img src="/favicon.svg" alt="" width="40" height="40" />
+        <p style="margin: 0; font-size: 14px">A carregar o StudentOS…</p>
+      </div>
+    </div>
+    <noscript>O StudentOS precisa de JavaScript ativo no browser.</noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

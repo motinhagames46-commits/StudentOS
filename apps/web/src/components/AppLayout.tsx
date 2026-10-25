@@ -13,10 +13,11 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { useLogout, useMe } from '../hooks/useAuth';
 import { AlertsBell } from './AlertsBell';
+import { LoadingList } from './ui';
 
 interface NavItem {
   to: string;
@@ -148,7 +149,9 @@ export function AppLayout() {
           </span>
         </header>
         <main id="conteudo" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-10">
-          <Outlet />
+          <Suspense fallback={<LoadingList rows={4} />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
 
