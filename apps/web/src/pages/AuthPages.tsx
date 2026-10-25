@@ -13,7 +13,9 @@ function AuthShell({ title, subtitle, children }: { title: string; subtitle: str
     <main className="flex min-h-dvh items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
-          <img src="/favicon.svg" alt="" className="mx-auto mb-4 size-10" />
+          <Link to="/" aria-label="StudentOS — página inicial" className="mx-auto mb-4 block size-10">
+            <img src="/favicon.svg" alt="" className="size-10" />
+          </Link>
           <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{title}</h1>
           <p className="mt-1 text-sm text-stone-500">{subtitle}</p>
         </div>

@@ -2,6 +2,7 @@ import { Loader2 } from 'lucide-react';
 import { Navigate, Outlet, useLocation } from 'react-router';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
+import { LandingPage } from '../pages/LandingPage';
 import { ErrorState } from './ui';
 
 export function FullPageSpinner() {
@@ -24,6 +25,12 @@ export function RequireAuth() {
       </div>
     );
   }
-  if (!data) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  // Sem sessão, a raiz é a página de entrada; as outras rotas pedem o login.
+  if (!data)
+    return location.pathname === '/' ? (
+      <LandingPage />
+    ) : (
+      <Navigate to="/login" replace state={{ from: location.pathname }} />
+    );
   return <Outlet />;
 }
