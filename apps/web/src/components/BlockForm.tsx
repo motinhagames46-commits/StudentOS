@@ -7,8 +7,9 @@ import {
 } from '@studentos/shared';
 import { useState, type FormEvent } from 'react';
 import { useCreateBlock, useDisciplines } from '../hooks/queries';
+import { useMe } from '../hooks/useAuth';
 import { ApiError, errorMessage } from '../lib/api';
-import { blockKindLabels } from '../lib/format';
+import { blockKindLabels, isoToDateOnly } from '../lib/format';
 import { Button, FormError, SelectField, TextField } from './ui';
 
 function toIso(day: string, time: string): string | null {
@@ -18,16 +19,20 @@ function toIso(day: string, time: string): string | null {
   return zonedToInstant(+d[1]!, +d[2]!, +d[3]!, +t[1]!, +t[2]!, DEFAULT_TIMEZONE).toISOString();
 }
 
-/** Criação manual de aulas e eventos (com repetição semanal opcional). */
-export function BlockForm({ onDone }: { onDone: () => void }) {
+/**
+ * Criação manual de aulas e eventos (com repetição semanal opcional). `commitment` prepara um compromisso fixo
+ * (trabalho, treino…): semanal até ao fim do semestre e ocupado, para o planeador não marcar estudo por cima.
+ */
+export function BlockForm({ onDone, commitment = false }: { onDone: () => void; commitment?: boolean }) {
   const create = useCreateBlock();
   const disciplines = useDisciplines();
+  const semesterEnd = useMe().data?.activeSemester?.endDate;
   const [title, setTitle] = useState('');
-  const [kind, setKind] = useState<BlockKind>('CLASS');
+  const [kind, setKind] = useState<BlockKind>(commitment ? 'OTHER' : 'CLASS');
   const [day, setDay] = useState('');
   const [start, setStart] = useState('');
   const [end, setEnd] = useState('');
-  const [repeatUntil, setRepeatUntil] = useState('');
+  const [repeatUntil, setRepeatUntil] = useState(commitment && semesterEnd ? isoToDateOnly(semesterEnd) : '');
   const [location, setLocation] = useState('');
   const [disciplineId, setDisciplineId] = useState('');
   const [isBusy, setIsBusy] = useState(true);
@@ -77,7 +82,7 @@ export function BlockForm({ onDone }: { onDone: () => void }) {
       <div className="grid gap-3 sm:grid-cols-[1fr_10rem]">
         <TextField
           label="Título"
-          placeholder="Ex.: Programação Web (T)"
+          placeholder={commitment ? 'Ex.: Trabalho, treino' : 'Ex.: Programação Web (T)'}
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           error={errors.title}

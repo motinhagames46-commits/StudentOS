@@ -1,5 +1,5 @@
 import { DEFAULT_TIMEZONE, zonedDayKey } from '@studentos/shared';
-import { CalendarArrowDown, CalendarDays, FileUp, Plus, Rows3 } from 'lucide-react';
+import { CalendarArrowDown, CalendarDays, FileUp, Plus, Repeat, Rows3 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { BlockForm } from '../components/BlockForm';
@@ -15,7 +15,7 @@ import type { BlockOccurrence, CalendarData } from '../lib/types';
 /** Calendário: vista semanal (aulas, eventos, prazos) e mensal (spec §7.5). */
 export function CalendarPage() {
   const [view, setView] = useState<'week' | 'month'>('week');
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<'block' | 'commitment' | null>(null);
   const [selected, setSelected] = useState<BlockOccurrence | null>(null);
 
   function handleSelect(id: string, data: CalendarData | undefined) {
@@ -36,18 +36,29 @@ export function CalendarPage() {
               Importar horário
             </Link>
             {!adding && (
-              <Button onClick={() => setAdding(true)}>
-                <Plus aria-hidden="true" className="size-4" />
-                Aula ou evento
-              </Button>
+              <>
+                <Button variant="secondary" onClick={() => setAdding('commitment')}>
+                  <Repeat aria-hidden="true" className="size-4" />
+                  Compromisso fixo
+                </Button>
+                <Button onClick={() => setAdding('block')}>
+                  <Plus aria-hidden="true" className="size-4" />
+                  Aula ou evento
+                </Button>
+              </>
             )}
           </div>
         }
       />
 
       {adding && (
-        <Card title="Nova aula ou evento" className="mb-4">
-          <BlockForm onDone={() => setAdding(false)} />
+        <Card title={adding === 'commitment' ? 'Novo compromisso fixo' : 'Nova aula ou evento'} className="mb-4">
+          {adding === 'commitment' && (
+            <p className="mb-3 text-sm text-stone-600">
+              Trabalho, treinos, explicações… Repete-se todas as semanas e o plano de estudo nunca marca nada por cima.
+            </p>
+          )}
+          <BlockForm key={adding} commitment={adding === 'commitment'} onDone={() => setAdding(null)} />
         </Card>
       )}
 

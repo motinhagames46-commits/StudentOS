@@ -1,4 +1,4 @@
-import type { AvailabilityWindowInput } from '@studentos/shared';
+import { DEFAULT_TIMEZONE, addDaysToKey, zonedDayKey, type AvailabilityWindowInput } from '@studentos/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useStudyPreferences } from '../../hooks/queries';
@@ -8,20 +8,31 @@ import {
   STUDY_PERIODS,
   WEEKDAY_LABELS,
   availabilityFromChoices,
+  commitmentBlock,
   weeklyAvailableMinutes,
 } from '../../lib/onboarding';
+import { isoToDateOnly } from '../../lib/format';
+import type { Semester } from '../../lib/types';
+import { CommitmentsField, commitmentErrors, type CommitmentRow } from './CommitmentsField';
 import { FormError, SelectField } from '../ui';
 import { StepActions, StepHeader, type HeadingRef } from './StepParts';
 
 // Passos 3 e 4 do questionário: disponibilidade e preferências de sessão (alimentam o planeador).
 export function AvailabilityStep({
   headingRef,
+  semester,
   onDone,
 }: {
   headingRef: HeadingRef;
+  semester: Semester | null;
   onDone: (windows: AvailabilityWindowInput[] | null) => void;
 }) {
+  const queryClient = useQueryClient();
   const prefs = useStudyPreferences();
+  const [commitments, setCommitments] = useState<CommitmentRow[]>([]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [days, setDays] = useState<number[]>([1, 2, 3, 4, 5]);
   const [periods, setPeriods] = useState<string[]>(['fim-tarde']);
   const [keep, setKeep] = useState<boolean | null>(null);
@@ -34,18 +45,41 @@ export function AvailabilityStep({
       ? (list as (number | string)[]).filter((v) => v !== value)
       : [...list, value];
 
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const windows = keepExisting ? null : availabilityFromChoices(days, periods);
+    const errs = commitmentErrors(commitments);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+    if (commitments.length === 0) return onDone(windows);
+
+    const today = zonedDayKey(new Date(), DEFAULT_TIMEZONE);
+    const semesterEnd = semester ? isoToDateOnly(semester.endDate) : '';
+    // Até ao fim do semestre; sem semestre (ou já terminado), meio ano.
+    const until = semesterEnd > today ? semesterEnd : addDaysToKey(today, 182);
+    setSaving(true);
+    setFormError(null);
+    try {
+      for (const c of commitments) {
+        await api('/schedule-blocks', { method: 'POST', body: commitmentBlock(c, today, until) });
+        // Já gravado: sai da lista, para tentar de novo não o duplicar.
+        setCommitments((rs) => rs.filter((x) => x.key !== c.key));
+      }
+      void queryClient.invalidateQueries();
+      onDone(windows);
+    } catch (err) {
+      setFormError(err instanceof ApiError && err.details.length ? err.details[0]!.message : errorMessage(err));
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onDone(keepExisting ? null : availabilityFromChoices(days, periods));
-      }}
-      noValidate
-    >
+    <form onSubmit={(e) => void submit(e)} noValidate>
       <StepHeader
         headingRef={headingRef}
         title="Quando podes estudar?"
-        why="O plano só marca sessões nestas horas e nunca por cima das tuas aulas. É uma preferência: mudas quando quiseres."
+        why="O plano só marca sessões nestas horas e nunca por cima das tuas aulas nem dos compromissos fixos. É uma preferência: mudas quando quiseres."
       />
       {hasExisting && (
         <label className="mb-4 flex items-center gap-2 text-sm text-stone-700">
@@ -96,7 +130,9 @@ export function AvailabilityStep({
           </p>
         </>
       )}
-      <StepActions saving={false} skip={() => onDone(null)} />
+      <CommitmentsField rows={commitments} onChange={setCommitments} errors={errors} />
+      <FormError message={formError} />
+      <StepActions saving={saving} skip={() => onDone(null)} />
     </form>
   );
 }

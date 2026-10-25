@@ -138,7 +138,7 @@ export function formatTime(iso: string): string {
   );
 }
 
-export const blockKindLabels: Record<BlockKind, string> = { CLASS: 'Aula', EVENT: 'Evento', OTHER: 'Outro' };
+export const blockKindLabels: Record<BlockKind, string> = { CLASS: 'Aula', EVENT: 'Evento', OTHER: 'Compromisso' };
 
 export const originLabels: Record<'MANUAL' | 'IMPORT_ICS' | 'IMPORT_CSV', string> = {
   MANUAL: 'Criado manualmente',

@@ -30,4 +30,9 @@
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-accent;
   }
+  /* Caixas de seleção e opções nativas no acento da marca (sem o azul do browser) */
+  input[type='checkbox'],
+  input[type='radio'] {
+    accent-color: var(--color-accent);
+  }
 }

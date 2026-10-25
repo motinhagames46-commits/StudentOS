@@ -85,6 +85,7 @@ export function OnboardingPage() {
           {step === 3 && (
             <AvailabilityStep
               headingRef={headingRef}
+              semester={me.activeSemester}
               onDone={(windows) => {
                 setAvailability(windows);
                 next();

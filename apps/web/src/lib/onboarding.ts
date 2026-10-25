@@ -1,7 +1,15 @@
 // Regras puras do questionário de boas-vindas: modelos de avaliação, disponibilidade a partir de
 // períodos e resumo do plano proposto. Cada resposta alimenta um modelo real (disciplinas, avaliações,
 // preferências), por isso nada aqui é decorativo.
-import type { AvailabilityWindowInput, ProposedSession } from '@studentos/shared';
+import {
+  DEFAULT_TIMEZONE,
+  addDaysToKey,
+  weekdayOfKey,
+  zonedToInstant,
+  type AvailabilityWindowInput,
+  type ProposedSession,
+  type ScheduleBlockCreateInput,
+} from '@studentos/shared';
 
 export type AssessmentTypeCode = 'TEST' | 'EXAM' | 'PROJECT' | 'ASSIGNMENT' | 'PRESENTATION' | 'OTHER';
 
@@ -64,6 +72,7 @@ export const STUDY_PERIODS: StudyPeriod[] = [
 ];
 
 export const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+export const WEEKDAY_NAMES = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
 /** Uma janela por dia × período escolhido (dias 1 = segunda … 7 = domingo), por ordem. */
 export function availabilityFromChoices(weekdays: number[], periodIds: string[]): AvailabilityWindowInput[] {
@@ -106,4 +115,34 @@ export function summarizeByDiscipline(
   return [...byCode.entries()]
     .map(([code, v]) => ({ code, ...v }))
     .sort((a, b) => b.minutes - a.minutes || a.code.localeCompare(b.code));
+}
+
+export interface Commitment {
+  title: string;
+  weekday: number; // 1 = segunda … 7 = domingo
+  start: string; // "HH:MM"
+  end: string;
+}
+
+/** Primeiro dia (hoje incluído) que calha no dia da semana pedido. */
+export function firstDateOnWeekday(todayKey: string, weekday: number): string {
+  const offset = (weekday - weekdayOfKey(todayKey) + 7) % 7;
+  return addDaysToKey(todayKey, offset);
+}
+
+/** Compromisso fixo (trabalho, treino…) como bloco semanal ocupado, de hoje até `untilKey`, em hora de Lisboa. */
+export function commitmentBlock(c: Commitment, todayKey: string, untilKey: string): ScheduleBlockCreateInput {
+  const [y, m, d] = firstDateOnWeekday(todayKey, c.weekday).split('-').map(Number) as [number, number, number];
+  const at = (time: string) => {
+    const [h, min] = time.split(':').map(Number) as [number, number];
+    return zonedToInstant(y, m, d, h, min, DEFAULT_TIMEZONE).toISOString();
+  };
+  return {
+    title: c.title.trim(),
+    kind: 'OTHER',
+    isBusy: true,
+    startAt: at(c.start),
+    endAt: at(c.end),
+    repeatWeeklyUntil: untilKey,
+  };
 }

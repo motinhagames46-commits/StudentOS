@@ -1,7 +1,7 @@
 // Questionário de boas-vindas: cada resposta grava um modelo real e o fim é o plano da semana do planeador.
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { PASSWORD, uniqueEmail } from './helpers';
+import { PASSWORD, register, uniqueEmail } from './helpers';
 
 async function expectNoSeriousViolations(page: Page) {
   const { violations } = await new AxeBuilder({ page })
@@ -47,6 +47,12 @@ test('conta nova: questionário até ao plano da semana confirmado', async ({ pa
   await page.getByRole('checkbox', { name: 'Sáb' }).check();
   await page.getByRole('checkbox', { name: 'Tarde (14:00–17:00)' }).check();
   await expect(page.getByText(/Até \d+ h por semana/)).toBeVisible();
+  // Compromisso fixo opcional: fica como bloco semanal ocupado
+  await page.getByRole('button', { name: 'Adicionar compromisso' }).click();
+  await page.getByLabel('Compromisso', { exact: true }).fill('Trabalho');
+  await page.getByLabel('Dia', { exact: true }).selectOption({ label: 'Terça' });
+  await page.getByLabel('Das', { exact: true }).fill('18:00');
+  await page.getByLabel('Às', { exact: true }).fill('22:00');
   await expectNoSeriousViolations(page);
   await page.getByRole('button', { name: 'Continuar' }).click();
 
@@ -66,6 +72,17 @@ test('conta nova: questionário até ao plano da semana confirmado', async ({ pa
 
   await page.getByRole('button', { name: 'Ir para o painel' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Olá, Rita' })).toBeVisible();
+
+  const blocks = await page.evaluate(async () => {
+    const from = new Date().toISOString();
+    const to = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString();
+    const res = await fetch(`/api/schedule-blocks?from=${from}&to=${to}`);
+    const list = (await res.json()) as { title: string; kind: string; isBusy: boolean }[];
+    return [...new Set(list.map((b) => JSON.stringify({ title: b.title, kind: b.kind, isBusy: b.isBusy })))].map(
+      (x) => JSON.parse(x) as unknown,
+    );
+  });
+  expect(blocks).toEqual([{ title: 'Trabalho', kind: 'OTHER', isBusy: true }]);
 
   // As respostas ficaram gravadas: avaliações do modelo e disponibilidade
   await page.goto('/disciplinas');
@@ -117,4 +134,14 @@ test('se gravar uma disciplina falhar, tentar de novo não duplica as que já fi
     ((await (await fetch('/api/disciplines')).json()) as { code: string }[]).map((d) => d.code).sort(),
   );
   expect(codes).toEqual(['BD', 'PW']);
+});
+
+test('no calendário, «Compromisso fixo» já vem semanal e ocupado', async ({ page }) => {
+  await register(page, 'Vasco');
+  await page.goto('/calendario');
+  await page.getByRole('button', { name: 'Compromisso fixo' }).click();
+  await expect(page.getByRole('heading', { name: 'Novo compromisso fixo' })).toBeVisible();
+  await expect(page.getByLabel('Tipo')).toHaveValue('OTHER');
+  await expect(page.getByLabel('Repetir até')).not.toHaveValue('');
+  await expect(page.getByRole('checkbox', { name: /Ocupado/ })).toBeChecked();
 });

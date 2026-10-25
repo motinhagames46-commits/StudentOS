@@ -1,9 +1,11 @@
-import { studyPreferencesSchema } from '@studentos/shared';
+import { scheduleBlockCreateSchema, studyPreferencesSchema } from '@studentos/shared';
 import { describe, expect, it } from 'vitest';
 import {
   ASSESSMENT_TEMPLATES,
   SESSION_PRESETS,
   availabilityFromChoices,
+  commitmentBlock,
+  firstDateOnWeekday,
   summarizeByDiscipline,
   weeklyAvailableMinutes,
 } from './onboarding';
@@ -53,5 +55,31 @@ describe('questionário de boas-vindas', () => {
       { code: 'BD', minutes: 50, sessions: 1 },
       { code: 'Sem disciplina', minutes: 30, sessions: 1 },
     ]);
+  });
+});
+
+describe('compromissos fixos', () => {
+  it('começa no próximo dia da semana pedido (hoje incluído)', () => {
+    // 2026-10-25 é domingo
+    expect(firstDateOnWeekday('2026-10-25', 7)).toBe('2026-10-25');
+    expect(firstDateOnWeekday('2026-10-25', 1)).toBe('2026-10-26');
+    expect(firstDateOnWeekday('2026-10-27', 1)).toBe('2026-11-02');
+  });
+
+  it('gera um bloco semanal ocupado, válido para a API, na hora de Lisboa', () => {
+    const block = commitmentBlock(
+      { title: ' Trabalho ', weekday: 2, start: '18:00', end: '22:00' },
+      '2026-10-25',
+      '2027-01-31',
+    );
+    expect(block).toMatchObject({ title: 'Trabalho', kind: 'OTHER', isBusy: true, repeatWeeklyUntil: '2027-01-31' });
+    // terça 27/10 já é hora de inverno (UTC+0); em julho seria UTC+1
+    expect(block.startAt).toBe('2026-10-27T18:00:00.000Z');
+    expect(block.endAt).toBe('2026-10-27T22:00:00.000Z');
+    expect(scheduleBlockCreateSchema.safeParse(block).success).toBe(true);
+    expect(
+      commitmentBlock({ title: 'Treino', weekday: 3, start: '19:00', end: '20:30' }, '2027-07-05', '2027-07-31')
+        .startAt,
+    ).toBe('2027-07-07T18:00:00.000Z');
   });
 });

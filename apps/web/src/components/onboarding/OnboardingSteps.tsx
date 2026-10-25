@@ -24,7 +24,7 @@ export function WelcomeStep({ name, onStart }: { name: string; onStart: () => vo
     },
     {
       icon: <CalendarClock aria-hidden="true" className="size-5" />,
-      text: 'Quando podes estudar — o plano nunca marca nada fora disso nem por cima das aulas.',
+      text: 'Quando podes estudar — o plano nunca marca nada fora disso nem por cima das aulas e compromissos.',
     },
     {
       icon: <Timer aria-hidden="true" className="size-5" />,
