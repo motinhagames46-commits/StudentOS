@@ -142,7 +142,7 @@ export function AccountPage() {
           </form>
         </Card>
 
-        <p className="text-center text-xs text-stone-500">
+        <p className="text-center text-xs text-stone-600">
           <Link to="/privacidade" className="underline hover:text-stone-800">
             Política de privacidade
           </Link>

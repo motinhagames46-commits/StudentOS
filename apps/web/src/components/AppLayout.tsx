@@ -45,11 +45,28 @@ const secondary: NavItem[] = [
 
 const MOBILE_PRIMARY = 4;
 
-function Logo() {
+function Logo({ dark = false }: { dark?: boolean }) {
   return (
-    <span className="flex items-center gap-2 text-base font-semibold text-stone-900">
+    <span className={`flex items-center gap-2 text-base font-semibold ${dark ? 'text-white' : 'text-stone-900'}`}>
       <img src="/favicon.svg" alt="" className="size-6" />
       StudentOS
+    </span>
+  );
+}
+
+function Avatar({ name, className }: { name: string; className: string }) {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0]!.toUpperCase())
+    .join('');
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-flex shrink-0 items-center justify-center rounded-full font-semibold ${className}`}
+    >
+      {initials}
     </span>
   );
 }
@@ -67,33 +84,42 @@ export function AppLayout() {
         Saltar para o conteúdo
       </a>
 
-      {/* Barra lateral — desktop */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-stone-200 bg-white md:flex md:sticky md:top-0 md:h-dvh">
-        <div className="flex items-center justify-between py-4 pr-3 pl-5">
-          <Logo />
-          <AlertsBell />
+      {/* Barra lateral escura (estilo Gentelella) — desktop */}
+      <aside className="hidden w-[230px] shrink-0 flex-col bg-sidebar text-sidebar-text md:sticky md:top-0 md:flex md:h-dvh">
+        <div className="flex h-[58px] items-center px-5">
+          <Logo dark />
         </div>
-        <nav aria-label="Navegação principal" className="flex-1 space-y-1 overflow-y-auto px-3">
+        <div className="flex items-center gap-3 px-5 py-4">
+          <Avatar
+            name={data?.user.name ?? ''}
+            className="size-12 bg-white/10 text-base text-white ring-2 ring-white/20"
+          />
+          <div className="min-w-0">
+            <p className="text-xs text-sidebar-muted">Bem-vindo,</p>
+            <p className="truncate text-sm font-medium text-white">{data?.user.name}</p>
+            <p className="truncate text-xs text-sidebar-muted">{data?.activeSemester?.label}</p>
+          </div>
+        </div>
+        <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto pb-4">
+          <p className="px-5 pt-3 pb-2 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">Geral</p>
           {nav.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
-          <p className="px-3 pt-4 pb-1 text-[11px] font-semibold tracking-wide text-stone-500 uppercase">Definições</p>
+          <p className="px-5 pt-5 pb-2 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">
+            Definições
+          </p>
           {secondary.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
         </nav>
-        <div className="border-t border-stone-200 p-3">
-          <p className="truncate px-3 text-sm font-medium text-stone-800">{data?.user.name}</p>
-          <p className="truncate px-3 text-xs text-stone-500">{data?.activeSemester?.label}</p>
-          <button
-            type="button"
-            onClick={() => logout.mutate()}
-            className="mt-2 flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-          >
-            <LogOut aria-hidden="true" className="size-4" />
-            Terminar sessão
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => logout.mutate()}
+          className="flex items-center gap-3 border-t border-white/10 px-5 py-3 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-white focus-visible:outline-white focus-visible:-outline-offset-2"
+        >
+          <LogOut aria-hidden="true" className="size-4 text-sidebar-muted" />
+          Terminar sessão
+        </button>
       </aside>
 
       {/* Barra superior — mobile */}
@@ -112,9 +138,19 @@ export function AppLayout() {
         </div>
       </header>
 
-      <main id="conteudo" className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-10 md:pb-10">
-        <Outlet />
-      </main>
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Barra superior — desktop */}
+        <header className="hidden h-[58px] items-center justify-end gap-3 border-b border-panel-border bg-white px-6 md:flex">
+          <AlertsBell align="right" />
+          <span className="flex items-center gap-2 text-sm text-stone-700">
+            <Avatar name={data?.user.name ?? ''} className="size-8 bg-sidebar text-xs text-white" />
+            {data?.user.name}
+          </span>
+        </header>
+        <main id="conteudo" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-10">
+          <Outlet />
+        </main>
+      </div>
 
       <MobileNav />
     </div>
@@ -127,12 +163,14 @@ function SidebarLink({ item: { to, label, icon: Icon, end } }: { item: NavItem }
       to={to}
       end={end}
       className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-          isActive ? 'bg-stone-100 text-stone-900' : 'text-stone-600 hover:bg-stone-50 hover:text-stone-900'
+        `group flex items-center gap-3 border-r-[5px] px-5 py-2.5 text-sm transition-colors focus-visible:outline-white focus-visible:-outline-offset-2 ${
+          isActive
+            ? 'border-brand bg-linear-to-r from-sidebar-active-from to-sidebar-active-to font-medium text-white'
+            : 'border-transparent text-sidebar-text hover:bg-sidebar-hover hover:text-white'
         }`
       }
     >
-      <Icon aria-hidden="true" className="size-4" />
+      <Icon aria-hidden="true" className="size-4 text-sidebar-muted group-aria-[current=page]:text-white" />
       {label}
     </NavLink>
   );

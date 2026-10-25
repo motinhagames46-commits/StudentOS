@@ -81,7 +81,7 @@ export function DisciplineDetailPage() {
               style={{ backgroundColor: d.color ?? '#a8a29e' }}
             />
             <div>
-              <p className="text-xs font-semibold tracking-wide text-stone-500">
+              <p className="text-xs font-semibold tracking-wide text-stone-600">
                 {d.code}
                 {d.ects ? ` · ${d.ects} ECTS` : ''}
                 {d.semester ? ` · ${d.semester.label}` : ''}
@@ -160,7 +160,7 @@ export function DisciplineDetailPage() {
 
 function BackLink() {
   return (
-    <Link to="/disciplinas" className="inline-flex items-center gap-1 text-sm text-stone-500 hover:text-stone-900">
+    <Link to="/disciplinas" className="inline-flex items-center gap-1 text-sm text-stone-600 hover:text-stone-900">
       <ArrowLeft aria-hidden="true" className="size-4" />
       Disciplinas
     </Link>

@@ -188,6 +188,25 @@ export function LandingPage() {
           </div>
         </section>
 
+        <section aria-labelledby="por-dentro" className="mx-auto max-w-6xl px-4 pt-16">
+          <h2 id="por-dentro" className="text-3xl font-bold tracking-tight">
+            Vê por dentro
+          </h2>
+          <p className="mt-2 text-stone-700">Tudo o que importa esta semana, num só ecrã.</p>
+          <figure className="mt-8">
+            <img
+              src="/landing/painel.jpg"
+              width={1280}
+              height={800}
+              loading="lazy"
+              decoding="async"
+              alt="Painel do StudentOS: tarefas da semana, tarefa em atraso, plano de hoje com a sugestão do que estudar agora e próximas avaliações."
+              className="h-auto w-full rounded-xl border border-stone-200 shadow-xl shadow-stone-900/10"
+            />
+            <figcaption className="mt-3 text-center text-sm text-stone-600">O painel, com dados de exemplo.</figcaption>
+          </figure>
+        </section>
+
         <section
           id="como-funciona"
           aria-labelledby="como-funciona-titulo"

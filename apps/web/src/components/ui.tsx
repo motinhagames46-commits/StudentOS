@@ -1,7 +1,7 @@
 // Componentes de interface reutilizáveis (secção 13).
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
-import { useId } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { useId, useState } from 'react';
+import { AlertCircle, ChevronDown, Loader2 } from 'lucide-react';
 
 const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(' ');
 
@@ -136,28 +136,82 @@ export function SelectField({
   );
 }
 
+/** Painel ao estilo x_panel do Gentelella. `collapsible` guarda o estado neste browser (só preferência visual). */
 export function Card({
   title,
   action,
   children,
   className,
+  collapsible = false,
 }: {
   title?: string;
   action?: ReactNode;
   children: ReactNode;
   className?: string;
+  collapsible?: boolean;
 }) {
+  const bodyId = useId();
+  const storageKey = collapsible && title ? `painel-recolhido:${title}` : null;
+  const [collapsed, setCollapsed] = useState(() => readFlag(storageKey));
+  const toggle = () => {
+    setCollapsed(!collapsed);
+    writeFlag(storageKey, !collapsed);
+  };
+
   return (
-    <section className={cx('rounded-xl border border-stone-200 bg-white', className)}>
+    <section
+      className={cx('rounded-lg border border-panel-border bg-white shadow-[0_1px_4px_rgba(42,63,84,0.06)]', className)}
+    >
       {title && (
-        <header className="flex items-center justify-between gap-2 border-b border-stone-100 px-4 py-3">
-          <h2 className="text-sm font-semibold text-stone-900">{title}</h2>
-          {action}
+        <header
+          className={cx(
+            'flex items-center justify-between gap-2 px-4 py-3',
+            !collapsed && 'border-b-2 border-panel-border',
+          )}
+        >
+          <h2 className="text-base font-semibold text-stone-800">{title}</h2>
+          <div className="flex items-center gap-1">
+            {action}
+            {storageKey && (
+              <IconButton
+                label={collapsed ? `Expandir «${title}»` : `Recolher «${title}»`}
+                aria-expanded={!collapsed}
+                aria-controls={bodyId}
+                onClick={toggle}
+                className="size-8"
+              >
+                <ChevronDown
+                  aria-hidden="true"
+                  className={cx('size-4 motion-safe:transition-transform', collapsed && '-rotate-90')}
+                />
+              </IconButton>
+            )}
+          </div>
         </header>
       )}
-      <div className="p-4">{children}</div>
+      <div id={bodyId} hidden={collapsed} className="p-4">
+        {children}
+      </div>
     </section>
   );
+}
+
+function readFlag(key: string | null): boolean {
+  if (!key) return false;
+  try {
+    return localStorage.getItem(key) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeFlag(key: string | null, value: boolean) {
+  if (!key) return;
+  try {
+    localStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    // Sem armazenamento (modo privado): o painel recolhe só nesta visita.
+  }
 }
 
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: ReactNode; action?: ReactNode }) {
@@ -165,7 +219,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
         <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{title}</h1>
-        {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-sm text-stone-600">{subtitle}</p>}
       </div>
       {action}
     </div>

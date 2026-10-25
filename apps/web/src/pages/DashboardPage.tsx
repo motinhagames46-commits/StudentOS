@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router';
 import { StudyByDisciplineChart, TaskProgress } from '../components/charts';
+import { SetupProgress, StatTiles } from '../components/DashboardWidgets';
 import { GradeStatusBadge } from '../components/GradeStatusBadge';
 import { TaskList } from '../components/TaskList';
 import { QuickActions, TodayPlan } from '../components/TodayPlan';
@@ -9,7 +10,7 @@ import { useDashboard, useStats, useUpdateTask } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
 import { formatDate, formatDuration, formatGrade, relativeDay } from '../lib/format';
-import type { Dashboard, GradeSummaryDto } from '../lib/types';
+import type { GradeSummaryDto } from '../lib/types';
 
 const todayLabel = () =>
   new Intl.DateTimeFormat('pt-PT', {
@@ -43,8 +44,9 @@ export function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-4">
+          <SetupProgress data={data} />
+          <StatTiles data={data} studyMinutes={stats.data?.totalMinutes ?? null} />
           <QuickActions />
-          <Stats data={data} />
           <TodayPlan />
 
           {data.overdueTasks.length > 0 && (
@@ -55,6 +57,7 @@ export function DashboardPage() {
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card
+              collapsible
               title="Próximos 7 dias"
               action={
                 <Link to="/tarefas" className="text-sm text-accent hover:underline">
@@ -70,7 +73,7 @@ export function DashboardPage() {
               />
             </Card>
 
-            <Card title="Próximas avaliações">
+            <Card collapsible title="Próximas avaliações">
               {data.upcomingAssessments.length === 0 ? (
                 <EmptyState message="Sem avaliações marcadas." />
               ) : (
@@ -99,6 +102,7 @@ export function DashboardPage() {
           </div>
 
           <Card
+            collapsible
             title="Estudo nos últimos 7 dias"
             action={
               <Link to="/sessoes" className="text-sm text-accent hover:underline">
@@ -141,6 +145,7 @@ export function DashboardPage() {
           </Card>
 
           <Card
+            collapsible
             title="Médias por disciplina"
             action={
               <Link to="/disciplinas" className="text-sm text-accent hover:underline">
@@ -202,30 +207,4 @@ function RequiredHint({ grades }: { grades: GradeSummaryDto }) {
   if (r.status === 'impossible')
     return <p className="text-xs font-medium text-red-700">Já não é possível passar nesta época</p>;
   return null;
-}
-
-function Stats({ data }: { data: Dashboard }) {
-  const { average, credits } = data.globalAverage;
-  const stats = [
-    { label: 'Tarefas esta semana', value: String(data.upcomingTasks.length) },
-    { label: 'Em atraso', value: String(data.overdueTasks.length), alert: data.overdueTasks.length > 0 },
-    {
-      label: 'Média (aprovadas)',
-      value: formatGrade(average, 1),
-      hint: credits ? `${credits} ECTS aprovados` : 'Sem disciplinas concluídas',
-    },
-  ];
-  return (
-    <dl className="grid grid-cols-3 gap-3">
-      {stats.map((s) => (
-        <div key={s.label} className="rounded-xl border border-stone-200 bg-white px-4 py-3">
-          <dt className="text-xs text-stone-500">{s.label}</dt>
-          <dd className={`mt-1 text-2xl font-semibold tabular-nums ${s.alert ? 'text-red-700' : 'text-stone-900'}`}>
-            {s.value}
-          </dd>
-          {s.hint && <dd className="mt-0.5 text-xs text-stone-500">{s.hint}</dd>}
-        </div>
-      ))}
-    </dl>
-  );
 }

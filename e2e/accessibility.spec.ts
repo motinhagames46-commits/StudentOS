@@ -100,6 +100,7 @@ test.describe('acessibilidade (axe)', () => {
   });
 
   for (const [name, path, heading] of [
+    ['disciplinas', '/disciplinas', 'Disciplinas'],
     ['importar', '/importar', 'Importar horário'],
     ['preferências', '/preferencias', 'Preferências de estudo'],
     ['integrações', '/integracoes', 'Integrações'],
