@@ -186,7 +186,8 @@ export function SessionsStep({
         ))}
       </SelectField>
       <FormError message={formError} />
-      <StepActions saving={saving} label="Ver a minha semana" />
+      {/* Sem as preferências carregadas, «manter a disponibilidade» enviaria uma lista vazia. */}
+      <StepActions saving={saving || (availability === null && !prefs.data)} label="Ver a minha semana" />
     </form>
   );
 }

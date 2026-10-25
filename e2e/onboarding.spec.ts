@@ -85,3 +85,36 @@ test('o questionário pode ser saltado logo no início', async ({ page }) => {
   await page.getByRole('button', { name: 'Saltar e ir para o painel' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Olá, Tiago' })).toBeVisible();
 });
+
+test('se gravar uma disciplina falhar, tentar de novo não duplica as que já ficaram gravadas', async ({ page }) => {
+  await page.goto('/registo');
+  await page.getByLabel('Nome').fill('Inês');
+  await page.getByLabel('Email').fill(uniqueEmail('ines'));
+  await page.getByLabel('Palavra-passe').fill(PASSWORD);
+  await page.getByRole('button', { name: 'Criar conta' }).click();
+  await page.getByRole('button', { name: 'Vamos a isso' }).click();
+
+  await page.getByLabel('Nome da disciplina', { exact: true }).fill('Programação Web');
+  await page.getByLabel('Sigla', { exact: true }).fill('PW');
+  await page.getByRole('button', { name: 'Outra disciplina' }).click();
+  await page.getByLabel('Nome da disciplina 2').fill('Bases de Dados');
+  await page.getByLabel('Sigla 2').fill('BD');
+
+  // O segundo pedido falha uma vez (simulado)
+  let posts = 0;
+  await page.route('**/api/disciplines', (route) =>
+    route.request().method() === 'POST' && ++posts === 2
+      ? route.fulfill({ status: 500, json: { error: { code: 'INTERNAL_ERROR', message: 'Falha simulada' } } })
+      : route.continue(),
+  );
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByRole('alert')).toContainText('Falha simulada');
+  await expect(page.getByLabel('Nome da disciplina', { exact: true })).toHaveValue('Bases de Dados');
+
+  await page.getByRole('button', { name: 'Continuar' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Como é avaliada cada disciplina?' })).toBeVisible();
+  const codes = await page.evaluate(async () =>
+    ((await (await fetch('/api/disciplines')).json()) as { code: string }[]).map((d) => d.code).sort(),
+  );
+  expect(codes).toEqual(['BD', 'PW']);
+});

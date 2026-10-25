@@ -118,10 +118,13 @@ export function DisciplinesStep({
           method: 'POST',
           body: { name: r.name.trim(), code: r.code.trim(), ...(r.ects.trim() ? { ects: Number(r.ects) } : {}) },
         });
+        // Já gravada: sai da lista, para tentar de novo não a duplicar se uma seguinte falhar.
+        setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.key !== r.key) : [emptyRow()]));
       }
       await queryClient.invalidateQueries();
       onDone();
     } catch (err) {
+      void queryClient.invalidateQueries();
       setFormError(err instanceof ApiError && err.details.length ? err.details[0]!.message : errorMessage(err));
     } finally {
       setSaving(false);
@@ -165,14 +168,14 @@ export function DisciplinesStep({
               error={errors[`${r.key}.name`]}
             />
             <TextField
-              label="Sigla"
+              label={i === 0 ? 'Sigla' : `Sigla ${i + 1}`}
               placeholder="PW"
               value={r.code}
               onChange={(e) => update(r.key, 'code', e.target.value)}
               error={errors[`${r.key}.code`]}
             />
             <TextField
-              label="ECTS"
+              label={i === 0 ? 'ECTS' : `ECTS ${i + 1}`}
               inputMode="numeric"
               placeholder="6"
               value={r.ects}
@@ -222,6 +225,8 @@ export function AssessmentsStep({ headingRef, onDone }: { headingRef: HeadingRef
       await queryClient.invalidateQueries();
       onDone();
     } catch (err) {
+      // Recarrega as disciplinas: as que já receberam avaliações deixam de aparecer (não se duplicam).
+      void queryClient.invalidateQueries();
       setFormError(errorMessage(err));
     } finally {
       setSaving(false);
