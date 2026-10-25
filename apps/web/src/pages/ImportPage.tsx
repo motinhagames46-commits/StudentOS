@@ -464,7 +464,7 @@ function ImportItemCard({
         />
         <label htmlFor={checkboxId} className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <Badge tone={item.target === 'task' ? 'blue' : 'neutral'}>
+            <Badge tone={item.target === 'task' ? 'accent' : 'neutral'}>
               {item.target === 'task' ? 'Tarefa (prazo)' : blockKindLabels[item.kind]}
             </Badge>
             {item.recurrenceSummary && <span className="text-xs text-stone-500">{item.recurrenceSummary}</span>}

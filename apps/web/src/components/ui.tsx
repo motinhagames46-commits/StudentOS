@@ -283,14 +283,14 @@ export function Badge({
   tone = 'neutral',
 }: {
   children: ReactNode;
-  tone?: 'neutral' | 'green' | 'red' | 'amber' | 'blue';
+  tone?: 'neutral' | 'green' | 'red' | 'amber' | 'accent';
 }) {
   const tones = {
     neutral: 'bg-stone-100 text-stone-700',
     green: 'bg-green-50 text-green-800',
     red: 'bg-red-50 text-red-800',
     amber: 'bg-amber-50 text-amber-900',
-    blue: 'bg-accent-soft text-blue-800',
+    accent: 'bg-accent-soft text-accent-ink',
   };
   return (
     <span

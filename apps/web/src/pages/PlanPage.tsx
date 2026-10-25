@@ -33,7 +33,7 @@ const statusLabels: Record<PlannedSession['status'], string> = {
   MISSED: 'Falhada',
   CANCELLED: 'Retirada',
 };
-const statusTone = { PLANNED: 'blue', COMPLETED: 'green', MISSED: 'red', CANCELLED: 'neutral' } as const;
+const statusTone = { PLANNED: 'accent', COMPLETED: 'green', MISSED: 'red', CANCELLED: 'neutral' } as const;
 
 const longDay = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
 
@@ -204,7 +204,7 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
     >
       <div className="space-y-4 text-sm">
         <div className="flex flex-wrap gap-2">
-          <Badge tone="blue">
+          <Badge tone="accent">
             {p.sessions.length} sessões novas · {total} min
           </Badge>
           {p.removals.length > 0 && <Badge tone="amber">{p.removals.length} sessões futuras substituídas</Badge>}

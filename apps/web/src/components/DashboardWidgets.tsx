@@ -125,7 +125,7 @@ export function SetupProgress({ data }: { data: Dashboard }) {
         {steps.map((s) => (
           <li key={s.label} className="flex items-center gap-2 text-sm">
             {s.done ? (
-              <CheckCircle2 aria-hidden="true" className="size-4 text-brand-text" />
+              <CheckCircle2 aria-hidden="true" className="size-4 text-accent" />
             ) : (
               <Circle aria-hidden="true" className="size-4 text-[#7B8794]" />
             )}

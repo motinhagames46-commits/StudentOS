@@ -82,7 +82,7 @@ test('painel com dados de exemplo', async ({ page }, testInfo) => {
   }
   const everyDay = [1, 2, 3, 4, 5, 6, 7].flatMap((weekday) => [
     { weekday, startMinute: 9 * 60, endMinute: 12 * 60 },
-    { weekday, startMinute: 14 * 60, endMinute: 20 * 60 },
+    { weekday, startMinute: 14 * 60, endMinute: 23 * 60 },
   ]);
   await api(page, 'PUT', '/preferences/study', {
     sessionMinutes: 50,

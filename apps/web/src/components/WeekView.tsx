@@ -88,7 +88,7 @@ const variantClass: Record<TimedItem['variant'], string> = {
   class: 'border-l-4 bg-stone-100 text-stone-900',
   event: 'border border-stone-300 bg-white text-stone-900',
   free: 'border border-dashed border-stone-300 bg-white/70 text-stone-600',
-  study: 'border-l-4 border-accent bg-accent-soft text-blue-950',
+  study: 'border-l-4 border-accent bg-accent-soft text-accent-ink',
 };
 
 export function WeekView({

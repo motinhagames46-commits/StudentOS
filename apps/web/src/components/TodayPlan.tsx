@@ -97,7 +97,7 @@ export function TodayPlan() {
                   <span className="min-w-0 flex-1 truncate text-sm text-stone-900">
                     {studyTitle(s.task?.title ?? s.assessment?.name, s.discipline?.code)}
                   </span>
-                  <Badge tone={s.status === 'COMPLETED' ? 'green' : s.status === 'MISSED' ? 'red' : 'blue'}>
+                  <Badge tone={s.status === 'COMPLETED' ? 'green' : s.status === 'MISSED' ? 'red' : 'accent'}>
                     {statusLabels[s.status]}
                   </Badge>
                 </li>
@@ -129,7 +129,7 @@ function SuggestionBox({ suggestion }: { suggestion: Suggestion }) {
   const inProgress = start.error instanceof ApiError && start.error.code === 'STUDY_SESSION_IN_PROGRESS';
 
   return (
-    <div className="space-y-2 rounded-lg bg-accent-soft px-3 py-2 text-sm text-blue-950">
+    <div className="space-y-2 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent-ink">
       <p className="flex gap-2">
         <Sparkles aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent" />
         <span>

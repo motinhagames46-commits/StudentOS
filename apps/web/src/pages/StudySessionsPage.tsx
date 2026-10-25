@@ -260,7 +260,7 @@ export function StudySessionsPage() {
                 {s.endedAt ? (
                   <span className="shrink-0 text-sm tabular-nums text-stone-700">{formatDuration(durationMs(s))}</span>
                 ) : (
-                  <Badge tone="blue">Em curso</Badge>
+                  <Badge tone="accent">Em curso</Badge>
                 )}
               </li>
             ))}

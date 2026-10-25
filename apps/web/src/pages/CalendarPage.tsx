@@ -172,7 +172,7 @@ function BlockDetails({ occurrence: o, onClose }: { occurrence: BlockOccurrence;
       <div className="space-y-3 text-sm">
         <div className="flex flex-wrap gap-2">
           <Badge>{blockKindLabels[o.kind]}</Badge>
-          {o.recurring && <Badge tone="blue">Série recorrente</Badge>}
+          {o.recurring && <Badge tone="accent">Série recorrente</Badge>}
           {!o.isBusy && <Badge>Não bloqueia estudo</Badge>}
           {o.conflict && <Badge tone="red">Em conflito com outro evento</Badge>}
         </div>

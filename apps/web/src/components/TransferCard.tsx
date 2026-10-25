@@ -83,7 +83,7 @@ function SendSection() {
       ) : all.length === 0 ? (
         <EmptyState message="Esta conta não tem disciplinas ativas para transferir." />
       ) : created ? (
-        <div className="space-y-2 rounded-lg bg-accent-soft p-3 text-blue-950">
+        <div className="space-y-2 rounded-lg bg-accent-soft p-3 text-accent-ink">
           <p>Na outra conta, abre Conta → Transferir disciplinas → Receber, e cola este código:</p>
           <p className="flex items-center gap-2">
             <span className="font-mono text-2xl font-semibold tracking-widest" aria-label="Código gerado">

@@ -102,7 +102,7 @@ export function SemesterManager({ onClose }: { onClose: () => void }) {
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-2 text-sm font-medium text-stone-900">
                       {s.label}
-                      {s.isActive && <Badge tone="blue">Ativo</Badge>}
+                      {s.isActive && <Badge tone="accent">Ativo</Badge>}
                     </p>
                     <p className="text-xs text-stone-500">
                       {formatDate(s.startDate)} – {formatDate(s.endDate)}

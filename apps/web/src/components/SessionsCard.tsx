@@ -61,7 +61,7 @@ export function SessionsCard() {
               <div className="min-w-0 flex-1">
                 <p className="flex flex-wrap items-center gap-2 text-sm text-stone-900">
                   {describeDevice(s.userAgent)}
-                  {s.current && <Badge tone="blue">Esta sessão</Badge>}
+                  {s.current && <Badge tone="accent">Esta sessão</Badge>}
                 </p>
                 <p className="text-xs text-stone-500">
                   Iniciada a {formatDateTime(s.createdAt)} · última atividade {formatDateTime(s.lastSeenAt)}
