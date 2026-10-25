@@ -1,17 +1,12 @@
 // Conta: mudar a palavra-passe e eliminar a conta (exige email e palavra-passe).
 import { expect, test } from '@playwright/test';
-import { PASSWORD, uniqueEmail } from './helpers';
+import { PASSWORD, register, uniqueEmail } from './helpers';
 
 const NEW_PASSWORD = 'outra-frase-ainda-mais-longa';
 
 test('mudar a palavra-passe e eliminar a conta com confirmação', async ({ page }) => {
   const email = uniqueEmail('conta');
-  await page.goto('/registo');
-  await page.getByLabel('Nome').fill('Duarte');
-  await page.getByLabel('Email').fill(email);
-  await page.getByLabel('Palavra-passe').fill(PASSWORD);
-  await page.getByRole('button', { name: 'Criar conta' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Olá, Duarte' })).toBeVisible();
+  await register(page, 'Duarte', email);
 
   await page.goto('/conta');
   await page.getByLabel('Palavra-passe atual').fill('nao-e-esta-de-todo');

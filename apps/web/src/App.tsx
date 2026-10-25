@@ -9,6 +9,7 @@ import { DisciplineDetailPage } from './pages/DisciplineDetailPage';
 import { DisciplinesPage } from './pages/DisciplinesPage';
 import { ImportPage } from './pages/ImportPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
+import { OnboardingPage } from './pages/OnboardingPage';
 import { PlanPage } from './pages/PlanPage';
 import { PreferencesPage } from './pages/PreferencesPage';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -33,6 +34,7 @@ export function App() {
       <Route path="/registo" element={<RegisterPage />} />
       <Route path="/privacidade" element={<PrivacyPage />} />
       <Route element={<RequireAuth />}>
+        <Route path="boas-vindas" element={<OnboardingPage />} />
         <Route element={<AppLayout />}>
           <Route index element={<DashboardPage />} />
           <Route path="calendario" element={<CalendarPage />} />

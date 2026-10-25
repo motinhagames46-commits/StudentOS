@@ -44,11 +44,14 @@ function useAuthSubmit(path: '/auth/login' | '/auth/register') {
       await api<{ user: User }>(path, { method: 'POST', body });
       await queryClient.invalidateQueries({ queryKey: ['me'] });
       const from = (location.state as { from?: string } | null)?.from;
-      navigate(from && from !== '/login' ? from : '/', { replace: true });
+      // Conta nova: primeiro o questionário de boas-vindas (pode ser saltado).
+      if (path === '/auth/register') void navigate('/boas-vindas', { replace: true });
+      else void navigate(from && from !== '/login' ? from : '/', { replace: true });
+      // Sem setSubmitting(false) no sucesso: a navegação é uma transição e um render urgente da página
+      // (já com sessão) ativaria o <Navigate to="/"> antes de chegarmos ao destino.
     } catch (err) {
       if (err instanceof ApiError && err.details.length) setErrors(err.fieldErrors());
       else setFormError(errorMessage(err));
-    } finally {
       setSubmitting(false);
     }
   }
@@ -117,7 +120,8 @@ export function RegisterPage() {
   const { submit, errors, setErrors, formError, submitting } = useAuthSubmit('/auth/register');
 
   if (me.isPending) return <FullPageSpinner />;
-  if (me.data) return <Navigate to="/" replace />;
+  // Durante o registo a sessão já existe: quem navega é o submit (para as boas-vindas), não este atalho.
+  if (me.data && !submitting) return <Navigate to="/" replace />;
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
