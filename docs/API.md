@@ -64,17 +64,17 @@ Avaliações e prazos são de dia inteiro porque os formulários só pedem a dat
 
 ## Semestres, disciplinas e avaliações
 
-| Método       | Caminho                                  | Descrição                                                                                       |
-| ------------ | ---------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| GET/POST     | `/api/semesters`                         | Listar ou criar semestres.                                                                      |
-| PATCH/DELETE | `/api/semesters/:id`                     | Editar (incluindo escolher o semestre ativo) ou eliminar.                                       |
-| GET          | `/api/disciplines?semesterId=&archived=` | Por omissão, só as disciplinas ativas. Com `archived=true`, só as arquivadas.                   |
-| POST         | `/api/disciplines`                       | Criar. Sem `semesterId`, a disciplina fica no semestre ativo.                                   |
-| GET/DELETE   | `/api/disciplines/:id`                   | Consultar ou eliminar. Ao eliminar, as avaliações vão também e as tarefas ficam sem disciplina. |
-| PATCH        | `/api/disciplines/:id`                   | Editar. `{ "archived": true }` arquiva e `false` reativa.                                       |
-| GET          | `/api/disciplines/:id/grades?target=`    | Médias, estado e nota necessária no exame.                                                      |
-| GET/POST     | `/api/disciplines/:id/assessments`       | Listar ou criar avaliações. A soma dos pesos não pode passar de 100 %.                          |
-| PATCH/DELETE | `/api/assessments/:id`                   | Editar ou eliminar uma avaliação.                                                               |
+| Método       | Caminho                                  | Descrição                                                                                                                      |
+| ------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| GET/POST     | `/api/semesters`                         | Listar ou criar semestres.                                                                                                     |
+| PATCH/DELETE | `/api/semesters/:id`                     | Editar (incluindo escolher o semestre ativo) ou eliminar.                                                                      |
+| GET          | `/api/disciplines?semesterId=&archived=` | Por omissão, só as disciplinas ativas. Com `archived=true`, só as arquivadas.                                                  |
+| POST         | `/api/disciplines`                       | Criar. Sem `semesterId`, a disciplina fica no semestre ativo.                                                                  |
+| GET/DELETE   | `/api/disciplines/:id`                   | Consultar ou eliminar. Ao eliminar, as avaliações vão também e as tarefas ficam sem disciplina.                                |
+| PATCH        | `/api/disciplines/:id`                   | Editar. `{ "archived": true }` arquiva e `false` reativa. Faltas: `absences` (inteiro ≥ 0) e `absenceLimit` (1–999 ou `null`). |
+| GET          | `/api/disciplines/:id/grades?target=`    | Médias, estado e nota necessária no exame.                                                                                     |
+| GET/POST     | `/api/disciplines/:id/assessments`       | Listar ou criar avaliações. A soma dos pesos não pode passar de 100 %.                                                         |
+| PATCH/DELETE | `/api/assessments/:id`                   | Editar ou eliminar uma avaliação.                                                                                              |
 
 ## Tarefas
 

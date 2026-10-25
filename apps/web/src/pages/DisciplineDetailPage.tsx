@@ -1,6 +1,7 @@
 import { Archive, ArchiveRestore, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
+import { AbsencesCard } from '../components/AbsencesCard';
 import { AssessmentSection } from '../components/AssessmentSection';
 import { DisciplineForm } from '../components/DisciplineForm';
 import { GradeSimulator } from '../components/GradeSimulator';
@@ -141,6 +142,8 @@ export function DisciplineDetailPage() {
       <Card title="Avaliações">
         <AssessmentSection discipline={d} />
       </Card>
+
+      <AbsencesCard key={d.id} discipline={d} />
 
       <Card title="Tarefas pendentes">
         {tasks.isPending ? (

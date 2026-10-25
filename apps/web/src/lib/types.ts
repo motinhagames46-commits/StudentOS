@@ -52,6 +52,8 @@ export interface DisciplineRef {
 
 export interface Discipline extends DisciplineRef {
   ects: number | null;
+  absences: number;
+  absenceLimit: number | null;
   archivedAt: string | null;
   passingGrade: number;
   semesterId: number | null;

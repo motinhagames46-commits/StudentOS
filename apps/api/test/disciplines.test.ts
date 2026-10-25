@@ -131,3 +131,25 @@ describe('arquivar disciplinas (spec §7.2)', () => {
     expect((await request(app).get('/api/disciplines').set('Cookie', cookie)).body).toHaveLength(1);
   });
 });
+
+describe('faltas por UC (pesquisa de mercado n.º 3)', () => {
+  const patch = (body: object, who = cookie) =>
+    request(app).patch(`/api/disciplines/${disciplineId}`).set('Cookie', who).send(body);
+
+  it('começa sem faltas nem limite e guarda as duas', async () => {
+    const before = await request(app).get(`/api/disciplines/${disciplineId}`).set('Cookie', cookie);
+    expect(before.body).toMatchObject({ absences: 0, absenceLimit: null });
+    const res = await patch({ absences: 3, absenceLimit: 6 });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ absences: 3, absenceLimit: 6 });
+    expect((await patch({ absenceLimit: null })).body.absenceLimit).toBeNull();
+  });
+
+  it('recusa valores inválidos e faltas de disciplinas de outra conta', async () => {
+    expect((await patch({ absences: -1 })).status).toBe(400);
+    expect((await patch({ absences: 1.5 })).status).toBe(400);
+    expect((await patch({ absenceLimit: 0 })).status).toBe(400);
+    const { cookie: other } = await createUserAndLogin('rui');
+    expect((await patch({ absences: 5 }, other)).status).toBe(404);
+  });
+});

@@ -78,6 +78,15 @@ export const disciplineCreateSchema = z.strictObject({
 export const disciplineUpdateSchema = disciplineCreateSchema.partial().extend({
   /** Arquivar (true) ou reativar (false); preferível a eliminar (spec §7.2). */
   archived: z.boolean().optional(),
+  /** Faltas registadas e limite do regulamento da UC (na mesma unidade: aulas ou horas). */
+  absences: z.number().int('As faltas são um número inteiro').min(0, 'Não pode ser negativo').max(999).optional(),
+  absenceLimit: z
+    .number()
+    .int('O limite é um número inteiro')
+    .min(1, 'O limite tem de ser pelo menos 1')
+    .max(999)
+    .nullable()
+    .optional(),
 });
 
 export const assessmentCreateSchema = z.strictObject({
