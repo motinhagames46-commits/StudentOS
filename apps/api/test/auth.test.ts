@@ -1,3 +1,4 @@
+import { TERMS_VERSION } from '@studentos/shared';
 import request from 'supertest';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { app } from '../src/app.js';
@@ -10,7 +11,7 @@ describe('registo (HU01)', () => {
   it('cria a conta, inicia sessão e cria o semestre ativo', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Inês', email: 'Ines@Exemplo.pt ', password: PASSWORD });
+      .send({ name: 'Inês', email: 'Ines@Exemplo.pt ', password: PASSWORD, acceptTerms: true });
     expect(res.status).toBe(201);
     expect(res.body.user).toMatchObject({ name: 'Inês', email: 'ines@exemplo.pt' });
     expect(res.body.user.passwordHash).toBeUndefined();
@@ -21,13 +22,27 @@ describe('registo (HU01)', () => {
     const me = await request(app).get('/api/me').set('Cookie', cookie);
     expect(me.status).toBe(200);
     expect(me.body.activeSemester.label).toMatch(/semestre/);
+
+    // Fica registada a versão dos Termos aceite e quando
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'ines@exemplo.pt' } });
+    expect(user.termsVersion).toBe(TERMS_VERSION);
+    expect(user.termsAcceptedAt).toBeInstanceOf(Date);
+  });
+
+  it('sem aceitar os Termos não cria conta (400 no campo acceptTerms)', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: PASSWORD });
+    expect(res.status).toBe(400);
+    expect(res.body.error.details[0]).toMatchObject({ path: 'acceptTerms' });
+    expect(await prisma.user.count()).toBe(0);
   });
 
   it('recusa email já registado (409)', async () => {
     await registerUser('ines');
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Outra', email: 'ines@exemplo.pt', password: PASSWORD });
+      .send({ name: 'Outra', email: 'ines@exemplo.pt', password: PASSWORD, acceptTerms: true });
     expect(res.status).toBe(409);
     expect(res.body.error.message).toBe('Este email já está registado');
   });
@@ -35,7 +50,7 @@ describe('registo (HU01)', () => {
   it('recusa palavra-passe curta com erro no campo (400)', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: 'curta' });
+      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: 'curta', acceptTerms: true });
     expect(res.status).toBe(400);
     expect(res.body.error.details[0]).toMatchObject({ path: 'password' });
   });
@@ -43,14 +58,14 @@ describe('registo (HU01)', () => {
   it('recusa palavras-passe comuns', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: 'password1234' });
+      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: 'password1234', acceptTerms: true });
     expect(res.status).toBe(400);
   });
 
   it('rejeita campos desconhecidos', async () => {
     const res = await request(app)
       .post('/api/auth/register')
-      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: PASSWORD, isAdmin: true });
+      .send({ name: 'Inês', email: 'ines@exemplo.pt', password: PASSWORD, acceptTerms: true, isAdmin: true });
     expect(res.status).toBe(400);
   });
 });

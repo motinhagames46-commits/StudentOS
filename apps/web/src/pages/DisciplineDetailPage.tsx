@@ -155,6 +155,9 @@ export function DisciplineDetailPage() {
 
       <Card title="Quanto preciso?">
         <GradeSimulator key={d.id} assessments={d.assessments} passingGrade={d.passingGrade} />
+        <p className="mt-3 text-xs text-stone-600">
+          Cálculo indicativo, com os pesos e mínimos que indicaste. O que conta é o regulamento da UC e a pauta oficial.
+        </p>
       </Card>
 
       <Card title="Avaliações">

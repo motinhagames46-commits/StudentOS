@@ -12,7 +12,7 @@ export async function resetDb() {
 export async function registerUser(name: string) {
   const res = await request(app)
     .post('/api/auth/register')
-    .send({ name, email: `${name}@exemplo.pt`, password: PASSWORD });
+    .send({ name, email: `${name}@exemplo.pt`, password: PASSWORD, acceptTerms: true });
   if (res.status !== 201) throw new Error(`Registo falhou: ${res.status} ${JSON.stringify(res.body)}`);
   const cookie = res.headers['set-cookie'] as unknown as string[];
   return { cookie, user: res.body.user as { id: number; email: string } };

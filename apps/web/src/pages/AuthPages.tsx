@@ -24,6 +24,10 @@ function AuthShell({ title, subtitle, children }: { title: string; subtitle: str
           <Link to="/privacidade" className="underline hover:text-stone-800">
             Privacidade
           </Link>
+          {' · '}
+          <Link to="/termos" className="underline hover:text-stone-800">
+            Termos
+          </Link>
         </p>
       </div>
     </main>
@@ -119,6 +123,7 @@ export function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const { submit, errors, setErrors, formError, submitting } = useAuthSubmit('/auth/register');
 
   if (me.isPending) return <FullPageSpinner />;
@@ -127,7 +132,7 @@ export function RegisterPage() {
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const parsed = registerSchema.safeParse({ name, email, password });
+    const parsed = registerSchema.safeParse({ name, email, password, acceptTerms });
     if (!parsed.success) {
       setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
       return;
@@ -162,6 +167,34 @@ export function RegisterPage() {
           error={errors.password}
           hint={`Pelo menos ${MIN_PASSWORD_LENGTH} caracteres. Uma frase fácil de lembrar funciona bem.`}
         />
+        <div>
+          <label className="flex items-start gap-2 text-sm text-stone-700">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 shrink-0"
+              checked={acceptTerms}
+              onChange={(e) => setAcceptTerms(e.target.checked)}
+              aria-invalid={errors.acceptTerms ? true : undefined}
+              aria-describedby={errors.acceptTerms ? 'erro-termos' : undefined}
+            />
+            <span>
+              Tenho pelo menos 16 anos e aceito os{' '}
+              <Link to="/termos" target="_blank" rel="noreferrer" className="text-accent underline">
+                Termos de utilização
+              </Link>
+              . Li a{' '}
+              <Link to="/privacidade" target="_blank" rel="noreferrer" className="text-accent underline">
+                Política de privacidade
+              </Link>
+              .
+            </span>
+          </label>
+          {errors.acceptTerms && (
+            <p id="erro-termos" className="mt-1 text-sm text-red-700">
+              {errors.acceptTerms}
+            </p>
+          )}
+        </div>
         <FormError message={formError} />
         <Button type="submit" loading={submitting} className="w-full">
           Criar conta

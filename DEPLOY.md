@@ -38,6 +38,7 @@ Cada `git push` para `main` faz um novo deploy automaticamente.
 
 ## Notas
 
+- **Limites de pedidos:** os valores por defeito chegam para uma turma no mesmo Wi-Fi (2000 pedidos por IP a cada 15 minutos, 20 contas novas por IP por hora). Só se mudam com `RATE_LIMIT_PER_15_MIN` e `RATE_LIMIT_REGISTER_PER_HOUR` nas variáveis do Render, se for mesmo preciso.
 - **Plano gratuito do Render:** o serviço adormece após cerca de 15 minutos sem pedidos, e o primeiro pedido seguinte pode demorar até 1 minuto. Para a defesa, abre a app uns minutos antes.
 - **Cache e domínio:** os ficheiros `/assets/*` têm o hash no nome e ficam em cache no browser durante um ano, por isso as visitas seguintes só esperam pelo servidor. O `apps/web/index.html` tem o endereço publicado (`https://studentos-7axk.onrender.com`) nas etiquetas Open Graph (`og:url` e `og:image`, pré-visualização ao partilhar a ligação): se o domínio mudar, atualiza-as.
 - **Dados de demonstração:** em produção não há seed. Cria uma conta na própria app. Se quiseres a conta demo, corre localmente `DATABASE_URL="<url do Neon>" npm run db:seed`. A palavra-passe da conta demo é pública (está no código), por isso não a uses com dados reais.

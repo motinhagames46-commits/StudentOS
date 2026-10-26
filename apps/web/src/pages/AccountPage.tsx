@@ -146,6 +146,10 @@ export function AccountPage() {
           <Link to="/privacidade" className="underline hover:text-stone-800">
             Política de privacidade
           </Link>
+          {' · '}
+          <Link to="/termos" className="underline hover:text-stone-800">
+            Termos de utilização
+          </Link>
         </p>
       </div>
     </>

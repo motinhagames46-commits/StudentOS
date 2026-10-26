@@ -147,6 +147,8 @@ Render (serviço web, Frankfurt) + Neon (PostgreSQL, UE), em plano gratuito. O p
 - O ficheiro `apps/api/.env` tem segredos e nunca deve ir para o Git (está no `.gitignore`).
 - Todos os recursos são filtrados pelo utilizador da sessão. Um recurso de outro utilizador devolve 404, e há testes para isso (`apps/api/test/tasks.test.ts`).
 - A conta do seed é só para desenvolvimento local.
+- Abuso e negação de serviço: as inundações de rede param na Cloudflare que o Render põe à frente do serviço; a API tem limites em camadas (por IP, por conta, nas operações caras, na criação de contas e nas tentativas de login) e fecha ligações lentas de propósito. Detalhes em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+- Termos de utilização em `/termos` (sem garantia, cálculos indicativos, utilização aceitável, responsabilidade limitada nos termos da lei, lei portuguesa). Criar conta exige confirmar 16+ anos e aceitar os Termos; a conta guarda a versão aceite e quando. Não substituem aconselhamento jurídico.
 
 ## Resolução de problemas
 

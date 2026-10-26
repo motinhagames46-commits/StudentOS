@@ -84,6 +84,13 @@ export function PrivacyPage() {
           página Conta exportas todos os teus dados em JSON (acesso e portabilidade) e eliminas a conta com todos os
           dados de forma permanente (apagamento).
         </p>
+        <p>
+          As regras de utilização estão nos{' '}
+          <Link to="/termos" className="text-accent underline">
+            Termos de utilização
+          </Link>
+          .
+        </p>
       </div>
     </main>
   );

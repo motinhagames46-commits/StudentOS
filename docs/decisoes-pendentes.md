@@ -19,7 +19,7 @@ Perguntas levantadas no trabalho de 2026-10-25 (página de entrada, questionári
 
 ## Bloqueios do dono antes de divulgar a desconhecidos ou cobrar
 
-- **RGPD:** a página de privacidade tem de identificar um responsável pelo tratamento e um contacto. O agente não pode inventar essa identidade.
+- **RGPD e Termos:** a página de privacidade (e os Termos) têm de identificar um responsável pelo tratamento e um contacto (RGPD, art. 13.º). Pode ser um email criado só para o StudentOS, sem o teu nome na apresentação. O agente não pode inventar essa identidade. Os Termos de utilização (`/termos`, 2026-10-26) foram escritos sem revisão jurídica: antes de cobrar, convém que um jurista os reveja.
 - **IPVC:** confirmar se um projeto avaliado no IPVC pode ser comercializado.
 - **`StudentOS-Especificacao-v2.md`** (na raiz, fora do Git): decidir se entra no repositório ou se é apagado.
 

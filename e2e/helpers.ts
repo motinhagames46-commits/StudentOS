@@ -13,6 +13,7 @@ export async function register(page: Page, name: string, email = uniqueEmail(nam
   await page.getByLabel('Nome').fill(name);
   await page.getByLabel('Email').fill(email);
   await page.getByLabel('Palavra-passe').fill(PASSWORD);
+  await page.getByRole('checkbox', { name: /aceito os Termos/ }).check();
   await page.getByRole('button', { name: 'Criar conta' }).click();
   await expect(page).toHaveURL(/\/boas-vindas$/);
   await page.getByRole('button', { name: 'Saltar e ir para o painel' }).click();

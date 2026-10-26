@@ -311,9 +311,14 @@ export function LandingPage() {
       <footer className="border-t border-stone-200">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-6 text-sm text-stone-600">
           <span>StudentOS · projeto académico</span>
-          <Link to="/privacidade" className="underline hover:text-stone-900">
-            Privacidade
-          </Link>
+          <span className="flex gap-4">
+            <Link to="/privacidade" className="underline hover:text-stone-900">
+              Privacidade
+            </Link>
+            <Link to="/termos" className="underline hover:text-stone-900">
+              Termos de utilização
+            </Link>
+          </span>
         </div>
       </footer>
     </div>

@@ -18,6 +18,7 @@ test('conta nova: questionário até ao plano da semana confirmado', async ({ pa
   await page.getByLabel('Nome').fill('Rita');
   await page.getByLabel('Email').fill(uniqueEmail('rita'));
   await page.getByLabel('Palavra-passe').fill(PASSWORD);
+  await page.getByRole('checkbox', { name: /aceito os Termos/ }).check();
   await page.getByRole('button', { name: 'Criar conta' }).click();
 
   await expect(page).toHaveURL(/\/boas-vindas$/);
@@ -98,6 +99,7 @@ test('o questionário pode ser saltado logo no início', async ({ page }) => {
   await page.getByLabel('Nome').fill('Tiago');
   await page.getByLabel('Email').fill(uniqueEmail('tiago'));
   await page.getByLabel('Palavra-passe').fill(PASSWORD);
+  await page.getByRole('checkbox', { name: /aceito os Termos/ }).check();
   await page.getByRole('button', { name: 'Criar conta' }).click();
   await page.getByRole('button', { name: 'Saltar e ir para o painel' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Olá, Tiago' })).toBeVisible();
@@ -108,6 +110,7 @@ test('se gravar uma disciplina falhar, tentar de novo não duplica as que já fi
   await page.getByLabel('Nome').fill('Inês');
   await page.getByLabel('Email').fill(uniqueEmail('ines'));
   await page.getByLabel('Palavra-passe').fill(PASSWORD);
+  await page.getByRole('checkbox', { name: /aceito os Termos/ }).check();
   await page.getByRole('button', { name: 'Criar conta' }).click();
   await page.getByRole('button', { name: 'Vamos a isso' }).click();
 

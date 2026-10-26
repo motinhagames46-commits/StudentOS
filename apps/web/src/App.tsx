@@ -6,6 +6,7 @@ import { ServerWakeBanner } from './components/ServerWakeBanner';
 import { lazyPage } from './lib/lazyPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { PrivacyPage } from './pages/PrivacyPage';
+import { TermsPage } from './pages/TermsPage';
 
 // Páginas da app carregadas à parte: quem só vê a página de entrada ou o login descarrega menos.
 const AccountPage = lazyPage(() => import('./pages/AccountPage'), 'AccountPage');
@@ -40,6 +41,7 @@ export function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registo" element={<RegisterPage />} />
         <Route path="/privacidade" element={<PrivacyPage />} />
+        <Route path="/termos" element={<TermsPage />} />
         <Route element={<RequireAuth />}>
           <Route
             path="boas-vindas"

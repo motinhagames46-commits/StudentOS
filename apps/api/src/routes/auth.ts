@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { loginSchema, registerSchema, semesterFor } from '@studentos/shared';
+import { TERMS_VERSION, loginSchema, registerSchema, semesterFor } from '@studentos/shared';
 import { hashPassword, isCommonPassword, verifyAgainstDummy, verifyPassword } from '../lib/auth.js';
 import { HttpError, parse, validationError } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
@@ -25,6 +25,9 @@ authRouter.post('/register', async (req, res) => {
       name: input.name,
       email: input.email,
       passwordHash: await hashPassword(input.password),
+      // Prova da aceitação dos Termos (a validação exige acceptTerms: true).
+      termsAcceptedAt: new Date(),
+      termsVersion: TERMS_VERSION,
       semesters: { create: { ...semester, isActive: true } },
     },
   });

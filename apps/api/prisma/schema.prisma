@@ -75,6 +75,8 @@ model User {
   email             String             @unique
   passwordHash      String
   tokenVersion      Int                @default(0) // legado (JWT); mantido para permitir rollback
+  termsAcceptedAt   DateTime? // aceitação dos Termos de utilização no registo (contas anteriores: null)
+  termsVersion      String?
   lastLoginAt       DateTime?
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt

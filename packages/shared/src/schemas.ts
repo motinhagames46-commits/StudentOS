@@ -23,10 +23,14 @@ const newPasswordSchema = z
   .max(200, 'A palavra-passe é demasiado longa');
 const currentPasswordSchema = z.string('Indica a palavra-passe').min(1, 'Indica a palavra-passe').max(200);
 
+/** Versão dos Termos de utilização em vigor (data da página /termos); fica registada em cada conta nova. */
+export const TERMS_VERSION = '2026-10-26';
+
 export const registerSchema = z.strictObject({
   name: z.string('Indica o nome').trim().min(2, 'O nome deve ter pelo menos 2 caracteres').max(80),
   email: emailSchema,
   password: newPasswordSchema,
+  acceptTerms: z.literal(true, { error: 'Para criar conta, confirma a idade e aceita os Termos de utilização' }),
 });
 
 export const loginSchema = z.strictObject({
