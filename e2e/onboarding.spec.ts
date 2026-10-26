@@ -145,3 +145,53 @@ test('no calendário, «Compromisso fixo» já vem semanal e ocupado', async ({ 
   await expect(page.getByLabel('Repetir até')).not.toHaveValue('');
   await expect(page.getByRole('checkbox', { name: /Ocupado/ })).toBeChecked();
 });
+
+test('se a proposta deixar de valer, «Gerar de novo» faz outra e confirma-se', async ({ page }) => {
+  await register(page, 'Lara');
+  // Dados pela API: uma disciplina com avaliações e disponibilidade todo o dia
+  await page.evaluate(async () => {
+    const post = (path: string, body: unknown, method = 'POST') =>
+      fetch(`/api${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then((r) => r.json() as Promise<{ id: number }>);
+    const d = await post('/disciplines', { name: 'Bases de Dados', code: 'BD', ects: 6 });
+    await post(`/disciplines/${d.id}/assessments`, { name: 'Exame', type: 'EXAM', weight: 100 });
+    const allDay = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, startMinute: 0, endMinute: 1440 }));
+    await post(
+      '/preferences/study',
+      { sessionMinutes: 50, minSessionMinutes: 25, breakMinutes: 10, maxDailyMinutes: 180, availability: allDay },
+      'PUT',
+    );
+  });
+
+  await page.goto('/boas-vindas');
+  await page.getByRole('button', { name: 'Vamos a isso' }).click();
+  await page.getByRole('button', { name: 'Saltar este passo' }).click();
+  await page.getByRole('button', { name: 'Saltar este passo' }).click();
+  await page.getByRole('button', { name: 'Continuar' }).click(); // mantém a disponibilidade
+  await page.getByRole('button', { name: 'Ver a minha semana' }).click();
+  await expect(page.getByRole('button', { name: 'Confirmar plano' })).toBeVisible();
+
+  // Entretanto o calendário muda: um evento ocupado em cima da primeira sessão proposta
+  await page.evaluate(async () => {
+    const from = new Date().toISOString();
+    const to = new Date(Date.now() + 8 * 24 * 60 * 60 * 1000).toISOString();
+    const { draft } = (await (await fetch(`/api/planner/sessions?from=${from}&to=${to}`)).json()) as {
+      draft: { proposal: { sessions: { start: string; end: string }[] } };
+    };
+    const first = draft.proposal.sessions[0]!;
+    await fetch('/api/schedule-blocks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: 'Reunião', kind: 'EVENT', startAt: first.start, endAt: first.end }),
+    });
+  });
+
+  await page.getByRole('button', { name: 'Confirmar plano' }).click();
+  await expect(page.getByRole('alert')).toContainText('Esta proposta já não se pode confirmar');
+  await page.getByRole('button', { name: 'Gerar de novo' }).click();
+  await page.getByRole('button', { name: 'Confirmar plano' }).click();
+  await expect(page.getByRole('status').filter({ hasText: 'Plano guardado' })).toBeVisible();
+});

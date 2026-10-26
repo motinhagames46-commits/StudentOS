@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
 import { DEFAULT_TIMEZONE, addDaysToKey, weekdayOfKey, zonedDayKey, zonedToInstant } from '@studentos/shared';
@@ -112,6 +112,8 @@ describe('pré-visualização (spec §11.6)', () => {
 });
 
 describe('confirmação e replaneamento', () => {
+  afterEach(() => vi.useRealTimers());
+
   async function confirmedPlan() {
     await setAvailability(ines);
     const { body: task } = await createTask(ines, { estimatedMinutes: 150, dueDate: iso(4 * DAY) });
@@ -143,6 +145,32 @@ describe('confirmação e replaneamento', () => {
     // a sessão fixada conta como trabalho reservado: só faltam 100 min para planear
     const active = await prisma.plannedSession.findMany({ where: { status: 'PLANNED', pinned: false } });
     expect(active.reduce((s, x) => s + x.plannedMinutes, 0)).toBe(100);
+  });
+
+  it('confirmar uns minutos depois não falha: as sessões que já começaram ficam de fora', async () => {
+    // Disponível o dia todo: a primeira sessão começa daqui a poucos minutos (grelha de 5 min).
+    const allDay = [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({ weekday, startMinute: 0, endMinute: 1440 }));
+    await setAvailability(ines, allDay);
+    await createTask(ines, { estimatedMinutes: 150, dueDate: iso(3 * DAY) });
+    const { body: plan } = await preview(ines);
+    const sessions = plan.proposal.sessions as { start: string }[];
+    expect(sessions.length).toBeGreaterThan(1);
+
+    // O estudante confirma um minuto depois de a primeira sessão começar.
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date(sessions[0]!.start).getTime() + 60_000 });
+    const res = await request(app).post(`/api/planner/${plan.id}/confirm`).set('Cookie', ines);
+    expect(res.status).toBe(200);
+    expect(res.body.created).toBe(sessions.length - 1);
+  });
+
+  it('dois «Confirmar» ao mesmo tempo criam as sessões uma só vez', async () => {
+    await setAvailability(ines);
+    await createTask(ines, { estimatedMinutes: 100, dueDate: iso(3 * DAY) });
+    const { body: plan } = await preview(ines, { from: tomorrow() });
+    const confirm = () => request(app).post(`/api/planner/${plan.id}/confirm`).set('Cookie', ines);
+    const results = await Promise.all([confirm(), confirm()]);
+    expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    expect(await prisma.plannedSession.count()).toBe(plan.proposal.sessions.length);
   });
 
   it('recusa confirmar uma proposta desatualizada (409) ou expirada (410)', async () => {

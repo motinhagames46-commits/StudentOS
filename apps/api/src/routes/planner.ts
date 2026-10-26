@@ -160,23 +160,34 @@ plannerRouter.post('/:id/confirm', async (req, res) => {
   }
 
   const proposal = plan.proposal as unknown as StoredProposal;
+  // O que começou entretanto (o estudante demorou a confirmar) fica de fora, em vez de anular a proposta toda.
+  const sessions = proposal.sessions.filter((s) => new Date(s.start) >= now);
+  const removals = proposal.removals.filter((r) => new Date(r.startAt) > now);
   const context = await buildPlannerContext(req.userId, plan.fromDate, plan.toDate, now);
   const stale =
-    proposal.sessions.some((s) => {
-      const interval = { start: new Date(s.start), end: new Date(s.end) };
-      return interval.start < now || context.busy.some((b) => overlaps(b, interval));
-    }) || proposal.removals.some((r) => !context.replaceable.some((c) => c.id === r.id));
+    sessions.some((s) => context.busy.some((b) => overlaps(b, { start: new Date(s.start), end: new Date(s.end) }))) ||
+    removals.some((r) => !context.replaceable.some((c) => c.id === r.id));
   if (stale) {
     throw new HttpError(409, 'PLAN_STALE', 'O calendário mudou desde a pré-visualização. Gera um novo plano.');
   }
 
   const result = await prisma.$transaction(async (tx) => {
+    // Reclamar a proposta antes de escrever: dois «Confirmar» em simultâneo não criam as sessões duas vezes.
+    const claimed = await tx.studyPlan.updateMany({
+      where: { id: plan.id, status: 'DRAFT' },
+      data: { status: 'CONFIRMED', confirmedAt: now },
+    });
+    if (claimed.count === 0) throw new HttpError(409, 'PLAN_NOT_DRAFT', 'Este plano já não é uma proposta pendente');
+    await tx.studyPlan.updateMany({
+      where: { userId: req.userId, status: 'CONFIRMED', id: { not: plan.id } },
+      data: { status: 'SUPERSEDED' },
+    });
     const removed = await tx.plannedSession.updateMany({
-      where: { userId: req.userId, id: { in: proposal.removals.map((r) => r.id) }, status: 'PLANNED', pinned: false },
+      where: { userId: req.userId, id: { in: removals.map((r) => r.id) }, status: 'PLANNED', pinned: false },
       data: { status: 'CANCELLED' },
     });
     const created = await tx.plannedSession.createMany({
-      data: proposal.sessions.map((s: ProposedSession) => ({
+      data: sessions.map((s: ProposedSession) => ({
         userId: req.userId,
         startAt: new Date(s.start),
         endAt: new Date(s.end),
@@ -188,11 +199,6 @@ plannerRouter.post('/:id/confirm', async (req, res) => {
         planId: plan.id,
       })),
     });
-    await tx.studyPlan.updateMany({
-      where: { userId: req.userId, status: 'CONFIRMED' },
-      data: { status: 'SUPERSEDED' },
-    });
-    await tx.studyPlan.update({ where: { id: plan.id }, data: { status: 'CONFIRMED', confirmedAt: now } });
     return { created: created.count, removed: removed.count };
   });
   res.json(result);

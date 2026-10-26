@@ -116,7 +116,7 @@ A quota nunca é gravada (`prepMinutes` continua a ser só do estudante), o praz
 **Ciclo de vida:**
 
 - Cada proposta é um `StudyPlan` em estado `DRAFT` que dura 30 minutos.
-- Na confirmação, a proposta é revalidada contra o estado atual da base de dados: 409 `PLAN_STALE` se algo mudou, 410 `PLAN_EXPIRED` se expirou.
+- Na confirmação, a proposta é revalidada contra o estado atual da base de dados: 409 `PLAN_STALE` se algo mudou, 410 `PLAN_EXPIRED` se expirou. As sessões que entretanto começaram ficam de fora, em vez de anularem a proposta. A transação começa por reclamar a proposta (`DRAFT` → `CONFIRMED`), para dois pedidos simultâneos não criarem as sessões duas vezes; no questionário, uma proposta que já não vale mostra «Gerar de novo».
 - **Sessões protegidas:** concluídas, fixadas e a decorrer. Nunca são alteradas.
 - **Sessões substituíveis:** planeadas, não fixadas e no futuro. Ao confirmar, passam a `CANCELLED`, ficando no histórico em vez de serem apagadas.
 - Mover uma sessão à mão fixa-a, e o replaneamento respeita-a.

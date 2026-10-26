@@ -2,13 +2,16 @@ import { DEFAULT_TIMEZONE, zonedDayKey } from '@studentos/shared';
 import { CalendarPlus, CheckCircle2 } from 'lucide-react';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useConfirmPlan, usePlanPreview } from '../../hooks/queries';
-import { downloadFile, errorMessage } from '../../lib/api';
+import { ApiError, downloadFile, errorMessage } from '../../lib/api';
 import { formatTime, studyTitle } from '../../lib/format';
 import { summarizeByDiscipline } from '../../lib/onboarding';
 import { Button, ErrorState, FormError, LoadingList } from '../ui';
 
 const TZ = DEFAULT_TIMEZONE;
 const longDay = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
+// Proposta que expirou, mudou ou já foi tratada noutro separador: a saída é gerar outra.
+const outdated = (err: unknown) =>
+  err instanceof ApiError && ['PLAN_STALE', 'PLAN_EXPIRED', 'PLAN_NOT_DRAFT'].includes(err.code);
 const hours = (minutes: number) => `${Math.round((minutes / 60) * 10) / 10} h`.replace('.', ',');
 
 /** Último passo: o plano real dos próximos 7 dias, calculado pelo planeador determinístico. */
@@ -171,7 +174,30 @@ export function WeekResultStep({
         </details>
       )}
 
-      <FormError message={confirm.isError ? errorMessage(confirm.error) : null} />
+      {confirm.isError &&
+        (outdated(confirm.error) ? (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-amber-50 px-3 py-2"
+          >
+            <p className="text-sm text-amber-900">
+              Esta proposta já não se pode confirmar (passou muito tempo ou o calendário mudou). Gera uma nova com as
+              mesmas respostas.
+            </p>
+            <Button
+              variant="secondary"
+              loading={preview.isPending}
+              onClick={() => {
+                confirm.reset();
+                preview.mutate({ days: 7 });
+              }}
+            >
+              Gerar de novo
+            </Button>
+          </div>
+        ) : (
+          <FormError message={errorMessage(confirm.error)} />
+        ))}
       <div className="flex flex-wrap justify-end gap-2">
         <Button variant="ghost" onClick={onBack}>
           Ajustar horas livres
