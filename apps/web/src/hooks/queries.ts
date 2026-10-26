@@ -2,6 +2,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AssessmentCreateInput,
+  AssistantAnswer,
+  AssistantAskInput,
   AssessmentUpdateInput,
   DisciplineCreateInput,
   DocumentConfirmItem,
@@ -445,3 +447,10 @@ export function useDeleteDocument() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
   });
 }
+
+/** Pergunta ao assistente: a conversa fica só no estado da página. */
+export const useAskAssistant = () =>
+  useMutation({
+    mutationFn: (input: AssistantAskInput) =>
+      api<AssistantAnswer>('/assistant/ask', { method: 'POST', body: input, expectSlow: true }),
+  });

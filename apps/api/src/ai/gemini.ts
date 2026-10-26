@@ -1,6 +1,6 @@
 // Gemini pela API REST (sem SDK): a chave vai no cabeçalho x-goog-api-key, nunca no URL nem em logs.
 import { z } from 'zod';
-import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider } from './provider.js';
+import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider, type WebAnswer } from './provider.js';
 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 // Um PDF com várias páginas pode levar bem mais de um minuto a transcrever.
@@ -12,6 +12,14 @@ const generateResponse = z.object({
       z.object({
         content: z.object({ parts: z.array(z.object({ text: z.string().optional() })).optional() }).optional(),
         finishReason: z.string().optional(),
+        groundingMetadata: z
+          .object({
+            groundingChunks: z
+              .array(z.object({ web: z.object({ uri: z.string(), title: z.string().optional() }).optional() }))
+              .optional(),
+            searchEntryPoint: z.object({ renderedContent: z.string().optional() }).optional(),
+          })
+          .optional(),
       }),
     )
     .optional(),
@@ -45,14 +53,13 @@ export class GeminiProvider implements AiProvider {
     return res.json().catch(() => null);
   }
 
-  async generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options: { system?: string } = {}) {
-    // O $schema (versão do JSON Schema) não faz parte do formato que a API aceita.
-    const { $schema: _version, ...responseJsonSchema } = z.toJSONSchema(schema) as Record<string, unknown>;
+  /** Primeiro candidato com texto; resposta cortada ou vazia viram erros da app. */
+  private async generate(parts: AiPart[], system: string | undefined, extra: Record<string, unknown>) {
     const data = generateResponse.safeParse(
       await this.call(`${encodeURIComponent(this.model)}:generateContent`, {
         contents: [{ role: 'user', parts }],
-        ...(options.system ? { systemInstruction: { parts: [{ text: options.system }] } } : {}),
-        generationConfig: { responseMimeType: 'application/json', responseJsonSchema },
+        ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
+        ...extra,
       }),
     );
     const candidate = data.success ? data.data.candidates?.[0] : undefined;
@@ -64,6 +71,15 @@ export class GeminiProvider implements AiProvider {
     }
     const text = candidate?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
     if (!text) throw new AiError('AI_BLOCKED', 'O serviço de IA não devolveu resposta para este pedido.');
+    return { text, grounding: candidate?.groundingMetadata };
+  }
+
+  async generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options: { system?: string } = {}) {
+    // O $schema (versão do JSON Schema) não faz parte do formato que a API aceita.
+    const { $schema: _version, ...responseJsonSchema } = z.toJSONSchema(schema) as Record<string, unknown>;
+    const { text } = await this.generate(parts, options.system, {
+      generationConfig: { responseMimeType: 'application/json', responseJsonSchema },
+    });
 
     let json: unknown;
     try {
@@ -74,6 +90,22 @@ export class GeminiProvider implements AiProvider {
     const result = schema.safeParse(json);
     if (!result.success) throw new AiError('AI_INVALID_RESPONSE', 'A resposta da IA não veio no formato esperado.');
     return result.data;
+  }
+
+  async searchAnswer(parts: AiPart[], options: { system?: string } = {}): Promise<WebAnswer> {
+    const { text, grounding } = await this.generate(parts, options.system, { tools: [{ google_search: {} }] });
+    const sources = new Map<string, string>();
+    for (const chunk of grounding?.groundingChunks ?? []) {
+      // Só ligações https chegam a um <a href> na página.
+      if (chunk.web?.uri.startsWith('https://') && !sources.has(chunk.web.uri)) {
+        sources.set(chunk.web.uri, chunk.web.title || chunk.web.uri);
+      }
+    }
+    return {
+      text,
+      sources: [...sources].map(([url, title]) => ({ title, url })),
+      searchSuggestionsHtml: grounding?.searchEntryPoint?.renderedContent ?? null,
+    };
   }
 
   async embed(texts: string[], task: 'document' | 'query'): Promise<number[][]> {

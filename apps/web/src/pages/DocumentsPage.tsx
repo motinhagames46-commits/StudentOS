@@ -2,6 +2,7 @@ import { DOCUMENT_MAX_BYTES, DOCUMENT_MAX_FILES } from '@studentos/shared';
 import { Camera, FileText, Upload, X } from 'lucide-react';
 import { useRef, useState, type ChangeEvent } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { AiUnavailable } from '../components/AiUnavailable';
 import { useToast } from '../components/Toast';
 import {
   Badge,
@@ -44,18 +45,7 @@ export function DocumentsPage() {
         ) : ai.data?.status === 'ENABLED' ? (
           <UploadCard />
         ) : (
-          <Card>
-            <p className="text-sm text-stone-700">
-              {ai.data?.status === 'NOT_ALLOWED'
-                ? 'A leitura de documentos com IA não está disponível nesta conta.'
-                : 'Para ler documentos, ativa primeiro o assistente de IA.'}
-            </p>
-            {ai.data?.status !== 'NOT_ALLOWED' && (
-              <Link to="/integracoes" className="mt-3 inline-block text-sm font-medium text-accent hover:underline">
-                Ir para Integrações
-              </Link>
-            )}
-          </Card>
+          <AiUnavailable status={ai.data?.status} action="ler documentos" />
         )}
 
         <Card title="Os teus documentos">

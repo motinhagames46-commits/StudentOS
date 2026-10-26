@@ -6,8 +6,8 @@ import type { AiProvider } from './provider.js';
 
 export type AiStatus = 'NOT_ALLOWED' | 'NOT_CONFIGURED' | 'NEEDS_CONSENT' | 'ENABLED';
 
-/** Versão do texto de consentimento mostrado na página Integrações. */
-export const AI_CONSENT_VERSION = '2026-10-26';
+/** Versão do texto de consentimento mostrado na página Integrações (2: pesquisa Google no assistente). */
+export const AI_CONSENT_VERSION = '2026-10-26.2';
 
 let gemini: GeminiProvider | null = null;
 let override: AiProvider | null | undefined;
@@ -27,9 +27,14 @@ export function setAiProviderForTests(provider: AiProvider | null | undefined) {
 
 export const isAiAllowed = (email: string) => env.AI_ALLOWED_EMAILS.includes(email.toLowerCase());
 
-export function aiStatusOf(user: { email: string; aiConsentAt: Date | null }): AiStatus {
+export function aiStatusOf(user: {
+  email: string;
+  aiConsentAt: Date | null;
+  aiConsentVersion: string | null;
+}): AiStatus {
   if (!isAiAllowed(user.email)) return 'NOT_ALLOWED';
   if (!aiProvider()) return 'NOT_CONFIGURED';
-  if (!user.aiConsentAt) return 'NEEDS_CONSENT';
+  // Um consentimento dado a um texto anterior não cobre o que mudou: volta a pedir-se.
+  if (!user.aiConsentAt || user.aiConsentVersion !== AI_CONSENT_VERSION) return 'NEEDS_CONSENT';
   return 'ENABLED';
 }

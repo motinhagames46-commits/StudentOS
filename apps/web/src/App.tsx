@@ -13,6 +13,7 @@ const AccountPage = lazyPage(() => import('./pages/AccountPage'), 'AccountPage')
 const CalendarPage = lazyPage(() => import('./pages/CalendarPage'), 'CalendarPage');
 const DashboardPage = lazyPage(() => import('./pages/DashboardPage'), 'DashboardPage');
 const DisciplineDetailPage = lazyPage(() => import('./pages/DisciplineDetailPage'), 'DisciplineDetailPage');
+const AssistantPage = lazyPage(() => import('./pages/AssistantPage'), 'AssistantPage');
 const DisciplinesPage = lazyPage(() => import('./pages/DisciplinesPage'), 'DisciplinesPage');
 const DocumentDetailPage = lazyPage(() => import('./pages/DocumentDetailPage'), 'DocumentDetailPage');
 const DocumentsPage = lazyPage(() => import('./pages/DocumentsPage'), 'DocumentsPage');
@@ -66,6 +67,7 @@ export function App() {
             <Route path="sessoes" element={<StudySessionsPage />} />
             <Route path="documentos" element={<DocumentsPage />} />
             <Route path="documentos/:id" element={<DocumentDetailPage />} />
+            <Route path="assistente" element={<AssistantPage />} />
             <Route path="conta" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>

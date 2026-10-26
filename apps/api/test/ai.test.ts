@@ -44,11 +44,18 @@ describe('acesso à IA: lista de contas, chave e consentimento', () => {
   it('o consentimento ativa e retirá-lo desativa; fica registada a versão e a data', async () => {
     expect((await status(owner)).body).toMatchObject({ status: 'NEEDS_CONSENT', model: 'fake' });
     const given = await request(app).post('/api/ai/consent').set('Cookie', owner);
-    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-26' });
+    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-26.2' });
     expect(given.body.consentAt).toEqual(expect.any(String));
 
     expect((await request(app).delete('/api/ai/consent').set('Cookie', owner)).status).toBe(204);
     expect((await status(owner)).body).toMatchObject({ status: 'NEEDS_CONSENT', consentAt: null });
+  });
+
+  it('um consentimento dado a um texto anterior deixa de valer: volta a NEEDS_CONSENT', async () => {
+    await request(app).post('/api/ai/consent').set('Cookie', owner);
+    await prisma.user.update({ where: { email: 'dono@exemplo.pt' }, data: { aiConsentVersion: '2026-10-26' } });
+    expect((await status(owner)).body).toMatchObject({ status: 'NEEDS_CONSENT', consentVersion: '2026-10-26' });
+    expect((await request(app).post('/api/ai/check').set('Cookie', owner)).status).toBe(403);
   });
 
   it('a verificação só corre com a IA ativa e só diz «ligado» com uma resposta válida', async () => {

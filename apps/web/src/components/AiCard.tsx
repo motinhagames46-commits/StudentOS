@@ -61,6 +61,10 @@ export function AiCard() {
                 perguntas ao assistente e totais agregados das finanças. As imagens não ficam guardadas no StudentOS.
               </li>
               <li>
+                Quando os teus documentos não chegam para responder, o assistente pesquisa a pergunta na Pesquisa
+                Google; nesse caso a Google guarda a pergunta e a resposta durante 30 dias.
+              </li>
+              <li>
                 No Espaço Económico Europeu, os termos da API Gemini não deixam a Google usar este conteúdo para
                 melhorar os seus produtos, mesmo no plano gratuito.
               </li>
@@ -68,11 +72,18 @@ export function AiCard() {
               <li>Podes desligar a qualquer momento; os dados já guardados no StudentOS ficam até os apagares.</li>
             </ul>
           </div>
-          {status.data.consentAt && (
-            <p className="text-xs text-stone-600">Ativada em {formatDateTime(status.data.consentAt)}.</p>
+          {/* Consentimento dado a um texto anterior: o servidor devolve NEEDS_CONSENT e pede-se outra vez. */}
+          {status.data.consentAt && s === 'NEEDS_CONSENT' ? (
+            <p className="rounded-lg bg-amber-50 px-3 py-2 text-amber-900">
+              O texto acima mudou desde que ativaste a IA. Lê-o e ativa outra vez para continuares.
+            </p>
+          ) : (
+            status.data.consentAt && (
+              <p className="text-xs text-stone-600">Ativada em {formatDateTime(status.data.consentAt)}.</p>
+            )
           )}
           <div className="flex flex-wrap gap-2">
-            {status.data.consentAt ? (
+            {status.data.consentAt && s !== 'NEEDS_CONSENT' ? (
               <>
                 {s === 'ENABLED' && (
                   <Button loading={check.isPending} onClick={() => check.mutate()}>

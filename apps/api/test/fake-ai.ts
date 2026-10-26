@@ -1,11 +1,21 @@
 // Fornecedor de IA falso para os testes: respostas JSON em fila e vetores determinísticos (sem rede).
 import type { z } from 'zod';
-import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider } from '../src/ai/provider.js';
+import {
+  AiError,
+  EMBEDDING_DIMENSIONS,
+  normalize,
+  type AiPart,
+  type AiProvider,
+  type WebAnswer,
+} from '../src/ai/provider.js';
 
 export class FakeAiProvider implements AiProvider {
   readonly model = 'fake';
   readonly embeddingModel = 'fake-embedding';
   readonly requests: AiPart[][] = [];
+  readonly searches: AiPart[][] = [];
+  /** Vetor devolvido para perguntas (task 'query'), para os testes escolherem o que fica mais perto. */
+  queryVector: number[] | null = null;
 
   constructor(private readonly responses: unknown[] = []) {}
 
@@ -16,7 +26,15 @@ export class FakeAiProvider implements AiProvider {
     return result.data;
   }
 
-  async embed(texts: string[]): Promise<number[][]> {
+  async searchAnswer(parts: AiPart[]): Promise<WebAnswer> {
+    this.searches.push(parts);
+    const answer = this.responses.shift() as WebAnswer | undefined;
+    if (!answer?.text) throw new AiError('AI_BLOCKED', 'O serviço de IA não devolveu resposta para este pedido.');
+    return answer;
+  }
+
+  async embed(texts: string[], task: 'document' | 'query' = 'document'): Promise<number[][]> {
+    if (task === 'query' && this.queryVector) return texts.map(() => this.queryVector!);
     return texts.map((text) =>
       normalize(Array.from({ length: EMBEDDING_DIMENSIONS }, (_, i) => (text.charCodeAt(i % text.length) || 1) % 7)),
     );

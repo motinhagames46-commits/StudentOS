@@ -171,6 +171,12 @@ Ler um documento exige a IA ativa (`AI_NOT_ENABLED`); ver, rever e eliminar os j
 | POST   | `/api/documents/:id/confirm` | `{ items }` escolhidos e editados: cria avaliações (com peso, até 100 % por disciplina) e tarefas, ou acrescenta a data a uma avaliação existente (`assessmentId`). Uma transação; lista vazia = ignorar todas. 409 `DOCUMENT_ALREADY_REVIEWED` na segunda vez.                                                     |
 | DELETE | `/api/documents/:id`         | Apaga o documento e os excertos; o que já foi gravado a partir dele fica.                                                                                                                                                                                                                                           |
 
+### Assistente
+
+| Método | Rota                 | Descrição                                                                                                                                                                                                                                                                                                                                   |
+| ------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/assistant/ask` | `{ question, disciplineId?, history? }` (IA ativa). Busca exata dos 6 excertos mais próximos da conta; responde só com eles, com fontes `[n]` (`mode: "documents"`). Se não chegarem, ou sem fontes válidas, responde com pesquisa Google (`mode: "web"`, fontes web e `searchSuggestionsHtml`, a mostrar sem alterações). Nada é guardado. |
+
 ## Integrações
 
 | Método | Caminho             | Descrição                                                                                                                               |

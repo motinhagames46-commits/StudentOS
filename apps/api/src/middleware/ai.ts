@@ -7,7 +7,7 @@ import { prisma } from '../lib/prisma.js';
 export async function requireAi(req: Request, _res: Response, next: NextFunction): Promise<void> {
   const user = await prisma.user.findUniqueOrThrow({
     where: { id: req.userId },
-    select: { email: true, aiConsentAt: true },
+    select: { email: true, aiConsentAt: true, aiConsentVersion: true },
   });
   if (aiStatusOf(user) !== 'ENABLED') {
     throw new HttpError(403, 'AI_NOT_ENABLED', 'A IA não está ativa nesta conta. Ativa-a na página Integrações.');

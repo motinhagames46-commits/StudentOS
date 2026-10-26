@@ -83,7 +83,9 @@ export function PrivacyPage() {
           As funções de IA (Gemini, da Google) estão desligadas e só podem ser ativadas pela conta de quem mantém o
           StudentOS, com consentimento dado na página Integrações. Nas restantes contas, nenhum dado é enviado a
           fornecedores de IA. Quando ativadas, só o que a pessoa escolhe analisar é enviado; as imagens não ficam
-          guardadas, e guarda-se a data e a versão do consentimento.
+          guardadas, e guarda-se a data e a versão do consentimento. Se os documentos não chegarem para responder a uma
+          pergunta ao assistente, a pergunta segue para a Pesquisa Google, que a guarda com a resposta durante 30 dias;
+          a conversa não fica guardada no StudentOS.
         </p>
 
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os teus direitos</h2>

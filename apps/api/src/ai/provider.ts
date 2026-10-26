@@ -15,6 +15,15 @@ export interface AiProvider {
   generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options?: { system?: string }): Promise<z.output<T>>;
   /** Um vetor normalizado (comprimento 1) por texto, para a semelhança ser um produto interno. */
   embed(texts: string[], task: 'document' | 'query'): Promise<number[][]>;
+  /** Resposta em texto com pesquisa Google: as fontes e as sugestões de pesquisa vêm do próprio Gemini. */
+  searchAnswer(parts: AiPart[], options?: { system?: string }): Promise<WebAnswer>;
+}
+
+export interface WebAnswer {
+  text: string;
+  sources: { title: string; url: string }[];
+  /** HTML das sugestões de pesquisa (searchEntryPoint), a mostrar sem alterações. */
+  searchSuggestionsHtml: string | null;
 }
 
 export type AiErrorCode = 'AI_UNAVAILABLE' | 'AI_RATE_LIMITED' | 'AI_BLOCKED' | 'AI_INVALID_RESPONSE';

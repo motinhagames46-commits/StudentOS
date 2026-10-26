@@ -16,6 +16,7 @@ import { requireAuth } from './middleware/auth.js';
 import { apiNotFound, errorHandler, requestId, requireJsonBody } from './middleware/errors.js';
 import { aiRouter } from './routes/ai.js';
 import { assessmentsRouter } from './routes/assessments.js';
+import { assistantRouter } from './routes/assistant.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { disciplinesRouter } from './routes/disciplines.js';
@@ -71,7 +72,7 @@ export function createApp() {
   if (limits) {
     const costly = costlyLimiter();
     api.post(
-      ['/planner/preview', '/planner/replan', '/imports', '/transfers', '/ai/check', '/documents'],
+      ['/planner/preview', '/planner/replan', '/imports', '/transfers', '/ai/check', '/documents', '/assistant/ask'],
       requireAuth,
       costly,
     );
@@ -98,6 +99,7 @@ export function createApp() {
   api.use('/integrations', ...authed, integrationsRouter);
   api.use('/ai', ...authed, aiRouter);
   api.use('/documents', ...authed, documentsRouter);
+  api.use('/assistant', ...authed, assistantRouter);
   api.use(['/stats', '/calendar', '/alerts'], ...authed);
   api.use(insightsRouter);
   api.use(apiNotFound);

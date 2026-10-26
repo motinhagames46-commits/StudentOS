@@ -9,6 +9,7 @@ import {
   Link2,
   LayoutDashboard,
   LogOut,
+  MessagesSquare,
   MoreHorizontal,
   Timer,
   UserRound,
@@ -39,11 +40,14 @@ const nav: NavItem[] = [
 ];
 
 /** Só para contas com acesso à IA (as outras nem sabem que existe). */
-const documentsItem: NavItem = { to: '/documentos', label: 'Documentos', icon: ScanText, end: false };
+const aiItems: NavItem[] = [
+  { to: '/documentos', label: 'Documentos', icon: ScanText, end: false },
+  { to: '/assistente', label: 'Assistente', icon: MessagesSquare, end: false },
+];
 
 function useNav(): NavItem[] {
   const ai = useAiStatus();
-  return ai.data && ai.data.status !== 'NOT_ALLOWED' ? [...nav, documentsItem] : nav;
+  return ai.data && ai.data.status !== 'NOT_ALLOWED' ? [...nav, ...aiItems] : nav;
 }
 
 /** Definições e ferramentas. */
