@@ -16,7 +16,8 @@ import type {
   TaskQuery,
   TaskUpdateInput,
 } from '@studentos/shared';
-import { api } from '../lib/api';
+import { useToast } from '../components/Toast';
+import { api, errorMessage } from '../lib/api';
 import type {
   Alerts,
   Assessment,
@@ -93,11 +94,36 @@ export function useCreateTask() {
 }
 
 export function useUpdateTask() {
+  const queryClient = useQueryClient();
   const invalidate = useInvalidateAll();
+  const toast = useToast();
   return useMutation({
     mutationFn: ({ id, ...input }: TaskUpdateInput & { id: number }) =>
       api<Task>(`/tasks/${id}`, { method: 'PATCH', body: input }),
-    onSuccess: invalidate,
+    // Marcar como feita (ou reabrir) aparece logo; se o servidor falhar, volta atrás e diz porquê.
+    // Edições de formulário (sem `status`) continuam à espera da resposta, com os erros no formulário.
+    onMutate: async ({ id, status }) => {
+      if (!status) return undefined;
+      await queryClient.cancelQueries({ queryKey: ['tasks'] });
+      await queryClient.cancelQueries({ queryKey: ['dashboard'] });
+      const snapshot = [
+        ...queryClient.getQueriesData({ queryKey: ['tasks'] }),
+        ...queryClient.getQueriesData({ queryKey: ['dashboard'] }),
+      ];
+      const mark = <T extends { id: number }>(t: T) => (t.id === id ? { ...t, status } : t);
+      queryClient.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (list) => list?.map(mark));
+      queryClient.setQueryData<Dashboard>(
+        ['dashboard'],
+        (d) => d && { ...d, upcomingTasks: d.upcomingTasks.map(mark), overdueTasks: d.overdueTasks.map(mark) },
+      );
+      return { snapshot };
+    },
+    onError: (error, _input, context) => {
+      if (!context) return;
+      for (const [key, data] of context.snapshot) queryClient.setQueryData(key, data);
+      toast({ message: `Não foi possível guardar a tarefa: ${errorMessage(error)}`, tone: 'error' });
+    },
+    onSettled: invalidate,
   });
 }
 
