@@ -5,6 +5,7 @@ import {
   SlidersHorizontal,
   CheckSquare,
   FileUp,
+  ScanText,
   Link2,
   LayoutDashboard,
   LogOut,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
+import { useAiStatus } from '../hooks/queries';
 import { useLogout, useMe } from '../hooks/useAuth';
 import { AlertsBell } from './AlertsBell';
 import { LoadingList } from './ui';
@@ -35,6 +37,14 @@ const nav: NavItem[] = [
   { to: '/disciplinas', label: 'Disciplinas', icon: BookOpen, end: false },
   { to: '/sessoes', label: 'Foco', icon: Timer, end: false },
 ];
+
+/** Só para contas com acesso à IA (as outras nem sabem que existe). */
+const documentsItem: NavItem = { to: '/documentos', label: 'Documentos', icon: ScanText, end: false };
+
+function useNav(): NavItem[] {
+  const ai = useAiStatus();
+  return ai.data && ai.data.status !== 'NOT_ALLOWED' ? [...nav, documentsItem] : nav;
+}
 
 /** Definições e ferramentas. */
 const secondary: NavItem[] = [
@@ -75,6 +85,7 @@ function Avatar({ name, className }: { name: string; className: string }) {
 export function AppLayout() {
   const { data } = useMe();
   const logout = useLogout();
+  const main = useNav();
 
   return (
     <div className="min-h-dvh md:flex">
@@ -103,7 +114,7 @@ export function AppLayout() {
         </div>
         <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto pb-4">
           <p className="px-5 pt-3 pb-2 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">Geral</p>
-          {nav.map((item) => (
+          {main.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
           <p className="px-5 pt-5 pb-2 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">
@@ -181,6 +192,7 @@ function SidebarLink({ item: { to, label, icon: Icon, end } }: { item: NavItem }
 
 /** Barra inferior no telemóvel: quatro atalhos e um menu "Mais" com as restantes secções. */
 function MobileNav() {
+  const nav = useNav();
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const more = [...nav.slice(MOBILE_PRIMARY), ...secondary];

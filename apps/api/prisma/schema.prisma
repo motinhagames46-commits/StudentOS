@@ -400,6 +400,8 @@ model StudyDocument {
   status       DocumentStatus  @default(PROCESSING)
   pageCount    Int             @default(0)
   text         String          @default("")
+  /// Datas propostas pela IA à espera de revisão; esvazia-se ao confirmar (minimização de dados).
+  proposals    Json            @default("[]")
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   userId       Int

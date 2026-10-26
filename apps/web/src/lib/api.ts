@@ -26,18 +26,21 @@ export class ApiError extends Error {
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
-export async function api<T>(path: string, options: { method?: Method; body?: unknown } = {}): Promise<T> {
-  const { method = 'GET', body } = options;
+/** `expectSlow`: pedidos que demoram por natureza (IA) não ativam o aviso de servidor a acordar. */
+export async function api<T>(
+  path: string,
+  options: { method?: Method; body?: unknown; expectSlow?: boolean } = {},
+): Promise<T> {
+  const { method = 'GET', body, expectSlow = false } = options;
   let res: Response;
   try {
-    res = await trackSlow(
-      fetch(`/api${path}`, {
-        method,
-        credentials: 'include',
-        headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      }),
-    );
+    const request = fetch(`/api${path}`, {
+      method,
+      credentials: 'include',
+      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    res = await (expectSlow ? request : trackSlow(request));
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', 'Sem ligação ao servidor. Verifica a tua ligação.');
   }

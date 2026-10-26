@@ -159,6 +159,18 @@ Só para contas em `AI_ALLOWED_EMAILS`; as rotas que usam a IA exigem também a 
 | DELETE | `/api/ai/consent` | Retira o consentimento.                                                                                      |
 | POST   | `/api/ai/check`   | Pedido real mínimo ao Gemini; só responde `ok` com uma resposta válida. Erros do fornecedor: 502/429 `AI_*`. |
 
+### Documentos
+
+Ler um documento exige a IA ativa (`AI_NOT_ENABLED`); ver, rever e eliminar os já lidos não. Documentos de outra conta dão 404.
+
+| Método | Rota                         | Descrição                                                                                                                                                                                                                                                                                                           |
+| ------ | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/documents`             | `{ files: [{ filename, mimeType, data }], disciplineId? }`: 1 a 10 ficheiros JPEG/PNG/WebP/PDF em base64, até 10 MB no total (formato confirmado pelos primeiros bytes; corpo até 15 MB, lido depois da sessão). O Gemini transcreve e propõe datas; guarda o texto e os excertos com vetores. 201 com o documento. |
+| GET    | `/api/documents`             | Lista (sem texto), com `pendingProposals`.                                                                                                                                                                                                                                                                          |
+| GET    | `/api/documents/:id`         | Texto e propostas por rever, cada uma com `match` (avaliação da disciplina com o mesmo nome) e `duplicate` (já existe no mesmo dia).                                                                                                                                                                                |
+| POST   | `/api/documents/:id/confirm` | `{ items }` escolhidos e editados: cria avaliações (com peso, até 100 % por disciplina) e tarefas, ou acrescenta a data a uma avaliação existente (`assessmentId`). Uma transação; lista vazia = ignorar todas. 409 `DOCUMENT_ALREADY_REVIEWED` na segunda vez.                                                     |
+| DELETE | `/api/documents/:id`         | Apaga o documento e os excertos; o que já foi gravado a partir dele fica.                                                                                                                                                                                                                                           |
+
 ## Integrações
 
 | Método | Caminho             | Descrição                                                                                                                               |

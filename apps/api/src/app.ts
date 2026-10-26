@@ -19,6 +19,7 @@ import { assessmentsRouter } from './routes/assessments.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { disciplinesRouter } from './routes/disciplines.js';
+import { documentsRouter } from './routes/documents.js';
 import { importsRouter } from './routes/imports.js';
 import { insightsRouter } from './routes/insights.js';
 import { integrationsRouter } from './routes/integrations.js';
@@ -40,12 +41,15 @@ export function createApp() {
 
   app.use(requestId);
   app.use(helmet());
-  // Limite de 100 KB, exceto nas importações (ficheiro como texto, até 1 MB + envelope JSON).
+  // Limite de 100 KB, exceto nas importações (ficheiro como texto, até 1 MB + envelope JSON). Os documentos
+  // (até 15 MB) só são lidos depois da sessão e dos limites de pedidos, no próprio router.
   const smallJson = express.json({ limit: '100kb' });
   const importJson = express.json({ limit: '2mb' });
-  app.use((req, res, next) =>
-    req.method === 'POST' && req.path === '/api/imports' ? importJson(req, res, next) : smallJson(req, res, next),
-  );
+  app.use((req, res, next) => {
+    if (req.method === 'POST' && req.path === '/api/imports') return importJson(req, res, next);
+    if (req.method === 'POST' && req.path === '/api/documents') return next();
+    return smallJson(req, res, next);
+  });
   app.use(cookieParser());
 
   const api = express.Router();
@@ -66,7 +70,11 @@ export function createApp() {
   const authed = limits ? [requireAuth, accountLimiter()] : [requireAuth];
   if (limits) {
     const costly = costlyLimiter();
-    api.post(['/planner/preview', '/planner/replan', '/imports', '/transfers', '/ai/check'], requireAuth, costly);
+    api.post(
+      ['/planner/preview', '/planner/replan', '/imports', '/transfers', '/ai/check', '/documents'],
+      requireAuth,
+      costly,
+    );
     api.get(['/me/export', '/me/calendar.ics'], requireAuth, costly);
   }
 
@@ -89,6 +97,7 @@ export function createApp() {
   api.use('/planned-sessions', ...authed, plannedSessionsRouter);
   api.use('/integrations', ...authed, integrationsRouter);
   api.use('/ai', ...authed, aiRouter);
+  api.use('/documents', ...authed, documentsRouter);
   api.use(['/stats', '/calendar', '/alerts'], ...authed);
   api.use(insightsRouter);
   api.use(apiNotFound);

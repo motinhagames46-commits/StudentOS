@@ -1,16 +1,11 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Info, ShieldCheck, Sparkles } from 'lucide-react';
+import { useAiStatus } from '../hooks/queries';
 import { api, errorMessage } from '../lib/api';
 import { formatDateTime } from '../lib/format';
+import type { AiStatus } from '../lib/types';
 import { useToast } from './Toast';
 import { Badge, Button, Card, ErrorState, FormError, Skeleton } from './ui';
-
-type AiStatus = 'NOT_ALLOWED' | 'NOT_CONFIGURED' | 'NEEDS_CONSENT' | 'ENABLED';
-interface AiStatusView {
-  status: AiStatus;
-  consentAt?: string | null;
-  model?: string | null;
-}
 
 const badges: Record<AiStatus, { label: string; tone: 'neutral' | 'amber' | 'green' }> = {
   NOT_ALLOWED: { label: 'Indisponível', tone: 'neutral' },
@@ -23,7 +18,7 @@ const badges: Record<AiStatus, { label: string; tone: 'neutral' | 'amber' | 'gre
 export function AiCard() {
   const queryClient = useQueryClient();
   const toast = useToast();
-  const status = useQuery({ queryKey: ['ai-status'], queryFn: () => api<AiStatusView>('/ai/status') });
+  const status = useAiStatus();
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['ai-status'] });
   const consent = useMutation({ mutationFn: () => api('/ai/consent', { method: 'POST' }), onSuccess: refresh });
   const withdraw = useMutation({ mutationFn: () => api('/ai/consent', { method: 'DELETE' }), onSuccess: refresh });

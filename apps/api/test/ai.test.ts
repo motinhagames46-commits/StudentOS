@@ -99,6 +99,8 @@ describe('Gemini pela API REST', () => {
     await expect(withResponse(ok({ candidates: [] })).generateJson(schema, [])).rejects.toMatchObject({
       code: 'AI_BLOCKED',
     });
+    const cut = { candidates: [{ content: { parts: [{ text: '{"nota": 1' }] }, finishReason: 'MAX_TOKENS' }] };
+    await expect(withResponse(ok(cut)).generateJson(schema, [])).rejects.toThrow(/demasiado longa/);
     await expect(
       withResponse(Promise.resolve(new Response('{}', { status: 429 }))).generateJson(schema, []),
     ).rejects.toBeInstanceOf(AiError);

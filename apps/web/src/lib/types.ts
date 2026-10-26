@@ -194,3 +194,10 @@ export type Suggestion =
       message: string;
     }
   | { kind: 'missing'; message: string };
+
+export type AiStatus = 'NOT_ALLOWED' | 'NOT_CONFIGURED' | 'NEEDS_CONSENT' | 'ENABLED';
+export interface AiStatusView {
+  status: AiStatus;
+  consentAt?: string | null;
+  model?: string | null;
+}

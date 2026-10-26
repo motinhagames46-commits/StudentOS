@@ -10,6 +10,7 @@ export const EMBEDDING_DIMENSIONS = 768;
 
 export interface AiProvider {
   readonly model: string;
+  readonly embeddingModel: string;
   /** JSON que cumpre o esquema (enviado como JSON Schema) e validado com o mesmo Zod; senão, AiError. */
   generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options?: { system?: string }): Promise<z.output<T>>;
   /** Um vetor normalizado (comprimento 1) por texto, para a semelhança ser um produto interno. */

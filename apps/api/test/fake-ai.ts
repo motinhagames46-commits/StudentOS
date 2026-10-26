@@ -4,6 +4,7 @@ import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider 
 
 export class FakeAiProvider implements AiProvider {
   readonly model = 'fake';
+  readonly embeddingModel = 'fake-embedding';
   readonly requests: AiPart[][] = [];
 
   constructor(private readonly responses: unknown[] = []) {}

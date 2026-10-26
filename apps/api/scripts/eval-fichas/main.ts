@@ -1,8 +1,10 @@
 // Mede um extrator «ficha da UC → avaliações» contra o conjunto de avaliação (test/fixtures/fichas-uc).
-// Uso: npm run eval:fichas [-- --extrator=vazio] [-- --retidas]
+// Uso: npm run eval:fichas [-- --extrator=vazio|gemini] [-- --retidas]
 // Por omissão corre só as fichas de afinação. As retidas são para a medição final: correr com --retidas
 // durante o desenvolvimento estraga a medição (o extrator passaria a ser afinado contra elas).
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { aiProvider } from '../../src/ai/access.js';
+import { extractDocument } from '../../src/ai/documents.js';
 import type { FichaExtractor } from '../../src/lib/fichas-uc/extractor.js';
 import { checkThreshold, scoreCase, tally, type CaseScore, type Dataset, type DatasetCase } from './score.js';
 
@@ -15,7 +17,22 @@ const extratorVazio: FichaExtractor = {
   extract: async () => ({ ok: false, reason: 'NAO_IMPLEMENTADO', message: 'Extrator vazio (linha de base)' }),
 };
 
-const extractors: Record<string, FichaExtractor> = { vazio: extratorVazio };
+/** O extrator dos documentos (Gemini), com o texto da ficha: mede o mesmo pedido que a app faz. */
+const extratorGemini: FichaExtractor = {
+  name: 'gemini',
+  async extract(text) {
+    const ai = aiProvider();
+    if (!ai) return { ok: false, reason: 'NAO_IMPLEMENTADO', message: 'Falta GEMINI_API_KEY em apps/api/.env' };
+    const { proposals } = await extractDocument(ai, [{ text }], new Date().toISOString().slice(0, 10));
+    const assessments = proposals
+      .filter((p) => p.target === 'assessment' && p.weight !== null)
+      .map((p) => ({ name: p.title, type: p.assessmentType, weight: p.weight!, minScore: p.minScore }));
+    if (assessments.length === 0) return { ok: false, reason: 'NAO_RECONHECIDA', message: 'Sem avaliações com peso' };
+    return { ok: true, assessments, examRegime: null, notes: [] };
+  },
+};
+
+const extractors: Record<string, FichaExtractor> = { vazio: extratorVazio, gemini: extratorGemini };
 
 const args = process.argv.slice(2);
 const includeHeldOut = args.includes('--retidas');

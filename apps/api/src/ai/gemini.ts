@@ -3,13 +3,15 @@ import { z } from 'zod';
 import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider } from './provider.js';
 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-const TIMEOUT_MS = 60_000;
+// Um PDF com várias páginas pode levar bem mais de um minuto a transcrever.
+const TIMEOUT_MS = 120_000;
 
 const generateResponse = z.object({
   candidates: z
     .array(
       z.object({
         content: z.object({ parts: z.array(z.object({ text: z.string().optional() })).optional() }).optional(),
+        finishReason: z.string().optional(),
       }),
     )
     .optional(),
@@ -20,7 +22,7 @@ export class GeminiProvider implements AiProvider {
   constructor(
     private readonly apiKey: string,
     readonly model: string,
-    private readonly embeddingModel: string,
+    readonly embeddingModel: string,
     private readonly fetchImpl: typeof fetch = fetch,
   ) {}
 
@@ -53,9 +55,14 @@ export class GeminiProvider implements AiProvider {
         generationConfig: { responseMimeType: 'application/json', responseJsonSchema },
       }),
     );
-    const text = data.success
-      ? (data.data.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '')
-      : '';
+    const candidate = data.success ? data.data.candidates?.[0] : undefined;
+    if (candidate?.finishReason === 'MAX_TOKENS') {
+      throw new AiError(
+        'AI_INVALID_RESPONSE',
+        'A resposta da IA ficou cortada por ser demasiado longa. Divide o documento em partes mais pequenas.',
+      );
+    }
+    const text = candidate?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
     if (!text) throw new AiError('AI_BLOCKED', 'O serviço de IA não devolveu resposta para este pedido.');
 
     let json: unknown;

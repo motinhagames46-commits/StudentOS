@@ -4,6 +4,8 @@ import type {
   AssessmentCreateInput,
   AssessmentUpdateInput,
   DisciplineCreateInput,
+  DocumentConfirmItem,
+  DocumentCreateInput,
   DisciplineUpdateInput,
   ScheduleBlockCreateInput,
   ScheduleBlockUpdateInput,
@@ -12,14 +14,17 @@ import type {
   SemesterUpdateInput,
   StudySessionQuery,
   StudySessionStartInput,
+  StudyDocumentSummary,
+  StudyDocumentView,
   TaskCreateInput,
   TaskQuery,
   TaskUpdateInput,
 } from '@studentos/shared';
 import { useToast } from '../components/Toast';
-import { api, errorMessage } from '../lib/api';
+import { ApiError, api, errorMessage } from '../lib/api';
 import { dashboardWithoutPendingTasks, withoutPendingTasks } from '../lib/pendingTaskDeletes';
 import type {
+  AiStatusView,
   Alerts,
   Assessment,
   CalendarData,
@@ -394,5 +399,49 @@ export function usePlannedSessionAction() {
       }
     },
     onSuccess: invalidate,
+  });
+}
+
+/** Estado da IA nesta conta (a navegação esconde os Documentos a quem não a pode usar). */
+export const useAiStatus = () => useQuery({ queryKey: ['ai-status'], queryFn: () => api<AiStatusView>('/ai/status') });
+
+export const useDocuments = () =>
+  useQuery({ queryKey: ['documents'], queryFn: () => api<StudyDocumentSummary[]>('/documents') });
+
+export const useDocument = (id: number) =>
+  useQuery({
+    queryKey: ['document', id],
+    queryFn: () => api<StudyDocumentView>(`/documents/${id}`),
+    enabled: Number.isInteger(id) && id > 0,
+  });
+
+export function useCreateDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: DocumentCreateInput) =>
+      api<StudyDocumentView>('/documents', { method: 'POST', body: input, expectSlow: true }),
+    onSuccess: (doc) => {
+      queryClient.setQueryData(['document', doc.id], doc);
+      return queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
+export function useConfirmDocument(id: number) {
+  const invalidateAll = useInvalidateAll(['documents', 'document']);
+  return useMutation({
+    mutationFn: (items: DocumentConfirmItem[]) =>
+      api<{ created: number; updated: number }>(`/documents/${id}/confirm`, { method: 'POST', body: { items } }),
+    onSuccess: invalidateAll,
+    // Já revisto noutro separador: recarregar fecha a revisão em vez de repetir o 409.
+    onError: (err) => (err instanceof ApiError && err.status === 409 ? invalidateAll() : undefined),
+  });
+}
+
+export function useDeleteDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api(`/documents/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
   });
 }
