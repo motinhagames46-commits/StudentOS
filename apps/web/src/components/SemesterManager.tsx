@@ -1,6 +1,7 @@
 import { semesterCreateSchema, type SemesterCreateInput } from '@studentos/shared';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
+import { useConfirm } from './ConfirmDialog';
 import { useCreateSemester, useDeleteSemester, useSemesters, useUpdateSemester } from '../hooks/queries';
 import { ApiError, errorMessage } from '../lib/api';
 import { dateOnlyToIso, formatDate, isoToDateOnly } from '../lib/format';
@@ -50,13 +51,16 @@ export function SemesterManager({ onClose }: { onClose: () => void }) {
   const create = useCreateSemester();
   const update = useUpdateSemester();
   const remove = useDeleteSemester();
+  const confirm = useConfirm();
   const [editingId, setEditingId] = useState<number | 'new' | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function handleDelete(s: Semester) {
-    const ok = window.confirm(
-      `Eliminar "${s.label}"? As disciplinas deste semestre não são eliminadas, mas ficam sem semestre.`,
-    );
+    const ok = await confirm({
+      title: `Eliminar o semestre «${s.label}»?`,
+      message: 'As disciplinas deste semestre não são eliminadas, mas ficam sem semestre.',
+      confirmLabel: 'Eliminar semestre',
+    });
     if (!ok) return;
     setDeleteError(null);
     try {

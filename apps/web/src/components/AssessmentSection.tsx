@@ -5,6 +5,7 @@ import { useCreateAssessment, useDeleteAssessment, useUpdateAssessment } from '.
 import { ApiError, errorMessage } from '../lib/api';
 import { assessmentTypeLabels, dateInputToIso, formatDate, formatGrade, isoToDateInput } from '../lib/format';
 import type { Assessment, Discipline } from '../lib/types';
+import { useConfirm } from './ConfirmDialog';
 import { Badge, Button, EmptyState, FormError, IconButton, SelectField, TextField } from './ui';
 
 /** Tabela de avaliações de uma disciplina, com criação e edição (RF07 / HU02). */
@@ -12,10 +13,16 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const remove = useDeleteAssessment();
+  const confirm = useConfirm();
   const { weightSum } = discipline.grades;
 
-  function handleDelete(a: Assessment) {
-    if (window.confirm(`Eliminar a avaliação "${a.name}"?`)) remove.mutate(a.id);
+  async function handleDelete(a: Assessment) {
+    const ok = await confirm({
+      title: `Eliminar a avaliação «${a.name}»?`,
+      message: a.score !== null ? 'A nota registada também é apagada e a média é recalculada.' : undefined,
+      confirmLabel: 'Eliminar avaliação',
+    });
+    if (ok) remove.mutate(a.id);
   }
 
   return (
@@ -87,7 +94,7 @@ export function AssessmentSection({ discipline }: { discipline: Discipline }) {
                 </IconButton>
                 <IconButton
                   label={`Eliminar "${a.name}"`}
-                  onClick={() => handleDelete(a)}
+                  onClick={() => void handleDelete(a)}
                   className="hover:text-red-700"
                 >
                   <Trash2 aria-hidden="true" className="size-4" />

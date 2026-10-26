@@ -23,6 +23,7 @@ import {
   SelectField,
   TextField,
 } from '../components/ui';
+import { useConfirm } from '../components/ConfirmDialog';
 import { useDisciplines } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { api, ApiError, errorMessage } from '../lib/api';
@@ -581,10 +582,21 @@ function ImportResult({ counts, onAnother }: { counts: ImportCounts; onAnother: 
 
 function ImportHistory({ jobs }: { jobs: ImportJobView[] }) {
   const queryClient = useQueryClient();
+  const confirm = useConfirm();
+
   const undo = useMutation({
     mutationFn: (id: string) => api<{ removed: number }>(`/imports/${id}/data`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries(),
   });
+
+  async function undoImport(j: ImportJobView) {
+    const ok = await confirm({
+      title: `Anular a importação de «${j.originalFilename}»?`,
+      message: 'As aulas e tarefas que ela criou são apagadas.',
+      confirmLabel: 'Anular importação',
+    });
+    if (ok) undo.mutate(j.id);
+  }
 
   return (
     <>
@@ -603,15 +615,7 @@ function ImportHistory({ jobs }: { jobs: ImportJobView[] }) {
               <Button
                 variant="secondary"
                 loading={undo.isPending && undo.variables === j.id}
-                onClick={() => {
-                  if (
-                    window.confirm(
-                      `Anular a importação de «${j.originalFilename}»? As aulas e tarefas que ela criou serão apagadas.`,
-                    )
-                  ) {
-                    undo.mutate(j.id);
-                  }
-                }}
+                onClick={() => void undoImport(j)}
               >
                 Anular importação
               </Button>

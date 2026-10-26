@@ -6,6 +6,7 @@ import { AssessmentSection } from '../components/AssessmentSection';
 import { DisciplineForm } from '../components/DisciplineForm';
 import { GradeSimulator } from '../components/GradeSimulator';
 import { TaskList } from '../components/TaskList';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Badge, Button, Card, ErrorState, LoadingList, Skeleton } from '../components/ui';
 import { useDeleteDiscipline, useDiscipline, useTasks, useUpdateDiscipline, useUpdateTask } from '../hooks/queries';
 import { ApiError, errorMessage } from '../lib/api';
@@ -20,6 +21,7 @@ export function DisciplineDetailPage() {
   const tasks = useTasks({ disciplineId: id, status: 'TODO', sort: 'dueDate' });
   const update = useUpdateDiscipline();
   const remove = useDeleteDiscipline();
+  const confirm = useConfirm();
   const updateTask = useUpdateTask();
   const [editing, setEditing] = useState(false);
 
@@ -44,12 +46,28 @@ export function DisciplineDetailPage() {
 
   async function handleDelete() {
     if (!d) return;
-    const content = d.assessments.length || d.pendingTasks;
-    const ok = window.confirm(
-      content
-        ? `Eliminar "${d.name}" de forma permanente?\n\n• ${d.assessments.length} avaliação(ões) e as notas registadas serão apagadas.\n• As tarefas ficam sem disciplina.\n\nSe só já não a frequentas, usa "Arquivar": o histórico fica guardado.`
-        : `Eliminar "${d.name}"?`,
-    );
+    const ok = await confirm({
+      title: `Eliminar «${d.name}» de forma permanente?`,
+      message: (
+        <>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>
+              {d.assessments.length === 1 ? '1 avaliação' : `${d.assessments.length} avaliações`} e as notas registadas
+              são apagadas.
+            </li>
+            {d.absences > 0 && <li>As {d.absences} faltas registadas são apagadas.</li>}
+            {d.pendingTasks > 0 && (
+              <li>
+                {d.pendingTasks === 1 ? 'A tarefa por fazer fica' : `As ${d.pendingTasks} tarefas por fazer ficam`} sem
+                disciplina.
+              </li>
+            )}
+          </ul>
+          <p>Se só já não a frequentas, usa «Arquivar»: o histórico fica guardado.</p>
+        </>
+      ),
+      confirmLabel: 'Eliminar disciplina',
+    });
     if (!ok) return;
     await remove.mutateAsync(d.id);
     navigate('/disciplinas', { replace: true });
@@ -108,7 +126,7 @@ export function DisciplineDetailPage() {
               )}
               {d.archivedAt ? 'Reativar' : 'Arquivar'}
             </Button>
-            <Button variant="danger" onClick={handleDelete} loading={remove.isPending}>
+            <Button variant="danger" onClick={() => void handleDelete()} loading={remove.isPending}>
               <Trash2 aria-hidden="true" className="size-4" />
               Eliminar
             </Button>

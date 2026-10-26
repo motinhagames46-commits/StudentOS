@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, CalendarClock, Pin, PinOff, Play, RefreshCw, Sparkles } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { useConfirm } from '../components/ConfirmDialog';
 import { WeekView, type TimedItem } from '../components/WeekView';
 import {
   Badge,
@@ -324,6 +325,16 @@ function SessionCard({
   onClose?: () => void;
 }) {
   const action = usePlannedSessionAction();
+  const confirm = useConfirm();
+
+  async function retire() {
+    const ok = await confirm({
+      title: 'Retirar esta sessão do plano?',
+      message: 'Deixa de aparecer no plano e no calendário; o tempo volta a ficar livre.',
+      confirmLabel: 'Retirar sessão',
+    });
+    if (ok) action.mutate({ kind: 'remove', id: s.id });
+  }
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [moving, setMoving] = useState(false);
@@ -417,12 +428,7 @@ function SessionCard({
                 Mover
               </Button>
             )}
-            <Button
-              variant="ghost"
-              onClick={() => {
-                if (window.confirm('Retirar esta sessão do plano?')) action.mutate({ kind: 'remove', id: s.id });
-              }}
-            >
+            <Button variant="ghost" onClick={() => void retire()}>
               Retirar
             </Button>
           </div>

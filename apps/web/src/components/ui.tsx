@@ -1,5 +1,5 @@
 // Componentes de interface reutilizáveis (secção 13).
-import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
+import type { ButtonHTMLAttributes, ComponentProps, InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react';
 import { useId, useState } from 'react';
 import { AlertCircle, ChevronDown, Loader2 } from 'lucide-react';
 
@@ -21,7 +21,7 @@ export function Button({
   children,
   disabled,
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; loading?: boolean }) {
+}: ComponentProps<'button'> & { variant?: Variant; loading?: boolean }) {
   return (
     <button
       type="button"

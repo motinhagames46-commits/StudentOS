@@ -5,6 +5,7 @@ import { Link } from 'react-router';
 import { BlockForm } from '../components/BlockForm';
 import { CalendarView } from '../components/CalendarView';
 import { WeekView } from '../components/WeekView';
+import { useConfirm } from '../components/ConfirmDialog';
 import { Badge, Button, Card, FormError } from '../components/ui';
 import { PageHeader } from '../components/ui';
 import { useDeleteBlock, useSkipOccurrence, useUpdateBlock } from '../hooks/queries';
@@ -168,6 +169,20 @@ function BlockDetails({ occurrence: o, onClose }: { occurrence: BlockOccurrence;
   const update = useUpdateBlock();
   const remove = useDeleteBlock();
   const skip = useSkipOccurrence();
+  const confirm = useConfirm();
+
+  async function handleRemove() {
+    const ok = await confirm(
+      o.recurring
+        ? {
+            title: `Eliminar a série «${o.title}»?`,
+            message: 'Desaparece de todas as semanas. Para tirar só este dia, usa «Cancelar só esta».',
+            confirmLabel: 'Eliminar série',
+          }
+        : { title: `Eliminar «${o.title}»?`, confirmLabel: 'Eliminar' },
+    );
+    if (ok) remove.mutate(o.blockId, { onSuccess: onClose });
+  }
   const error = update.error ?? remove.error ?? skip.error;
 
   return (
@@ -213,16 +228,7 @@ function BlockDetails({ occurrence: o, onClose }: { occurrence: BlockOccurrence;
               Cancelar só esta
             </Button>
           )}
-          <Button
-            variant="danger"
-            loading={remove.isPending}
-            onClick={() => {
-              const msg = o.recurring
-                ? `Eliminar a série «${o.title}» inteira (todas as semanas)?`
-                : `Eliminar «${o.title}»?`;
-              if (window.confirm(msg)) remove.mutate(o.blockId, { onSuccess: onClose });
-            }}
-          >
+          <Button variant="danger" loading={remove.isPending} onClick={() => void handleRemove()}>
             {o.recurring ? 'Eliminar série' : 'Eliminar'}
           </Button>
         </div>

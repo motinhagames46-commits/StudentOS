@@ -43,7 +43,6 @@ async function createDiscipline(page: Page, name: string, code: string) {
 }
 
 test('importar horário, definir disponibilidade e confirmar um plano sem conflitos', async ({ page }) => {
-  page.on('dialog', (dialog) => void dialog.accept());
   await register(page, 'Bia');
 
   await createDiscipline(page, 'Programação Web', 'PW');
@@ -124,9 +123,12 @@ test('importar horário, definir disponibilidade e confirmar um plano sem confli
   expect(overlaps.conflicts).toBe(0);
 
   // Retirar uma sessão do plano
-  const before = await page.getByRole('button', { name: 'Retirar' }).count();
-  await page.getByRole('button', { name: 'Retirar' }).first().click();
-  await expect(page.getByRole('button', { name: 'Retirar' })).toHaveCount(before - 1);
+  const retirar = page.getByRole('button', { name: 'Retirar', exact: true });
+  const before = await retirar.count();
+  await retirar.first().click();
+  await expect(page.getByRole('dialog', { name: 'Retirar esta sessão do plano?' })).toBeVisible();
+  await page.getByRole('button', { name: 'Retirar sessão' }).click();
+  await expect(retirar).toHaveCount(before - 1);
 
   // Integrações: estado honesto, nunca "Ligado"
   await page.goto('/integracoes');
