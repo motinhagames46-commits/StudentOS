@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
 import { createUserAndLogin, resetDb } from './helpers.js';
@@ -24,6 +24,26 @@ beforeEach(async () => {
 });
 
 describe('GET /api/stats (RF14)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('são sempre 7 dias civis, mesmo na semana a seguir à mudança da hora (às 23:30 de 26/10)', async () => {
+    // Antes contava-se em blocos de 24 h: depois de 25/10 (fim da hora de verão), entre as 23:00 e a meia-noite,
+    // 24 h antes caía no mesmo dia civil e o gráfico ficava com 6 dias.
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-10-26T23:30:00Z'));
+    const { body } = await request(app).get('/api/stats?days=7').set('Cookie', cookie);
+    expect(body.studyByDay.map((d: { date: string }) => d.date)).toEqual([
+      '2026-10-20',
+      '2026-10-21',
+      '2026-10-22',
+      '2026-10-23',
+      '2026-10-24',
+      '2026-10-25',
+      '2026-10-26',
+    ]);
+    expect(body.range.from).toBe('2026-10-19T23:00:00.000Z'); // meia-noite de 20/10, ainda hora de verão
+  });
+
   it('soma o tempo de estudo por disciplina, cortado ao intervalo, e conta tarefas', async () => {
     // O intervalo começa à meia-noite (Lisboa) de há 6 dias, ou seja, entre 6 e 7 dias atrás.
     const straddleEnd = new Date(Date.now() - 5.5 * DAY);
@@ -58,7 +78,8 @@ describe('GET /api/stats (RF14)', () => {
     expect(res.status).toBe(200);
     const from = Date.parse(res.body.range.from);
     expect(Date.now() - from).toBeGreaterThan(6 * DAY);
-    expect(Date.now() - from).toBeLessThanOrEqual(7 * DAY);
+    // 7 dias civis: até 7 × 24 h, mais 1 h se apanharem o fim da hora de verão.
+    expect(Date.now() - from).toBeLessThanOrEqual(7 * DAY + HOUR);
 
     const clipped = Math.round((straddleEnd.getTime() - from) / 60000);
     expect(res.body.studyByDiscipline).toEqual(

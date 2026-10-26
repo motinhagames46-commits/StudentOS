@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { calendarQuerySchema, statsQuerySchema } from '@studentos/shared';
+import { addDaysToKey, calendarQuerySchema, statsQuerySchema } from '@studentos/shared';
 import { blockOccurrences } from '../lib/calendar.js';
 import { parse } from '../lib/http.js';
 import { prisma } from '../lib/prisma.js';
@@ -26,7 +26,9 @@ function startOfLisbonDay(key: string): Date {
 insightsRouter.get('/stats', async (req, res) => {
   const { days = 7 } = parse(statsQuerySchema, req.query);
   const now = new Date();
-  const from = startOfLisbonDay(dayKey.format(new Date(now.getTime() - (days - 1) * DAY)));
+  // Dias civis, não blocos de 24 h: na semana a seguir à mudança da hora, 24 h antes pode ser o mesmo dia.
+  const keys = Array.from({ length: days }, (_, i) => addDaysToKey(dayKey.format(now), i - (days - 1)));
+  const from = startOfLisbonDay(keys[0]!);
 
   const [sessions, taskCounts, completedInRange, overdue] = await Promise.all([
     prisma.studySession.findMany({
@@ -42,7 +44,7 @@ insightsRouter.get('/stats', async (req, res) => {
   // O tempo é atribuído ao dia em que a sessão começou.
   const byDiscipline = new Map<number | null, { discipline: (typeof sessions)[number]['discipline']; ms: number }>();
   const byDay = new Map<string, number>();
-  for (let i = days - 1; i >= 0; i--) byDay.set(dayKey.format(new Date(now.getTime() - i * DAY)), 0);
+  for (const key of keys) byDay.set(key, 0);
 
   for (const s of sessions) {
     const start = Math.max(s.startedAt.getTime(), from.getTime());
