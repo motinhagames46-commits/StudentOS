@@ -4,7 +4,14 @@ import cookieParser from 'cookie-parser';
 import express from 'express';
 import helmet from 'helmet';
 import { env } from './lib/env.js';
-import { credentialLimiter, generalLimiter } from './lib/rate-limit.js';
+import {
+  accountLimiter,
+  costlyLimiter,
+  credentialLimiter,
+  generalLimiter,
+  loginLimiter,
+  registerLimiter,
+} from './lib/rate-limit.js';
 import { requireAuth } from './middleware/auth.js';
 import { apiNotFound, errorHandler, requestId, requireJsonBody } from './middleware/errors.js';
 import { assessmentsRouter } from './routes/assessments.js';
@@ -43,34 +50,44 @@ export function createApp() {
   const api = express.Router();
   api.use(requireJsonBody);
 
-  // Secção 12.3 — limites de pedidos (desativados nos testes; ver test/rate-limit.test.ts)
-  if (!env.isTest) {
+  // Secção 12.3 — limites de pedidos em camadas (desativados nos outros testes; ver test/rate-limit.test.ts)
+  const limits = !env.isTest;
+  if (limits) {
     api.use(generalLimiter(env.RATE_LIMIT_PER_15_MIN));
+    api.post('/auth/register', registerLimiter(env.RATE_LIMIT_REGISTER_PER_HOUR));
+    api.post('/auth/login', loginLimiter());
     const credentials = credentialLimiter();
     // Inclui os códigos de transferência: só as tentativas falhadas contam (adivinhar códigos).
-    api.use(['/auth/login', '/auth/register', '/me/password', '/transfers/preview', '/transfers/accept'], credentials);
+    api.use(['/auth/login', '/me/password', '/transfers/preview', '/transfers/accept'], credentials);
     api.delete('/me', credentials);
+  }
+  // Rotas com sessão: limite por conta (não pelo IP partilhado) e um mais apertado nas operações caras.
+  const authed = limits ? [requireAuth, accountLimiter()] : [requireAuth];
+  if (limits) {
+    const costly = costlyLimiter();
+    api.post(['/planner/preview', '/planner/replan', '/imports', '/transfers'], requireAuth, costly);
+    api.get(['/me/export', '/me/calendar.ics'], requireAuth, costly);
   }
 
   api.get('/health', (_req, res) => {
     res.json({ status: 'ok' });
   });
   api.use('/auth', authRouter);
-  api.use('/me', requireAuth, meRouter);
-  api.use('/transfers', requireAuth, transfersRouter);
-  api.use('/semesters', requireAuth, semestersRouter);
-  api.use('/disciplines', requireAuth, disciplinesRouter);
-  api.use('/assessments', requireAuth, assessmentsRouter);
-  api.use('/tasks', requireAuth, tasksRouter);
-  api.use('/dashboard', requireAuth, dashboardRouter);
-  api.use('/study-sessions', requireAuth, studySessionsRouter);
-  api.use('/imports', requireAuth, importsRouter);
-  api.use('/schedule-blocks', requireAuth, scheduleBlocksRouter);
-  api.use('/preferences', requireAuth, preferencesRouter);
-  api.use('/planner', requireAuth, plannerRouter);
-  api.use('/planned-sessions', requireAuth, plannedSessionsRouter);
-  api.use('/integrations', requireAuth, integrationsRouter);
-  api.use(['/stats', '/calendar', '/alerts'], requireAuth);
+  api.use('/me', ...authed, meRouter);
+  api.use('/transfers', ...authed, transfersRouter);
+  api.use('/semesters', ...authed, semestersRouter);
+  api.use('/disciplines', ...authed, disciplinesRouter);
+  api.use('/assessments', ...authed, assessmentsRouter);
+  api.use('/tasks', ...authed, tasksRouter);
+  api.use('/dashboard', ...authed, dashboardRouter);
+  api.use('/study-sessions', ...authed, studySessionsRouter);
+  api.use('/imports', ...authed, importsRouter);
+  api.use('/schedule-blocks', ...authed, scheduleBlocksRouter);
+  api.use('/preferences', ...authed, preferencesRouter);
+  api.use('/planner', ...authed, plannerRouter);
+  api.use('/planned-sessions', ...authed, plannedSessionsRouter);
+  api.use('/integrations', ...authed, integrationsRouter);
+  api.use(['/stats', '/calendar', '/alerts'], ...authed);
   api.use(insightsRouter);
   api.use(apiNotFound);
 

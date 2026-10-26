@@ -12,6 +12,8 @@ declare module 'express-serve-static-core' {
 
 /** Exige uma sessão válida guardada no servidor (spec §14.1). */
 export async function requireAuth(req: Request, _res: Response, next: NextFunction): Promise<void> {
+  // Já autenticado antes (limite das operações caras): não repetir a consulta à sessão.
+  if (req.sessionId) return next();
   const session = await resolveSession(req);
   if (!session) throw unauthorized();
   req.userId = session.userId;

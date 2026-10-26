@@ -30,7 +30,13 @@ e2e               Playwright + axe-core, contra o build de produção
   - em `/conta` é possível revogar sessões de outros dispositivos;
   - mudar a palavra-passe (`POST /api/me/password`) exige a atual, apaga todas as sessões e abre uma nova neste dispositivo, para que um cookie roubado deixe de servir;
   - eliminar a conta exige o email e a palavra-passe.
-- **Limites de pedidos** (`lib/rate-limit.ts`): 300 pedidos a cada 15 minutos por IP; 10 tentativas falhadas a cada 15 minutos nas operações que verificam a palavra-passe (login, registo, mudar a palavra-passe e eliminar a conta). O 429 usa o formato de erro comum. Os limitadores estão desligados nos outros testes e têm testes próprios (`test/rate-limit.test.ts`). O limite geral pode ser aumentado com `RATE_LIMIT_PER_15_MIN`; só a configuração dos testes E2E o faz, porque todos os pedidos vêm do mesmo IP.
+- **Limites de pedidos** (`lib/rate-limit.ts`), em camadas. As inundações de rede param na Cloudflare que o Render põe à frente de todos os serviços; a app trata o abuso na aplicação:
+  - por IP, 2000 pedidos a cada 15 minutos em toda a API (trava uma origem a inundar, mas cabe uma turma no mesmo Wi-Fi; `RATE_LIMIT_PER_15_MIN`);
+  - por conta (depois do `requireAuth`), 600 pedidos a cada 15 minutos;
+  - operações caras (gerar plano, replanear, importar, criar código de transferência, exportar dados e `.ics`), 30 a cada 15 minutos por conta;
+  - criação de contas, 20 por hora por IP, contando as que correm bem (`RATE_LIMIT_REGISTER_PER_HOUR`);
+  - tentativas falhadas: 10 logins por IP + email (força bruta a uma conta sem bloquear os colegas) e 50 por IP nas operações com palavra-passe ou códigos de transferência.
+    O IP vem do `CF-Connecting-IP` (escrito pela Cloudflare; o primeiro valor de `X-Forwarded-For` pode ser inventado) e, sem ele, de `req.ip`. Os contadores ficam em memória de um só processo (uma instância no Render gratuito; com mais, usar Render Key Value). O servidor fecha ligações lentas de propósito (cabeçalhos em 20 s, pedido em 60 s). O 429 usa o formato de erro comum; os limitadores estão desligados nos outros testes e têm testes próprios (`test/rate-limit.test.ts`); os testes E2E aumentam os limites por IP, porque todos os pedidos vêm do mesmo IP.
 - **Nada no browser:** não há tokens em `localStorage` nem em `sessionStorage`. O único valor guardado no browser é o último preset do modo foco, que é uma preferência de interface.
 - **CSRF:** os pedidos que alteram dados têm de ser JSON (415 caso contrário). Com o `SameSite=Lax`, isto basta para uma SPA na mesma origem.
 

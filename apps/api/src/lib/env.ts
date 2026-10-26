@@ -14,8 +14,10 @@ export const env = {
   isTest: nodeEnv === 'test',
   PORT: Number(process.env.PORT ?? 4000),
   DATABASE_URL: required('DATABASE_URL'),
-  /** Pedidos por IP a cada 15 minutos (limite geral). Só os testes E2E o aumentam: todos vêm do mesmo IP. */
-  RATE_LIMIT_PER_15_MIN: positiveInt('RATE_LIMIT_PER_15_MIN', 300),
+  /** Pedidos por IP a cada 15 minutos (teto geral; cabe uma turma no mesmo Wi-Fi). */
+  RATE_LIMIT_PER_15_MIN: positiveInt('RATE_LIMIT_PER_15_MIN', 2000),
+  /** Contas criadas por IP a cada hora. Só os testes E2E o aumentam: todos vêm do mesmo IP. */
+  RATE_LIMIT_REGISTER_PER_HOUR: positiveInt('RATE_LIMIT_REGISTER_PER_HOUR', 20),
 };
 
 function positiveInt(name: string, fallback: number): number {
