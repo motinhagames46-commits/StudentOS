@@ -78,6 +78,14 @@ export function PrivacyPage() {
           vê o nome da conta de origem. Os dados saem da conta de origem.
         </p>
 
+        <h2 className="pt-2 text-base font-semibold text-stone-900">Inteligência artificial</h2>
+        <p>
+          As funções de IA (Gemini, da Google) estão desligadas e só podem ser ativadas pela conta de quem mantém o
+          StudentOS, com consentimento dado na página Integrações. Nas restantes contas, nenhum dado é enviado a
+          fornecedores de IA. Quando ativadas, só o que a pessoa escolhe analisar é enviado; as imagens não ficam
+          guardadas, e guarda-se a data e a versão do consentimento.
+        </p>
+
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os teus direitos</h2>
         <p>
           Exerces os teus direitos diretamente na aplicação, sem pedires a ninguém: corriges os dados editando-os, na

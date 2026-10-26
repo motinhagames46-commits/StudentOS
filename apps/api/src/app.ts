@@ -14,6 +14,7 @@ import {
 } from './lib/rate-limit.js';
 import { requireAuth } from './middleware/auth.js';
 import { apiNotFound, errorHandler, requestId, requireJsonBody } from './middleware/errors.js';
+import { aiRouter } from './routes/ai.js';
 import { assessmentsRouter } from './routes/assessments.js';
 import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
@@ -65,7 +66,7 @@ export function createApp() {
   const authed = limits ? [requireAuth, accountLimiter()] : [requireAuth];
   if (limits) {
     const costly = costlyLimiter();
-    api.post(['/planner/preview', '/planner/replan', '/imports', '/transfers'], requireAuth, costly);
+    api.post(['/planner/preview', '/planner/replan', '/imports', '/transfers', '/ai/check'], requireAuth, costly);
     api.get(['/me/export', '/me/calendar.ics'], requireAuth, costly);
   }
 
@@ -87,6 +88,7 @@ export function createApp() {
   api.use('/planner', ...authed, plannerRouter);
   api.use('/planned-sessions', ...authed, plannedSessionsRouter);
   api.use('/integrations', ...authed, integrationsRouter);
+  api.use('/ai', ...authed, aiRouter);
   api.use(['/stats', '/calendar', '/alerts'], ...authed);
   api.use(insightsRouter);
   api.use(apiNotFound);

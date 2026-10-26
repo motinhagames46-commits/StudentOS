@@ -18,7 +18,20 @@ export const env = {
   RATE_LIMIT_PER_15_MIN: positiveInt('RATE_LIMIT_PER_15_MIN', 2000),
   /** Contas criadas por IP a cada hora. Só os testes E2E o aumentam: todos vêm do mesmo IP. */
   RATE_LIMIT_REGISTER_PER_HOUR: positiveInt('RATE_LIMIT_REGISTER_PER_HOUR', 20),
+  /** Chave do Gemini: só no servidor (.env local e variáveis do Render). Sem ela, a IA fica «Não configurada». */
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? '',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+  GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
+  /** Emails (separados por vírgulas) das contas que podem usar a IA. Vazio: ninguém. */
+  AI_ALLOWED_EMAILS: emailList(process.env.AI_ALLOWED_EMAILS),
 };
+
+function emailList(raw: string | undefined): string[] {
+  return (raw ?? '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 function positiveInt(name: string, fallback: number): number {
   const raw = process.env[name];

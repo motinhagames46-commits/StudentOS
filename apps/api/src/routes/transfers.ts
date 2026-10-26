@@ -224,6 +224,11 @@ transfersRouter.post('/accept', async (req, res) => {
       }
       await tx.discipline.update({ where: { id: d.id }, data: { userId: to, semesterId } });
     }
+    // Documentos, perguntas e quizzes ficam na conta de origem (não são transferidos), sem a disciplina que saiu.
+    const movedIds = p.disciplines.map((d) => d.id);
+    await tx.studyDocument.updateMany({ where: { disciplineId: { in: movedIds } }, data: { disciplineId: null } });
+    await tx.studyCard.updateMany({ where: { disciplineId: { in: movedIds } }, data: { disciplineId: null } });
+    await tx.quiz.updateMany({ where: { disciplineId: { in: movedIds } }, data: { disciplineId: null } });
     // Ligações a dados que ficam na conta de origem (importações, propostas) deixam de existir.
     await tx.task.updateMany({ where: { id: { in: p.movingTaskIds } }, data: { userId: to, importJobId: null } });
     await tx.scheduleBlock.updateMany({

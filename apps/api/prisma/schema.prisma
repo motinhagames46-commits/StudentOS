@@ -57,6 +57,29 @@ enum StudyPlanStatus {
   DISCARDED
 }
 
+// IA, documentos, estudo com repetição espaçada e finanças (passo 1 do roteiro com o Gemini)
+enum DocumentSource {
+  SCAN
+  PDF
+  TEXT
+}
+
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum CardKind {
+  MCQ
+  SHORT
+}
+
+enum FinanceKind {
+  EXPENSE
+  INCOME
+}
+
 enum ImportKind {
   ICS
   CSV
@@ -70,16 +93,18 @@ enum ImportStatus {
 }
 
 model User {
-  id                Int                @id @default(autoincrement())
+  id                Int                  @id @default(autoincrement())
   name              String
-  email             String             @unique
+  email             String               @unique
   passwordHash      String
-  tokenVersion      Int                @default(0) // legado (JWT); mantido para permitir rollback
+  tokenVersion      Int                  @default(0) // legado (JWT); mantido para permitir rollback
   termsAcceptedAt   DateTime? // aceitação dos Termos de utilização no registo (contas anteriores: null)
   termsVersion      String?
+  aiConsentAt       DateTime? // consentimento para enviar dados ao Gemini (só contas da lista AI_ALLOWED_EMAILS)
+  aiConsentVersion  String?
   lastLoginAt       DateTime?
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
   sessions          UserSession[]
   scheduleBlocks    ScheduleBlock[]
   importJobs        ImportJob[]
@@ -92,6 +117,15 @@ model User {
   studyPlans        StudyPlan[]
   plannedSessions   PlannedSession[]
   transfersSent     DisciplineTransfer[]
+  studyDocuments    StudyDocument[]
+  documentChunks    DocumentChunk[]
+  studyCards        StudyCard[]
+  cardReviews       CardReview[]
+  quizzes           Quiz[]
+  financeCategories FinanceCategory[]
+  transactions      FinanceTransaction[]
+  savingsGoals      SavingsGoal[]
+  financeInsights   FinanceInsight[]
 }
 
 // Sessão de autenticação no servidor (spec §14.1). O cookie leva um token opaco aleatório;
@@ -144,6 +178,9 @@ model Discipline {
   studySessions   StudySession[]
   scheduleBlocks  ScheduleBlock[]
   plannedSessions PlannedSession[]
+  studyDocuments  StudyDocument[]
+  studyCards      StudyCard[]
+  quizzes         Quiz[]
 
   @@unique([userId, semesterId, code])
   @@index([userId])
@@ -355,3 +392,165 @@ model DisciplineTransfer {
   @@index([fromUserId])
 }
 
+// Documento digitalizado ou carregado. Só se guarda o texto extraído (as imagens não ficam guardadas).
+model StudyDocument {
+  id           Int             @id @default(autoincrement())
+  title        String
+  source       DocumentSource
+  status       DocumentStatus  @default(PROCESSING)
+  pageCount    Int             @default(0)
+  text         String          @default("")
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  userId       Int
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId Int?
+  discipline   Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  chunks       DocumentChunk[]
+  cards        StudyCard[]
+  quizzes      Quiz[]
+
+  @@index([userId, createdAt])
+}
+
+// Excerto de um documento com o seu vetor (normalizado). Busca exata em SQL: para uma pessoa chega;
+// passa a pgvector + HNSW se o volume crescer (docs/ARCHITECTURE.md).
+model DocumentChunk {
+  id             Int           @id @default(autoincrement())
+  ordinal        Int
+  content        String
+  embedding      Float[]
+  embeddingModel String
+  documentId     Int
+  document       StudyDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId         Int
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, ordinal])
+  @@index([userId])
+}
+
+// Pergunta de revisão com o estado FSRS (ts-fsrs): state 0 nova, 1 a aprender, 2 revisão, 3 a reaprender.
+model StudyCard {
+  id             Int            @id @default(autoincrement())
+  kind           CardKind
+  question       String
+  options        String[]
+  correctOption  Int?
+  expectedAnswer String?
+  explanation    String?
+  due            DateTime       @default(now())
+  stability      Float          @default(0)
+  difficulty     Float          @default(0)
+  elapsedDays    Int            @default(0)
+  scheduledDays  Int            @default(0)
+  learningSteps  Int            @default(0)
+  reps           Int            @default(0)
+  lapses         Int            @default(0)
+  state          Int            @default(0)
+  lastReview     DateTime?
+  createdAt      DateTime       @default(now())
+  userId         Int
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId   Int?
+  discipline     Discipline?    @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  documentId     Int?
+  document       StudyDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  quizId         Int?
+  quiz           Quiz?          @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  reviews        CardReview[]
+
+  @@index([userId, due])
+}
+
+model CardReview {
+  id            Int       @id @default(autoincrement())
+  rating        Int // 1 de novo, 2 difícil, 3 bem, 4 fácil
+  state         Int
+  due           DateTime
+  stability     Float
+  difficulty    Float
+  elapsedDays   Int
+  scheduledDays Int
+  reviewedAt    DateTime  @default(now())
+  cardId        Int
+  card          StudyCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  userId        Int
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([cardId])
+  @@index([userId, reviewedAt])
+}
+
+// Quiz gerado no fim de uma sessão: perguntas em JSON validado com Zod, resultado depois de respondido.
+model Quiz {
+  id           Int            @id @default(autoincrement())
+  topic        String
+  questions    Json
+  score        Float?
+  answeredAt   DateTime?
+  createdAt    DateTime       @default(now())
+  userId       Int
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId Int?
+  discipline   Discipline?    @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  documentId   Int?
+  document     StudyDocument? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+  cards        StudyCard[]
+
+  @@index([userId, createdAt])
+}
+
+model FinanceCategory {
+  id           Int                  @id @default(autoincrement())
+  name         String
+  kind         FinanceKind
+  color        String?
+  userId       Int
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions FinanceTransaction[]
+
+  @@unique([userId, kind, name])
+}
+
+// Dinheiro sempre em cêntimos inteiros (EUR), para não haver erros de arredondamento.
+model FinanceTransaction {
+  id          Int              @id @default(autoincrement())
+  kind        FinanceKind
+  amountCents Int
+  occurredOn  DateTime         @db.Date
+  note        String?
+  createdAt   DateTime         @default(now())
+  userId      Int
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  categoryId  Int?
+  category    FinanceCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([userId, occurredOn])
+}
+
+model SavingsGoal {
+  id          Int       @id @default(autoincrement())
+  name        String
+  targetCents Int
+  savedCents  Int       @default(0)
+  deadline    DateTime? @db.Date
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  userId      Int
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Dicas de poupança da IA e o resumo agregado em que se basearam (sem descrições nem datas exatas).
+model FinanceInsight {
+  id        Int      @id @default(autoincrement())
+  tips      Json
+  basedOn   Json
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}

@@ -97,6 +97,27 @@ describe('transferir disciplinas para outra conta', () => {
     expect((await post(motinha, '/api/transfers/accept', { code })).status).toBe(404);
   });
 
+  it('documentos, perguntas e quizzes ficam na conta de origem, sem a disciplina transferida', async () => {
+    const afonsoId = (await request(app).get('/api/me').set('Cookie', afonso)).body.user.id as number;
+    const doc = await prisma.studyDocument.create({
+      data: { title: 'Apontamentos', source: 'TEXT', userId: afonsoId, disciplineId: pwId },
+    });
+    const card = await prisma.studyCard.create({
+      data: { kind: 'SHORT', question: 'O que é SQL?', userId: afonsoId, disciplineId: pwId, documentId: doc.id },
+    });
+    const code = await codeFor({ disciplineIds: [pwId] });
+    expect((await post(motinha, '/api/transfers/accept', { code })).status).toBe(200);
+
+    expect(await prisma.studyDocument.findUnique({ where: { id: doc.id } })).toMatchObject({
+      userId: afonsoId,
+      disciplineId: null,
+    });
+    expect(await prisma.studyCard.findUnique({ where: { id: card.id } })).toMatchObject({
+      userId: afonsoId,
+      disciplineId: null,
+    });
+  });
+
   it('sem incluir as aulas sem disciplina, essas ficam na conta de origem', async () => {
     await seedSource();
     const code = await codeFor({ disciplineIds: [pwId] });

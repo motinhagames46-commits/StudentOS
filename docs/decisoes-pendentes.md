@@ -31,3 +31,7 @@ Perguntas levantadas no trabalho de 2026-10-25 (página de entrada, questionári
 4. «Compromisso fixo» visível no calendário e pergunta opcional no questionário. **Feito.**
 5. Faltas por UC (n.º 3). **Feito.**
 6. Guião de teste com colegas. **Feito.** Parar e decidir o resto com os resultados.
+
+## IA integrada no StudentOS (2026-10-26)
+
+O dono pediu as funcionalidades de um prompt para uma app iOS (OCR, assistente RAG, quizzes com FSRS, finanças com dicas) integradas no StudentOS. Decisões: uso pessoal com consentimento; chat aceite (substitui o «sem chat» do conselho de 21/10); finanças só com dicas de poupança e boas práticas; **IA só para a conta do dono** (`AI_ALLOWED_EMAILS`); **busca exata** em vez de pgvector (a BD local não tem a extensão); **verificação do dono no servidor** em vez de RLS. Passo 1 (modelo de dados, acesso, consentimento, ligação ao Gemini) feito; passos 2–5 só com aprovação. Pendente do dono: revogar a chave enviada no chat e pôr uma nova em `apps/api/.env` e no Render.

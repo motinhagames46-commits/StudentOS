@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import type { NextFunction, Request, Response } from 'express';
+import { AiError } from '../ai/provider.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { env } from '../lib/env.js';
 import { HttpError } from '../lib/http.js';
@@ -33,6 +34,8 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
 
   if (err instanceof HttpError) {
     error = err;
+  } else if (err instanceof AiError) {
+    error = new HttpError(err.code === 'AI_RATE_LIMITED' ? 429 : 502, err.code, err.message);
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
     error = new HttpError(409, 'CONFLICT', 'Já existe um registo com estes dados');
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {

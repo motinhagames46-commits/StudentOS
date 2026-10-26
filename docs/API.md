@@ -148,6 +148,17 @@ No painel, «Começar agora» aceita a sugestão (spec §11.7): chama `POST /api
 | POST   | `/api/transfers/preview` | Na conta de destino: `{ code }` → nome da conta de origem, disciplinas, contagens, duplicados e conflitos. Não grava nada.                                                                                                                                                                                                                                                                                                |
 | POST   | `/api/transfers/accept`  | Na conta de destino: transfere numa transação. As avaliações acompanham as disciplinas; tarefas, aulas, sessões planeadas e de estudo ligadas mudam de conta; semestre emparelhado pelo nome (ou criado). 409 `TRANSFER_CONFLICT` se já houver a mesma sigla no mesmo semestre; 409 `TRANSFER_SAME_ACCOUNT`; 404 se o código for inválido, usado ou expirado. As tentativas falhadas contam para o limite de credenciais. |
 
+## IA (Gemini)
+
+Só para contas em `AI_ALLOWED_EMAILS`; as rotas que usam a IA exigem também a chave no servidor e consentimento (403 `AI_NOT_ENABLED`).
+
+| Método | Rota              | Descrição                                                                                                    |
+| ------ | ----------------- | ------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/ai/status`  | `NOT_ALLOWED` \| `NOT_CONFIGURED` \| `NEEDS_CONSENT` \| `ENABLED`; fora da lista, só o estado.               |
+| POST   | `/api/ai/consent` | Regista o consentimento (data e versão). 403 `AI_NOT_ALLOWED` fora da lista.                                 |
+| DELETE | `/api/ai/consent` | Retira o consentimento.                                                                                      |
+| POST   | `/api/ai/check`   | Pedido real mínimo ao Gemini; só responde `ok` com uma resposta válida. Erros do fornecedor: 502/429 `AI_*`. |
+
 ## Integrações
 
 | Método | Caminho             | Descrição                                                                                                                               |

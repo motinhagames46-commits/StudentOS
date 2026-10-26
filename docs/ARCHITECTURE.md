@@ -163,7 +163,13 @@ Para um estudante passar os dados para outra conta sua (por exemplo, outro email
 
 ## IA generativa (spec §12)
 
-Não incluída nesta versão: o planeador e todos os cálculos funcionam sem IA. Nenhum ficheiro nem dado do utilizador é enviado a fornecedores externos.
+Opcional e só para a conta de quem mantém o StudentOS (decisão do dono, 2026-10-26). O planeador e todos os cálculos continuam a funcionar sem IA; nas outras contas nada é enviado a fornecedores externos. Roteiro e decisões em [`decisoes-pendentes.md`](decisoes-pendentes.md) e no plano aprovado (documentos → assistente → quizzes com FSRS → finanças).
+
+- **Acesso:** três condições, verificadas no servidor (`ai/access.ts`, `middleware/ai.ts`): email da sessão em `AI_ALLOWED_EMAILS`, `GEMINI_API_KEY` configurada e consentimento dado na página Integrações (data e versão em `User.aiConsentAt`/`aiConsentVersion`). Estados: `NOT_ALLOWED`, `NOT_CONFIGURED`, `NEEDS_CONSENT`, `ENABLED`. Uma conta fora da lista só vê `NOT_ALLOWED`.
+- **Fornecedor:** contrato `AiProvider` (`ai/provider.ts`) com uma implementação Gemini por `fetch` à API REST (`ai/gemini.ts`, sem SDK). A chave vai no cabeçalho `x-goog-api-key`, nunca no URL, em logs ou em respostas. Respostas estruturadas: esquema Zod → `z.toJSONSchema()` → `responseJsonSchema`, e a resposta é validada com o mesmo Zod. Erros do fornecedor viram erros da app (`AI_UNAVAILABLE`, `AI_RATE_LIMITED`, `AI_BLOCKED`, `AI_INVALID_RESPONSE`). Os testes usam um fornecedor falso.
+- **Dados:** `StudyDocument`/`DocumentChunk` (só texto; vetores de 768 dimensões normalizados, em `Float[]`), `StudyCard`/`CardReview`/`Quiz` (estado FSRS), `FinanceCategory`/`FinanceTransaction`/`SavingsGoal`/`FinanceInsight` (cêntimos inteiros). Tudo por utilizador, com eliminação em cascata e na exportação (os vetores não, são derivados). A transferência de disciplinas não leva estes dados: ficam na conta de origem, sem a disciplina.
+- **Pesquisa semântica:** busca exata no PostgreSQL (produto interno de vetores normalizados), sem extensão: funciona na BD local embutida e no Neon. Passa a pgvector + HNSW se o volume crescer (a BD local não tem a extensão).
+- **Termos do Gemini:** no EEE os termos de dados dos serviços pagos aplicam-se também ao uso gratuito; oferecer a IA a outros utilizadores no EEE exigiria um projeto Google com faturação ([termos](https://ai.google.dev/gemini-api/terms)).
 
 ## Testes
 

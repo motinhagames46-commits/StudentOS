@@ -112,6 +112,7 @@ Cada linha só está marcada como **Testado** se tiver testes automáticos que p
 | Página de entrada para visitantes, com o simulador a correr só no browser                                                                                                                                 | E2E + axe                    |
 | Questionário de boas-vindas (disciplinas e ECTS, avaliações por modelo, horas livres e compromissos fixos, sessões) até ao plano real dos próximos 7 dias, confirmado pelo estudante                      | unitários + E2E + axe        |
 | Exportar dados (JSON) e eliminar conta (pede email e palavra-passe)                                                                                                                                       | API + E2E                    |
+| Fundação da IA (Gemini): acesso só para contas autorizadas, consentimento registado, verificação real da ligação, respostas JSON validadas                                                                | API + E2E + axe              |
 | Faltas por disciplina com limite do regulamento e aviso antes de o ultrapassar                                                                                                                            | unitários + API + E2E        |
 | Transferir disciplinas para outra conta (código de uso único, pré-visualização e confirmação)                                                                                                             | API + E2E                    |
 | Exportar o plano para o calendário pessoal (`.ics`): sessões planeadas, avaliações e prazos, com lembretes, UID estável e fuso de Lisboa; descarregado com a sessão, sem link público                     | API + E2E                    |
@@ -133,7 +134,7 @@ Cada linha só está marcada como **Testado** se tiver testes automáticos que p
 
 ### Não incluído nesta versão
 
-- IA generativa (spec §12). Nenhum dado é enviado a fornecedores externos.
+- IA generativa para outras contas (spec §12): só a conta de quem mantém o projeto a pode ativar; nas restantes nenhum dado é enviado a fornecedores externos.
 - Notificações por email ou push (os alertas existem só dentro da aplicação).
 - Recuperação de palavra-passe por email (não há serviço de envio de email configurado).
 - Paginação da API: as listas atuais são pequenas e limitadas por intervalo de datas.

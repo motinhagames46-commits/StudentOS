@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { FileUp, Info } from 'lucide-react';
+import { FileUp } from 'lucide-react';
 import { Link } from 'react-router';
+import { AiCard } from '../components/AiCard';
 import { Badge, Card, ErrorState, LoadingList, PageHeader } from '../components/ui';
 import { api, errorMessage } from '../lib/api';
 
@@ -66,13 +67,7 @@ export function IntegrationsPage() {
               </dl>
             </Card>
           ))}
-          <Card title="Assistente de IA" action={<Badge>Desligado</Badge>}>
-            <p className="flex gap-2 text-sm text-stone-600">
-              <Info aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-              Não incluído nesta versão. O plano de estudo é calculado por regras fixas, sem IA, e nenhum dado é enviado
-              a fornecedores de IA.
-            </p>
-          </Card>
+          <AiCard />
         </div>
       )}
     </>

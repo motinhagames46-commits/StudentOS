@@ -31,7 +31,7 @@ Implementado e publicado (detalhe na tabela §19 do [README](README.md#estado-da
 
 ## Fora de âmbito (nesta versão)
 
-IA generativa (há um conjunto de avaliação em preparação, sem decisão de avançar), notificações por email/push, recuperação de palavra-passe por email, paginação, funcionalidades sociais, app móvel nativa. Moodle e Outlook ficam `NOT_CONFIGURED` até haver autorização do IPVC e registo na Microsoft.
+IA generativa para outras contas (desde 2026-10-26 só a conta do dono a pode ativar, com consentimento), notificações por email/push, recuperação de palavra-passe por email, paginação, funcionalidades sociais, app móvel nativa. Moodle e Outlook ficam `NOT_CONFIGURED` até haver autorização do IPVC e registo na Microsoft.
 
 ## Requisitos
 

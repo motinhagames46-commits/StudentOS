@@ -3,6 +3,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = Number(process.env.E2E_PORT ?? 4100);
+// Conta com IA autorizada nesta execução (a BD de teste não é limpa entre execuções; os workers herdam o valor).
+const AI_EMAIL = (process.env.E2E_AI_EMAIL ??= `dono-ia-${Date.now()}@e2e.test`);
 const BASE_URL = `http://localhost:${PORT}`;
 const DATABASE_URL = process.env.E2E_DATABASE_URL ?? 'postgresql://studentos:studentos@localhost:54329/studentos_test';
 
@@ -53,6 +55,9 @@ export default defineConfig({
         // O limite de tentativas de palavra-passe mantém-se igual ao de produção.
         RATE_LIMIT_PER_15_MIN: '10000',
         RATE_LIMIT_REGISTER_PER_HOUR: '10000',
+        AI_ALLOWED_EMAILS: AI_EMAIL,
+        // Sem chave nos E2E (mesmo que exista em apps/api/.env): nunca há pedidos reais à Google.
+        GEMINI_API_KEY: '',
       },
     },
   ],

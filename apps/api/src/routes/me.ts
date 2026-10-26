@@ -66,6 +66,16 @@ meRouter.get('/export', async (req, res) => {
         select: { id: true, kind: true, status: true, originalFilename: true, createdAt: true, counts: true },
       },
       sessions: { select: { id: true, userAgent: true, createdAt: true, lastSeenAt: true, expiresAt: true } },
+      studyDocuments: true,
+      // Os vetores são derivados do texto (e grandes): exporta-se o texto de cada excerto.
+      documentChunks: { select: { id: true, documentId: true, ordinal: true, content: true } },
+      studyCards: true,
+      cardReviews: true,
+      quizzes: true,
+      financeCategories: true,
+      transactions: true,
+      savingsGoals: true,
+      financeInsights: true,
     },
   });
   const { passwordHash: _hash, tokenVersion: _tv, ...data } = user;
