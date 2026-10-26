@@ -18,6 +18,7 @@ Estudantes do ensino superior, muitos sobretudo no telemóvel (ver [`PRODUCT.md`
 - HTML semântico, navegação por teclado, foco visível global (`:focus-visible` com contorno na cor de destaque em `index.css`).
 - Campos com `<label>` associado; erros por campo junto ao campo (`TextField error`), erros gerais com `FormError` (`role="alert"`).
 - Operações assíncronas: botões com `loading` (evitam duplo envio); mensagens de sucesso com `role="status"`.
+- Avisos da app (`components/Toast.tsx`, nunca `alert`/`confirm` do browser): região `aria-live`, não roubam o foco e o tempo pára com o rato ou o foco em cima (WCAG 2.2.1). Marcar tarefas é otimista (aparece logo e volta atrás com aviso se falhar). Eliminar tarefas usa «Desfazer» durante 10 s: o pedido só sai quando o aviso fecha, por isso fechar a página não apaga nada. Pedidos com mais de 3 s mostram «A ligar ao servidor…».
 - Movimento reduzido: as poucas transições decorativas (seta de recolher, «+» das perguntas frequentes) usam `motion-safe:`; novas animações seguem a mesma regra.
 
 ## Layout e revisão

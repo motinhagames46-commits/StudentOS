@@ -5,7 +5,8 @@ import { Link } from 'react-router';
 import { TaskForm } from '../components/TaskForm';
 import { TaskList } from '../components/TaskList';
 import { Card, ErrorState, LoadingList, PageHeader, SelectField, TextField } from '../components/ui';
-import { useCreateTask, useDeleteTask, useDisciplines, useTasks, useUpdateTask } from '../hooks/queries';
+import { useCreateTask, useDisciplines, useTasks, useUpdateTask } from '../hooks/queries';
+import { useDeleteTaskWithUndo } from '../hooks/useDeleteTaskWithUndo';
 import { errorMessage } from '../lib/api';
 import { priorityLabels } from '../lib/format';
 
@@ -38,14 +39,14 @@ export function TasksPage() {
   const disciplines = useDisciplines();
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
-  const deleteTask = useDeleteTask();
+  const deleteTask = useDeleteTaskWithUndo();
 
   const disciplineOptions = disciplines.data ?? [];
   const editing = tasks.data?.find((t) => t.id === editingId);
 
   function handleDelete(id: number) {
     const task = tasks.data?.find((t) => t.id === id);
-    if (task && window.confirm(`Eliminar a tarefa "${task.title}"?`)) deleteTask.mutate(id);
+    if (task) deleteTask(task);
   }
 
   return (

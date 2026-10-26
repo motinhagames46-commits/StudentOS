@@ -18,6 +18,7 @@ import type {
 } from '@studentos/shared';
 import { useToast } from '../components/Toast';
 import { api, errorMessage } from '../lib/api';
+import { dashboardWithoutPendingTasks, withoutPendingTasks } from '../lib/pendingTaskDeletes';
 import type {
   Alerts,
   Assessment,
@@ -54,7 +55,7 @@ const dataKeys = [
   'suggestion',
 ];
 
-function useInvalidateAll(extraKeys: string[] = []) {
+export function useInvalidateAll(extraKeys: string[] = []) {
   const queryClient = useQueryClient();
   return () =>
     Promise.all([...dataKeys, ...extraKeys].map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
@@ -63,12 +64,18 @@ function useInvalidateAll(extraKeys: string[] = []) {
 /** O semestre ativo aparece no /me (barra lateral) e filtra o painel e as disciplinas. */
 const useInvalidateSemesters = () => useInvalidateAll(['me', 'semesters']);
 
-export const useDashboard = () => useQuery({ queryKey: ['dashboard'], queryFn: () => api<Dashboard>('/dashboard') });
+export const useDashboard = () =>
+  useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => api<Dashboard>('/dashboard'),
+    select: dashboardWithoutPendingTasks,
+  });
 
 export const useTasks = (filters: TaskQuery = {}) =>
   useQuery({
     queryKey: ['tasks', filters],
     queryFn: () => api<Task[]>(`/tasks${toQueryString(filters)}`),
+    select: withoutPendingTasks,
   });
 
 export const useDisciplines = (semesterId?: number, archived = false) =>
@@ -124,14 +131,6 @@ export function useUpdateTask() {
       toast({ message: `Não foi possível guardar a tarefa: ${errorMessage(error)}`, tone: 'error' });
     },
     onSettled: invalidate,
-  });
-}
-
-export function useDeleteTask() {
-  const invalidate = useInvalidateAll();
-  return useMutation({
-    mutationFn: (id: number) => api<void>(`/tasks/${id}`, { method: 'DELETE' }),
-    onSuccess: invalidate,
   });
 }
 
