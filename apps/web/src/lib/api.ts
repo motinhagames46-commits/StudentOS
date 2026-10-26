@@ -1,4 +1,5 @@
 // Cliente HTTP da API. Usa o cookie de sessão httpOnly (credentials: 'include').
+import { trackSlow } from './serverWake';
 
 export interface ApiErrorDetail {
   path: string;
@@ -29,12 +30,14 @@ export async function api<T>(path: string, options: { method?: Method; body?: un
   const { method = 'GET', body } = options;
   let res: Response;
   try {
-    res = await fetch(`/api${path}`, {
-      method,
-      credentials: 'include',
-      headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    });
+    res = await trackSlow(
+      fetch(`/api${path}`, {
+        method,
+        credentials: 'include',
+        headers: body !== undefined ? { 'Content-Type': 'application/json' } : undefined,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+      }),
+    );
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', 'Sem ligação ao servidor. Verifica a tua ligação.');
   }
@@ -60,7 +63,7 @@ async function toApiError(res: Response): Promise<ApiError> {
 export async function downloadFile(path: string, filename: string): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(`/api${path}`, { credentials: 'include' });
+    res = await trackSlow(fetch(`/api${path}`, { credentials: 'include' }));
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', 'Sem ligação ao servidor. Verifica a tua ligação.');
   }

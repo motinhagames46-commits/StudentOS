@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { FullPageSpinner, RequireAuth } from './components/RequireAuth';
+import { ServerWakeBanner } from './components/ServerWakeBanner';
 import { lazyPage } from './lib/lazyPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { PrivacyPage } from './pages/PrivacyPage';
@@ -33,34 +34,37 @@ function NotFound() {
 
 export function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/registo" element={<RegisterPage />} />
-      <Route path="/privacidade" element={<PrivacyPage />} />
-      <Route element={<RequireAuth />}>
-        <Route
-          path="boas-vindas"
-          element={
-            <Suspense fallback={<FullPageSpinner />}>
-              <OnboardingPage />
-            </Suspense>
-          }
-        />
-        <Route element={<AppLayout />}>
-          <Route index element={<DashboardPage />} />
-          <Route path="calendario" element={<CalendarPage />} />
-          <Route path="importar" element={<ImportPage />} />
-          <Route path="plano" element={<PlanPage />} />
-          <Route path="preferencias" element={<PreferencesPage />} />
-          <Route path="integracoes" element={<IntegrationsPage />} />
-          <Route path="tarefas" element={<TasksPage />} />
-          <Route path="disciplinas" element={<DisciplinesPage />} />
-          <Route path="disciplinas/:id" element={<DisciplineDetailPage />} />
-          <Route path="sessoes" element={<StudySessionsPage />} />
-          <Route path="conta" element={<AccountPage />} />
-          <Route path="*" element={<NotFound />} />
+    <>
+      <ServerWakeBanner />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/registo" element={<RegisterPage />} />
+        <Route path="/privacidade" element={<PrivacyPage />} />
+        <Route element={<RequireAuth />}>
+          <Route
+            path="boas-vindas"
+            element={
+              <Suspense fallback={<FullPageSpinner />}>
+                <OnboardingPage />
+              </Suspense>
+            }
+          />
+          <Route element={<AppLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="calendario" element={<CalendarPage />} />
+            <Route path="importar" element={<ImportPage />} />
+            <Route path="plano" element={<PlanPage />} />
+            <Route path="preferencias" element={<PreferencesPage />} />
+            <Route path="integracoes" element={<IntegrationsPage />} />
+            <Route path="tarefas" element={<TasksPage />} />
+            <Route path="disciplinas" element={<DisciplinesPage />} />
+            <Route path="disciplinas/:id" element={<DisciplineDetailPage />} />
+            <Route path="sessoes" element={<StudySessionsPage />} />
+            <Route path="conta" element={<AccountPage />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
         </Route>
-      </Route>
-    </Routes>
+      </Routes>
+    </>
   );
 }
