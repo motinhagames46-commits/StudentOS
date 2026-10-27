@@ -31,9 +31,12 @@ export type AiErrorCode = 'AI_UNAVAILABLE' | 'AI_RATE_LIMITED' | 'AI_BLOCKED' | 
 /** Erro do fornecedor, já em português e sem detalhes técnicos (o errorHandler converte-o em HTTP). */
 export class AiError extends Error {
   readonly code: AiErrorCode;
-  constructor(code: AiErrorCode, message: string) {
+  /** Detalhe técnico para o registo do servidor (nome e código do erro); nunca segredos nem a resposta. */
+  readonly detail: string | null;
+  constructor(code: AiErrorCode, message: string, detail: string | null = null) {
     super(message);
     this.code = code;
+    this.detail = detail;
   }
 }
 

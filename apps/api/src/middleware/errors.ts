@@ -35,6 +35,8 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   if (err instanceof HttpError) {
     error = err;
   } else if (err instanceof AiError) {
+    // Só o detalhe seguro (nome/código do erro ou estado HTTP), para se perceber no Render porque falhou.
+    if (!env.isTest && err.detail) console.error(`[${req.requestId}] ${req.method} ${req.path} ${err.detail}`);
     error = new HttpError(err.code === 'AI_RATE_LIMITED' ? 429 : 502, err.code, err.message);
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
     error = new HttpError(409, 'CONFLICT', 'Já existe um registo com estes dados');

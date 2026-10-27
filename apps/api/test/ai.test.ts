@@ -5,7 +5,7 @@ import { setAiProviderForTests } from '../src/ai/access.js';
 import { GeminiProvider } from '../src/ai/gemini.js';
 import { AiError, EMBEDDING_DIMENSIONS } from '../src/ai/provider.js';
 import { app } from '../src/app.js';
-import { env } from '../src/lib/env.js';
+import { cleanSecret, env } from '../src/lib/env.js';
 import { prisma } from '../src/lib/prisma.js';
 import { FakeAiProvider } from './fake-ai.js';
 import { PASSWORD, createUserAndLogin, resetDb } from './helpers.js';
@@ -111,6 +111,25 @@ describe('Gemini pela API REST', () => {
     await expect(
       withResponse(Promise.resolve(new Response('{}', { status: 429 }))).generateJson(schema, []),
     ).rejects.toBeInstanceOf(AiError);
+  });
+
+  it('sem resposta, diz porquê: chave com formato inválido ou demora; a chave nunca vai para o detalhe', async () => {
+    const failing = (error: Error) =>
+      new GeminiProvider('k', 'm', 'e', (() => Promise.reject(error)) as unknown as typeof fetch);
+    const schema = z.object({ ok: z.boolean() });
+    const invalid = failing(new TypeError('Headers.append: "CHAVE\nSECRETA" is an invalid header value.'));
+    await expect(invalid.generateJson(schema, [])).rejects.toMatchObject({
+      message: expect.stringMatching(/formato inválido/),
+      detail: 'Gemini sem resposta: TypeError', // sem a mensagem original, que traz a chave
+    });
+    await expect(
+      failing(Object.assign(new Error('timeout'), { name: 'TimeoutError' })).generateJson(schema, []),
+    ).rejects.toThrow(/demorou demasiado/);
+  });
+
+  it('a chave lida do ambiente perde espaços, quebras de linha e aspas', () => {
+    expect(cleanSecret(' "AIza-abc\ndef_123" \n')).toBe('AIza-abcdef_123');
+    expect(cleanSecret(undefined)).toBe('');
   });
 
   it('pede vetores de 768 dimensões por tipo de tarefa e devolve-os normalizados', async () => {

@@ -26,6 +26,26 @@ const generateResponse = z.object({
 });
 const embedResponse = z.object({ embeddings: z.array(z.object({ values: z.array(z.number()) })) });
 
+/**
+ * Pedido que nem chegou a ter resposta: diz qual foi a razão. Para o registo do servidor seguem só o nome e o
+ * código do erro, nunca a mensagem (num cabeçalho inválido, a mensagem traz a própria chave).
+ */
+function unreachable(err: unknown): AiError {
+  const e = err as { name?: string; message?: string; cause?: { code?: string } };
+  const detail = `Gemini sem resposta: ${e.name ?? 'Error'} ${e.cause?.code ?? ''}`.trim();
+  if (e.name === 'TimeoutError') {
+    return new AiError('AI_UNAVAILABLE', 'O serviço de IA demorou demasiado a responder. Tenta novamente.', detail);
+  }
+  if (e.name === 'TypeError' && e.message?.includes('header')) {
+    return new AiError(
+      'AI_UNAVAILABLE',
+      'A chave do Gemini no servidor tem um formato inválido. Volta a copiá-la para GEMINI_API_KEY, sem espaços nem quebras de linha.',
+      detail,
+    );
+  }
+  return new AiError('AI_UNAVAILABLE', 'Não foi possível contactar o serviço de IA. Tenta novamente.', detail);
+}
+
 export class GeminiProvider implements AiProvider {
   constructor(
     private readonly apiKey: string,
@@ -43,13 +63,19 @@ export class GeminiProvider implements AiProvider {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
-    } catch {
-      throw new AiError('AI_UNAVAILABLE', 'Não foi possível contactar o serviço de IA. Tenta novamente.');
+    } catch (err) {
+      throw unreachable(err);
     }
     if (res.status === 429) {
       throw new AiError('AI_RATE_LIMITED', 'O serviço de IA atingiu o limite de pedidos. Tenta daqui a pouco.');
     }
-    if (!res.ok) throw new AiError('AI_UNAVAILABLE', `O serviço de IA respondeu com um erro (${res.status}).`);
+    if (!res.ok) {
+      throw new AiError(
+        'AI_UNAVAILABLE',
+        `O serviço de IA respondeu com um erro (${res.status}).`,
+        `Gemini HTTP ${res.status}`,
+      );
+    }
     return res.json().catch(() => null);
   }
 

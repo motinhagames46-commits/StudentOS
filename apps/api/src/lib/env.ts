@@ -19,12 +19,20 @@ export const env = {
   /** Contas criadas por IP a cada hora. Só os testes E2E o aumentam: todos vêm do mesmo IP. */
   RATE_LIMIT_REGISTER_PER_HOUR: positiveInt('RATE_LIMIT_REGISTER_PER_HOUR', 20),
   /** Chave do Gemini: só no servidor (.env local e variáveis do Render). Sem ela, a IA fica «Não configurada». */
-  GEMINI_API_KEY: process.env.GEMINI_API_KEY ?? '',
+  GEMINI_API_KEY: cleanSecret(process.env.GEMINI_API_KEY),
   GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-flash-latest',
   GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
   /** Emails (separados por vírgulas) das contas que podem usar a IA. Vazio: ninguém. */
   AI_ALLOWED_EMAILS: emailList(process.env.AI_ALLOWED_EMAILS),
 };
+
+/**
+ * Uma chave colada no painel do Render ou no .env traz às vezes uma quebra de linha, espaços ou aspas.
+ * As chaves nunca os têm, e com eles o pedido nem sai (cabeçalho HTTP inválido).
+ */
+export function cleanSecret(raw: string | undefined): string {
+  return (raw ?? '').replace(/\s+/g, '').replace(/^["']+|["']+$/g, '');
+}
 
 function emailList(raw: string | undefined): string[] {
   return (raw ?? '')
