@@ -21,6 +21,8 @@ const ImportPage = lazyPage(() => import('./pages/ImportPage'), 'ImportPage');
 const IntegrationsPage = lazyPage(() => import('./pages/IntegrationsPage'), 'IntegrationsPage');
 const OnboardingPage = lazyPage(() => import('./pages/OnboardingPage'), 'OnboardingPage');
 const PlanPage = lazyPage(() => import('./pages/PlanPage'), 'PlanPage');
+const QuizPage = lazyPage(() => import('./pages/QuizPage'), 'QuizPage');
+const ReviewsPage = lazyPage(() => import('./pages/ReviewsPage'), 'ReviewsPage');
 const PreferencesPage = lazyPage(() => import('./pages/PreferencesPage'), 'PreferencesPage');
 const StudySessionsPage = lazyPage(() => import('./pages/StudySessionsPage'), 'StudySessionsPage');
 const TasksPage = lazyPage(() => import('./pages/TasksPage'), 'TasksPage');
@@ -68,6 +70,8 @@ export function App() {
             <Route path="documentos" element={<DocumentsPage />} />
             <Route path="documentos/:id" element={<DocumentDetailPage />} />
             <Route path="assistente" element={<AssistantPage />} />
+            <Route path="revisoes" element={<ReviewsPage />} />
+            <Route path="revisoes/quiz/:id" element={<QuizPage />} />
             <Route path="conta" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>

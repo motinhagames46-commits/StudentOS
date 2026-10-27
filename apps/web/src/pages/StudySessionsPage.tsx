@@ -1,5 +1,6 @@
 import { Pause, Play, Square } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 import { StudyByDayChart } from '../components/charts';
 import {
   Badge,
@@ -15,6 +16,7 @@ import {
   TextField,
 } from '../components/ui';
 import {
+  useAiStatus,
   useDisciplines,
   usePauseStudySession,
   useStartStudySession,
@@ -73,6 +75,9 @@ export function StudySessionsPage() {
   const disciplines = useDisciplines(me?.activeSemester?.id);
   const start = useStartStudySession();
   const stop = useStopStudySession();
+  const ai = useAiStatus();
+  // No fim de uma sessão de uma disciplina, um atalho para um quiz sobre os documentos dela.
+  const quizAfter = ai.data?.status === 'ENABLED' ? stop.data?.discipline : null;
   const pause = usePauseStudySession();
   const stats = useStats(14);
   const [disciplineId, setDisciplineId] = useState('');
@@ -145,73 +150,83 @@ export function StudySessionsPage() {
               </div>
             </div>
           ) : (
-            <form
-              className="flex flex-wrap items-end gap-3"
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (customInvalid) return;
-                const chosen = PRESETS[preset.key];
-                start.mutate({
-                  disciplineId: disciplineId ? Number(disciplineId) : null,
-                  targetMinutes: preset.key === 'custom' ? customTarget : chosen.target,
-                  breakMinutes: preset.key === 'custom' ? customRest : chosen.rest,
-                });
-              }}
-            >
-              <SelectField
-                label="Disciplina (opcional)"
-                value={disciplineId}
-                onChange={(e) => setDisciplineId(e.target.value)}
-                className="min-w-48 flex-1"
-              >
-                <option value="">Sem disciplina</option>
-                {disciplines.data?.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.code} — {d.name}
-                  </option>
-                ))}
-              </SelectField>
-              <SelectField
-                label="Modo foco"
-                value={preset.key}
-                onChange={(e) => setPreset((p) => ({ ...p, key: e.target.value as PresetKey }))}
-                className="min-w-48 flex-1"
-              >
-                {Object.entries(PRESETS).map(([key, p]) => (
-                  <option key={key} value={key}>
-                    {p.label}
-                  </option>
-                ))}
-              </SelectField>
-              {preset.key === 'custom' && (
-                <>
-                  <TextField
-                    label="Foco (min)"
-                    type="number"
-                    min={5}
-                    max={180}
-                    required
-                    value={preset.target}
-                    onChange={(e) => setPreset((p) => ({ ...p, target: e.target.value }))}
-                    className="w-28"
-                  />
-                  <TextField
-                    label="Pausa (min)"
-                    type="number"
-                    min={0}
-                    max={60}
-                    required
-                    value={preset.rest}
-                    onChange={(e) => setPreset((p) => ({ ...p, rest: e.target.value }))}
-                    className="w-28"
-                  />
-                </>
+            <>
+              {quizAfter && (
+                <p className="mb-3 rounded-lg bg-accent-soft px-3 py-2 text-sm text-accent-ink">
+                  Sessão de {quizAfter.code} terminada.{' '}
+                  <Link to={`/revisoes?disciplina=${quizAfter.id}`} className="font-medium underline">
+                    Testar o que estudaste com um quiz
+                  </Link>
+                </p>
               )}
-              <Button type="submit" loading={start.isPending} disabled={customInvalid}>
-                <Play aria-hidden="true" className="size-4" />
-                Iniciar
-              </Button>
-            </form>
+              <form
+                className="flex flex-wrap items-end gap-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (customInvalid) return;
+                  const chosen = PRESETS[preset.key];
+                  start.mutate({
+                    disciplineId: disciplineId ? Number(disciplineId) : null,
+                    targetMinutes: preset.key === 'custom' ? customTarget : chosen.target,
+                    breakMinutes: preset.key === 'custom' ? customRest : chosen.rest,
+                  });
+                }}
+              >
+                <SelectField
+                  label="Disciplina (opcional)"
+                  value={disciplineId}
+                  onChange={(e) => setDisciplineId(e.target.value)}
+                  className="min-w-48 flex-1"
+                >
+                  <option value="">Sem disciplina</option>
+                  {disciplines.data?.map((d) => (
+                    <option key={d.id} value={d.id}>
+                      {d.code} — {d.name}
+                    </option>
+                  ))}
+                </SelectField>
+                <SelectField
+                  label="Modo foco"
+                  value={preset.key}
+                  onChange={(e) => setPreset((p) => ({ ...p, key: e.target.value as PresetKey }))}
+                  className="min-w-48 flex-1"
+                >
+                  {Object.entries(PRESETS).map(([key, p]) => (
+                    <option key={key} value={key}>
+                      {p.label}
+                    </option>
+                  ))}
+                </SelectField>
+                {preset.key === 'custom' && (
+                  <>
+                    <TextField
+                      label="Foco (min)"
+                      type="number"
+                      min={5}
+                      max={180}
+                      required
+                      value={preset.target}
+                      onChange={(e) => setPreset((p) => ({ ...p, target: e.target.value }))}
+                      className="w-28"
+                    />
+                    <TextField
+                      label="Pausa (min)"
+                      type="number"
+                      min={0}
+                      max={60}
+                      required
+                      value={preset.rest}
+                      onChange={(e) => setPreset((p) => ({ ...p, rest: e.target.value }))}
+                      className="w-28"
+                    />
+                  </>
+                )}
+                <Button type="submit" loading={start.isPending} disabled={customInvalid}>
+                  <Play aria-hidden="true" className="size-4" />
+                  Iniciar
+                </Button>
+              </form>
+            </>
           )}
           {actionError && (
             <div className="mt-3">

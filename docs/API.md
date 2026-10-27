@@ -177,6 +177,20 @@ Ler um documento exige a IA ativa (`AI_NOT_ENABLED`); ver, rever e eliminar os j
 | ------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POST   | `/api/assistant/ask` | `{ question, disciplineId?, history? }` (IA ativa). Busca exata dos 6 excertos mais próximos da conta; responde só com eles, com fontes `[n]` (`mode: "documents"`). Se não chegarem, ou sem fontes válidas, responde com pesquisa Google (`mode: "web"`, fontes web e `searchSuggestionsHtml`, a mostrar sem alterações). Nada é guardado. |
 
+### Quizzes e revisões
+
+Criar e corrigir quizzes exige a IA ativa; ver quizzes e fazer revisões não. Quizzes e perguntas de outra conta dão 404.
+
+| Método | Rota                      | Descrição                                                                                                                                                                                                                                                             |
+| ------ | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/quizzes`            | `{ documentId \| disciplineId, count? }` (3–10). O Gemini cria perguntas de escolha múltipla e de resposta curta a partir do texto lido (até 30 000 caracteres); as incoerentes são descartadas. A resposta não traz as soluções. 422 `NO_STUDY_TEXT` sem documentos. |
+| GET    | `/api/quizzes`            | Lista com a percentagem de acerto.                                                                                                                                                                                                                                    |
+| GET    | `/api/quizzes/:id`        | O quiz; as soluções só depois de corrigido.                                                                                                                                                                                                                           |
+| POST   | `/api/quizzes/:id/answer` | `{ answers: [{ choice, text }] }`, uma por pergunta. Escolha múltipla corrigida pelo código; resposta curta pela IA (em branco é errada). Cria um cartão FSRS por pergunta com a primeira revisão. 409 `QUIZ_ALREADY_ANSWERED`.                                       |
+| GET    | `/api/reviews`            | Perguntas devidas (até 50, as mais atrasadas primeiro), `dueCount` e `nextDue`.                                                                                                                                                                                       |
+| POST   | `/api/reviews/:id`        | `{ rating }` (1 errei, 2 difícil, 3 bem, 4 fácil): FSRS agenda a próxima; retenção 0,95 se houver avaliação da disciplina nos próximos 7 dias, senão 0,90.                                                                                                            |
+| DELETE | `/api/reviews/:id`        | Apaga a pergunta e o histórico dela.                                                                                                                                                                                                                                  |
+
 ## Integrações
 
 | Método | Caminho             | Descrição                                                                                                                               |

@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   MessagesSquare,
+  Repeat,
   MoreHorizontal,
   Timer,
   UserRound,
@@ -43,6 +44,7 @@ const nav: NavItem[] = [
 const aiItems: NavItem[] = [
   { to: '/documentos', label: 'Documentos', icon: ScanText, end: false },
   { to: '/assistente', label: 'Assistente', icon: MessagesSquare, end: false },
+  { to: '/revisoes', label: 'Revisões', icon: Repeat, end: false },
 ];
 
 function useNav(): NavItem[] {

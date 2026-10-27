@@ -27,6 +27,7 @@ import { integrationsRouter } from './routes/integrations.js';
 import { meRouter } from './routes/me.js';
 import { plannedSessionsRouter } from './routes/planned-sessions.js';
 import { plannerRouter, preferencesRouter } from './routes/planner.js';
+import { quizzesRouter, reviewsRouter } from './routes/quizzes.js';
 import { scheduleBlocksRouter } from './routes/schedule-blocks.js';
 import { semestersRouter } from './routes/semesters.js';
 import { studySessionsRouter } from './routes/study-sessions.js';
@@ -72,7 +73,17 @@ export function createApp() {
   if (limits) {
     const costly = costlyLimiter();
     api.post(
-      ['/planner/preview', '/planner/replan', '/imports', '/transfers', '/ai/check', '/documents', '/assistant/ask'],
+      [
+        '/planner/preview',
+        '/planner/replan',
+        '/imports',
+        '/transfers',
+        '/ai/check',
+        '/documents',
+        '/assistant/ask',
+        '/quizzes',
+        '/quizzes/:id/answer',
+      ],
       requireAuth,
       costly,
     );
@@ -100,6 +111,8 @@ export function createApp() {
   api.use('/ai', ...authed, aiRouter);
   api.use('/documents', ...authed, documentsRouter);
   api.use('/assistant', ...authed, assistantRouter);
+  api.use('/quizzes', ...authed, quizzesRouter);
+  api.use('/reviews', ...authed, reviewsRouter);
   api.use(['/stats', '/calendar', '/alerts'], ...authed);
   api.use(insightsRouter);
   api.use(apiNotFound);

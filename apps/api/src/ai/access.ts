@@ -6,8 +6,8 @@ import type { AiProvider } from './provider.js';
 
 export type AiStatus = 'NOT_ALLOWED' | 'NOT_CONFIGURED' | 'NEEDS_CONSENT' | 'ENABLED';
 
-/** Versão do texto de consentimento mostrado na página Integrações (2: pesquisa Google no assistente). */
-export const AI_CONSENT_VERSION = '2026-10-26.2';
+/** Versão do texto de consentimento mostrado na página Integrações (muda sempre que o texto muda). */
+export const AI_CONSENT_VERSION = '2026-10-27';
 
 let gemini: GeminiProvider | null = null;
 let override: AiProvider | null | undefined;

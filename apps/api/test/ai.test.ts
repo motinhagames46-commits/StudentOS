@@ -44,7 +44,7 @@ describe('acesso à IA: lista de contas, chave e consentimento', () => {
   it('o consentimento ativa e retirá-lo desativa; fica registada a versão e a data', async () => {
     expect((await status(owner)).body).toMatchObject({ status: 'NEEDS_CONSENT', model: 'fake' });
     const given = await request(app).post('/api/ai/consent').set('Cookie', owner);
-    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-26.2' });
+    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-27' });
     expect(given.body.consentAt).toEqual(expect.any(String));
 
     expect((await request(app).delete('/api/ai/consent').set('Cookie', owner)).status).toBe(204);

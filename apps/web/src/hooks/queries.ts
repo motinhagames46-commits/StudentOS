@@ -8,6 +8,11 @@ import type {
   DisciplineCreateInput,
   DocumentConfirmItem,
   DocumentCreateInput,
+  QuizAnswerInput,
+  QuizCreateInput,
+  QuizSummary,
+  QuizView,
+  ReviewQueue,
   DisciplineUpdateInput,
   ScheduleBlockCreateInput,
   ScheduleBlockUpdateInput,
@@ -454,3 +459,48 @@ export const useAskAssistant = () =>
     mutationFn: (input: AssistantAskInput) =>
       api<AssistantAnswer>('/assistant/ask', { method: 'POST', body: input, expectSlow: true }),
   });
+
+export const useReviewQueue = () => useQuery({ queryKey: ['reviews'], queryFn: () => api<ReviewQueue>('/reviews') });
+
+/** Durante uma revisão a lista não é recarregada (não mexe nas perguntas a meio); só no fim. */
+export const useReviewCard = () =>
+  useMutation({
+    mutationFn: ({ id, rating }: { id: number; rating: number }) =>
+      api<{ due: string; retention: number }>(`/reviews/${id}`, { method: 'POST', body: { rating } }),
+  });
+
+export const useDeleteCard = () =>
+  useMutation({ mutationFn: (id: number) => api(`/reviews/${id}`, { method: 'DELETE' }) });
+
+export const useQuizzes = () => useQuery({ queryKey: ['quizzes'], queryFn: () => api<QuizSummary[]>('/quizzes') });
+
+export const useQuiz = (id: number) =>
+  useQuery({
+    queryKey: ['quiz', id],
+    queryFn: () => api<QuizView>(`/quizzes/${id}`),
+    enabled: Number.isInteger(id) && id > 0,
+  });
+
+export function useCreateQuiz() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: QuizCreateInput) =>
+      api<QuizView>('/quizzes', { method: 'POST', body: input, expectSlow: true }),
+    onSuccess: (quiz) => {
+      queryClient.setQueryData(['quiz', quiz.id], quiz);
+      return queryClient.invalidateQueries({ queryKey: ['quizzes'] });
+    },
+  });
+}
+
+export function useAnswerQuiz(id: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: QuizAnswerInput) =>
+      api<QuizView>(`/quizzes/${id}/answer`, { method: 'POST', body: input, expectSlow: true }),
+    onSuccess: (quiz) => {
+      queryClient.setQueryData(['quiz', id], quiz);
+      return Promise.all(['quizzes', 'reviews'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
+    },
+  });
+}

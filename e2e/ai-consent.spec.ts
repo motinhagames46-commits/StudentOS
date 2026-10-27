@@ -40,6 +40,16 @@ test('conta autorizada: ativar e desligar a IA com consentimento registado', asy
   await expect(page.getByRole('heading', { name: 'Assistente', level: 1 })).toBeVisible();
   await expect(page.getByText('Para usar o assistente, ativa primeiro o assistente de IA.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Perguntar' })).toHaveCount(0);
+
+  // Revisões: sem perguntas ainda, e sem IA ativa não se criam quizzes.
+  await page.getByRole('link', { name: 'Revisões', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Revisões', level: 1 })).toBeVisible();
+  await expect(page.getByText('Não tens revisões para agora.')).toBeVisible();
+  await expect(page.getByText('Para criar quizzes, ativa primeiro o assistente de IA.')).toBeVisible();
+  const reviews = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(reviews.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual(
+    [],
+  );
 });
 
 test('outra conta: IA indisponível e sem botão para a ativar', async ({ page }) => {
@@ -50,4 +60,5 @@ test('outra conta: IA indisponível e sem botão para a ativar', async ({ page }
   await expect(card.getByRole('button')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Documentos' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Assistente', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Revisões', exact: true })).toHaveCount(0);
 });
