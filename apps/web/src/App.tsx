@@ -21,6 +21,7 @@ const ImportPage = lazyPage(() => import('./pages/ImportPage'), 'ImportPage');
 const IntegrationsPage = lazyPage(() => import('./pages/IntegrationsPage'), 'IntegrationsPage');
 const OnboardingPage = lazyPage(() => import('./pages/OnboardingPage'), 'OnboardingPage');
 const PlanPage = lazyPage(() => import('./pages/PlanPage'), 'PlanPage');
+const FinancesPage = lazyPage(() => import('./pages/FinancesPage'), 'FinancesPage');
 const QuizPage = lazyPage(() => import('./pages/QuizPage'), 'QuizPage');
 const ReviewsPage = lazyPage(() => import('./pages/ReviewsPage'), 'ReviewsPage');
 const PreferencesPage = lazyPage(() => import('./pages/PreferencesPage'), 'PreferencesPage');
@@ -72,6 +73,7 @@ export function App() {
             <Route path="assistente" element={<AssistantPage />} />
             <Route path="revisoes" element={<ReviewsPage />} />
             <Route path="revisoes/quiz/:id" element={<QuizPage />} />
+            <Route path="financas" element={<FinancesPage />} />
             <Route path="conta" element={<AccountPage />} />
             <Route path="*" element={<NotFound />} />
           </Route>

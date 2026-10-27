@@ -6,5 +6,6 @@ export * from './imports.js';
 export * from './documents.js';
 export * from './assistant.js';
 export * from './study.js';
+export * from './finance.js';
 export * from './planner.js';
 export * from './workload.js';

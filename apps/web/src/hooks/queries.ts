@@ -8,6 +8,12 @@ import type {
   DisciplineCreateInput,
   DocumentConfirmItem,
   DocumentCreateInput,
+  FinanceInsightView,
+  FinanceSummary,
+  FinanceTransactionView,
+  GoalCreateInput,
+  SavingsGoalView,
+  TransactionCreateInput,
   QuizAnswerInput,
   QuizCreateInput,
   QuizSummary,
@@ -502,5 +508,88 @@ export function useAnswerQuiz(id: number) {
       queryClient.setQueryData(['quiz', id], quiz);
       return Promise.all(['quizzes', 'reviews'].map((key) => queryClient.invalidateQueries({ queryKey: [key] })));
     },
+  });
+}
+
+/** Tudo o que é das finanças fica sob ['finances', …]: uma mudança invalida o conjunto. */
+function useInvalidateFinances() {
+  const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: ['finances'] });
+}
+
+export const useFinanceSummary = (month: string) =>
+  useQuery({
+    queryKey: ['finances', 'summary', month],
+    queryFn: () => api<FinanceSummary>(`/finances/summary?month=${month}`),
+  });
+
+export const useTransactions = (month: string) =>
+  useQuery({
+    queryKey: ['finances', 'transactions', month],
+    queryFn: () => api<FinanceTransactionView[]>(`/finances/transactions?month=${month}`),
+  });
+
+export const useFinanceCategories = () =>
+  useQuery({
+    queryKey: ['finances', 'categories'],
+    queryFn: () => api<{ id: number; kind: 'EXPENSE' | 'INCOME'; name: string }[]>('/finances/categories'),
+  });
+
+export function useAddTransaction() {
+  const invalidate = useInvalidateFinances();
+  return useMutation({
+    mutationFn: (input: TransactionCreateInput) =>
+      api<FinanceTransactionView>('/finances/transactions', { method: 'POST', body: input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteTransaction() {
+  const invalidate = useInvalidateFinances();
+  return useMutation({
+    mutationFn: (id: number) => api(`/finances/transactions/${id}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+export const useGoals = () =>
+  useQuery({ queryKey: ['finances', 'goals'], queryFn: () => api<SavingsGoalView[]>('/finances/goals') });
+
+export function useCreateGoal() {
+  const invalidate = useInvalidateFinances();
+  return useMutation({
+    mutationFn: (input: GoalCreateInput) => api<SavingsGoalView>('/finances/goals', { method: 'POST', body: input }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useAddToGoal() {
+  const invalidate = useInvalidateFinances();
+  return useMutation({
+    mutationFn: ({ id, amountCents }: { id: number; amountCents: number }) =>
+      api<SavingsGoalView>(`/finances/goals/${id}/add`, { method: 'POST', body: { amountCents } }),
+    onSuccess: invalidate,
+  });
+}
+
+export function useDeleteGoal() {
+  const invalidate = useInvalidateFinances();
+  return useMutation({
+    mutationFn: (id: number) => api(`/finances/goals/${id}`, { method: 'DELETE' }),
+    onSuccess: invalidate,
+  });
+}
+
+export const useLatestInsight = () =>
+  useQuery({
+    queryKey: ['finances', 'insight'],
+    queryFn: () => api<FinanceInsightView | null>('/finances/insights/latest'),
+  });
+
+export function useCreateInsight() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<FinanceInsightView>('/finances/insights', { method: 'POST', expectSlow: true }),
+    onSuccess: (insight) => queryClient.setQueryData(['finances', 'insight'], insight),
   });
 }

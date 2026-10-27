@@ -11,6 +11,7 @@ import {
   LogOut,
   MessagesSquare,
   Repeat,
+  Wallet,
   MoreHorizontal,
   Timer,
   UserRound,
@@ -45,6 +46,7 @@ const aiItems: NavItem[] = [
   { to: '/documentos', label: 'Documentos', icon: ScanText, end: false },
   { to: '/assistente', label: 'Assistente', icon: MessagesSquare, end: false },
   { to: '/revisoes', label: 'Revisões', icon: Repeat, end: false },
+  { to: '/financas', label: 'Finanças', icon: Wallet, end: false },
 ];
 
 function useNav(): NavItem[] {

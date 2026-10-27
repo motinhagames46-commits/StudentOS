@@ -46,7 +46,7 @@ Projeto académico (cerca de 110 h, custo de alojamento 0 €, planos gratuitos)
 
 ## Suposições e decisões pendentes
 
-- Assistente de IA: decidido a 2026-10-26 — só a conta do dono, com consentimento, em cinco passos (fundação, documentos, assistente com fontes, quizzes com FSRS, finanças). Feitos: fundação, documentos, assistente e quizzes com revisões.
+- Assistente de IA: decidido a 2026-10-26 — só a conta do dono, com consentimento, em cinco passos (fundação, documentos, assistente com fontes, quizzes com FSRS, finanças). Feitos todos: fundação, documentos, assistente, quizzes com revisões e finanças.
 - Página de entrada, questionário e painel Gentelella (ramo `feat/primeira-impressao`): monetização, público, «Quem fez», arranque a frio e outras perguntas em [`docs/decisoes-pendentes.md`](docs/decisoes-pendentes.md), cada uma com a suposição usada.
 - Datas das avaliações chegam durante o semestre; até lá o plano usa o ritmo pelos ECTS.
 - CI do GitHub não corre enquanto a faturação da conta estiver bloqueada; a bateria local é a barreira antes de cada push.
@@ -57,7 +57,7 @@ Os do spec (§6 histórias de utilizador e §19 da especificação de implementa
 
 ## Próxima entrega
 
-Passo 5 da IA (finanças com dicas de poupança), depois de verificados os passos anteriores com a chave real. Outros candidatos: os itens adiados registados em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e no README (datas aproximadas em lote, PWA).
+Verificar os cinco passos da IA com a chave real do Gemini (documentos, assistente, quizzes, dicas de poupança). Outros candidatos: os itens adiados registados em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e no README (datas aproximadas em lote, PWA). Outros candidatos: os itens adiados registados em [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) e no README (datas aproximadas em lote, PWA).
 
 ## Manutenção
 

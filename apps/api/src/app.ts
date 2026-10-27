@@ -21,6 +21,7 @@ import { authRouter } from './routes/auth.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { disciplinesRouter } from './routes/disciplines.js';
 import { documentsRouter } from './routes/documents.js';
+import { financesRouter } from './routes/finances.js';
 import { importsRouter } from './routes/imports.js';
 import { insightsRouter } from './routes/insights.js';
 import { integrationsRouter } from './routes/integrations.js';
@@ -83,6 +84,7 @@ export function createApp() {
         '/assistant/ask',
         '/quizzes',
         '/quizzes/:id/answer',
+        '/finances/insights',
       ],
       requireAuth,
       costly,
@@ -113,6 +115,7 @@ export function createApp() {
   api.use('/assistant', ...authed, assistantRouter);
   api.use('/quizzes', ...authed, quizzesRouter);
   api.use('/reviews', ...authed, reviewsRouter);
+  api.use('/finances', ...authed, financesRouter);
   api.use(['/stats', '/calendar', '/alerts'], ...authed);
   api.use(insightsRouter);
   api.use(apiNotFound);

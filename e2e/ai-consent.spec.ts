@@ -50,6 +50,19 @@ test('conta autorizada: ativar e desligar a IA com consentimento registado', asy
   expect(reviews.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual(
     [],
   );
+
+  // Finanças: registar uma despesa não precisa de IA; as dicas sim.
+  await page.getByRole('link', { name: 'Finanças', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Finanças', level: 1 })).toBeVisible();
+  await page.getByLabel('Valor (€)').first().fill('12,50');
+  await page.getByLabel('Categoria (opcional)').fill('Cantina');
+  await page.getByRole('button', { name: 'Registar' }).click();
+  await expect(page.getByText('−12,50 €')).toBeVisible();
+  await expect(page.getByText('Para pedir dicas de poupança, ativa primeiro o assistente de IA.')).toBeVisible();
+  const finances = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
+  expect(finances.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual(
+    [],
+  );
 });
 
 test('outra conta: IA indisponível e sem botão para a ativar', async ({ page }) => {
@@ -61,4 +74,5 @@ test('outra conta: IA indisponível e sem botão para a ativar', async ({ page }
   await expect(page.getByRole('link', { name: 'Documentos' })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Assistente', exact: true })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Revisões', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Finanças', exact: true })).toHaveCount(0);
 });

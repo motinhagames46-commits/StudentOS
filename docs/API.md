@@ -193,6 +193,24 @@ Criar e corrigir quizzes exige a IA ativa; ver quizzes e fazer revisões não. Q
 | POST   | `/api/reviews/:id`        | `{ rating }` (1 errei, 2 difícil, 3 bem, 4 fácil): FSRS agenda a próxima; retenção 0,95 se houver avaliação da disciplina nos próximos 7 dias, senão 0,90. Duas revisões em simultâneo: a segunda dá 409 `CARD_ALREADY_REVIEWED`.                                     |
 | DELETE | `/api/reviews/:id`        | Apaga a pergunta e o histórico dela.                                                                                                                                                                                                                                  |
 
+### Finanças
+
+Valores em cêntimos inteiros (EUR); `month` é `aaaa-mm` (por omissão, o mês atual em Lisboa). Dados de outra conta dão 404. Só as dicas pedem a IA ativa.
+
+| Método | Rota                             | Descrição                                                                                                                                                                                                                            |
+| ------ | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/finances/transactions`     | Movimentos do mês (`?month=`), com o nome da categoria.                                                                                                                                                                              |
+| POST   | `/api/finances/transactions`     | `{ kind: EXPENSE \| INCOME, amountCents, occurredOn, category?, note? }`. A categoria (por nome e tipo) é criada à primeira vez.                                                                                                     |
+| DELETE | `/api/finances/transactions/:id` | Apaga o movimento.                                                                                                                                                                                                                   |
+| GET    | `/api/finances/categories`       | Categorias da conta (para sugerir ao escrever).                                                                                                                                                                                      |
+| GET    | `/api/finances/summary`          | Totais do mês, por categoria, e os 6 meses até ele.                                                                                                                                                                                  |
+| GET    | `/api/finances/goals`            | Objetivos de poupança.                                                                                                                                                                                                               |
+| POST   | `/api/finances/goals`            | `{ name, targetCents, savedCents?, deadline? }`.                                                                                                                                                                                     |
+| POST   | `/api/finances/goals/:id/add`    | `{ amountCents }`: soma ao poupado no servidor (dois separadores não se sobrepõem); 400 se passar do máximo.                                                                                                                         |
+| DELETE | `/api/finances/goals/:id`        | Apaga o objetivo.                                                                                                                                                                                                                    |
+| GET    | `/api/finances/insights/latest`  | Últimas dicas e os agregados em que se basearam (ou `null`).                                                                                                                                                                         |
+| POST   | `/api/finances/insights`         | (IA ativa) Dicas de poupança a partir das médias por mês dos últimos 3 meses completos com movimentos: receitas, despesas, despesas por categoria, taxa de poupança e objetivos sem nome. 422 `NOT_ENOUGH_DATA` sem um mês completo. |
+
 ## Integrações
 
 | Método | Caminho             | Descrição                                                                                                                               |
