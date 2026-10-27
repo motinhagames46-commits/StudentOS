@@ -95,7 +95,7 @@ export function TodayPlan() {
                     {formatTime(s.startAt)}–{formatTime(s.endAt)}
                   </span>
                   <span className="min-w-0 flex-1 truncate text-sm text-stone-900">
-                    {studyTitle(s.task?.title ?? s.assessment?.name, s.discipline?.code)}
+                    {studyTitle(s.isReview ? 'Revisões' : (s.task?.title ?? s.assessment?.name), s.discipline?.code)}
                   </span>
                   <Badge tone={s.status === 'COMPLETED' ? 'green' : s.status === 'MISSED' ? 'red' : 'accent'}>
                     {statusLabels[s.status]}
@@ -116,9 +116,13 @@ export function TodayPlan() {
  * fica ligada ao foco, como em «Começar foco» no plano; um item leva a sua disciplina, se tiver.
  */
 export function focusStartFor(suggestion: Suggestion): StudySessionStartInput | null {
-  if (suggestion.kind === 'session') return { plannedSessionId: suggestion.session.id };
-  if (suggestion.kind === 'item')
+  if (suggestion.kind === 'session')
+    return suggestion.session.isReview ? null : { plannedSessionId: suggestion.session.id };
+  if (suggestion.kind === 'item') {
+    // As revisões fazem-se na página delas, não com o temporizador.
+    if (suggestion.item.type === 'review') return null;
     return suggestion.item.disciplineId ? { disciplineId: suggestion.item.disciplineId } : {};
+  }
   return null;
 }
 
@@ -152,6 +156,18 @@ function SuggestionBox({ suggestion }: { suggestion: Suggestion }) {
           )}
         </span>
       </p>
+      {((suggestion.kind === 'item' && suggestion.item.type === 'review') ||
+        (suggestion.kind === 'session' && suggestion.session.isReview)) && (
+        <div className="pl-6">
+          <Link
+            to="/revisoes"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+          >
+            <Play aria-hidden="true" className="size-4" />
+            Rever agora
+          </Link>
+        </div>
+      )}
       {focus && (
         <div className="pl-6">
           <Button

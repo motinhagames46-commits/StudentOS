@@ -3,9 +3,12 @@
 import {
   DEFAULT_PLANNER_PREFERENCES,
   DEFAULT_TIMEZONE,
+  addDaysToKey,
   ectsPace,
   ectsPaceNote,
   minutesByDay,
+  startOfZonedDay,
+  zonedDayKey,
   type EctsPaceMissing,
   type Interval,
   type PlannerInput,
@@ -15,6 +18,12 @@ import {
 import type { PlannedSession } from '../generated/prisma/client.js';
 import { blockOccurrences } from './calendar.js';
 import { prisma } from './prisma.js';
+
+/** shortcut: estimativa fixa por pergunta; passa a média real dos CardReview quando houver histórico. */
+const REVIEW_MINUTES_PER_CARD = 1.5;
+
+/** Minutos para as revisões devidas, em blocos de 5 (a grelha do planeador). */
+export const reviewMinutes = (cards: number) => Math.ceil((cards * REVIEW_MINUTES_PER_CARD) / 5) * 5;
 
 const ASSESSMENT_LABELS: Record<string, string> = {
   TEST: 'Teste',
@@ -66,7 +75,9 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
     maxDailyMinutes: preferences.maxDailyMinutes,
   };
 
-  const [blocks, sessions, tasks, assessments] = await Promise.all([
+  const todayKey = zonedDayKey(now, DEFAULT_TIMEZONE);
+  const endOfToday = startOfZonedDay(addDaysToKey(todayKey, 1), DEFAULT_TIMEZONE);
+  const [blocks, sessions, tasks, assessments, dueCards] = await Promise.all([
     blockOccurrences(userId, from, to),
     prisma.plannedSession.findMany({ where: { userId, status: { not: 'CANCELLED' } } }),
     prisma.task.findMany({
@@ -78,6 +89,7 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       where: { discipline: { userId, archivedAt: null }, score: null, OR: [{ date: null }, { date: { gt: now } }] },
       include: { discipline: { select: { id: true, code: true, ects: true, semesterId: true } } },
     }),
+    prisma.studyCard.count({ where: { userId, due: { lt: endOfToday } } }),
   ]);
 
   const protectedSessions = sessions.filter((s) => isProtected(s, now));
@@ -178,6 +190,30 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       };
     }),
   ];
+
+  // Revisões devidas até ao fim de hoje: um item com prazo hoje, só quando o período inclui hoje.
+  // O que já foi revisto já não está devido; desconta-se só o tempo reservado em blocos de revisão fixados ou a
+  // decorrer. Um teto diário evita que um atraso grande de revisões ocupe o dia todo.
+  if (dueCards > 0 && from < endOfToday) {
+    const reserved = protectedSessions
+      .filter((s) => s.isReview && s.status === 'PLANNED' && zonedDayKey(s.startAt, DEFAULT_TIMEZONE) === todayKey)
+      .reduce((sum, s) => sum + s.plannedMinutes, 0);
+    const cap = Math.max(5, Math.floor(prefs.maxDailyMinutes / 4 / 5) * 5);
+    items.push({
+      type: 'review',
+      id: 0,
+      title: `Revisões (${dueCards} ${dueCards === 1 ? 'pergunta' : 'perguntas'})`,
+      disciplineId: null,
+      disciplineCode: null,
+      // 23:59 de hoje, como um prazo sem hora (à meia-noite já seria «amanhã» na explicação).
+      deadline: new Date(endOfToday.getTime() - 60_000),
+      remainingMinutes: Math.max(0, Math.min(reviewMinutes(dueCards), cap) - reserved),
+      priority: 'MEDIUM',
+      weightPercent: null,
+      missedCount: 0,
+      label: 'Repetição espaçada',
+    });
+  }
 
   const protectedIntervals = protectedSessions.filter(inRange).map((s) => ({ start: s.startAt, end: s.endAt }));
   return {

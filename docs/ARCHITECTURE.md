@@ -82,6 +82,8 @@ Fluxo obrigatório do spec §8.2: **ficheiro → validação → pré-visualiza�
 
 `planStudy()` em `packages/shared/src/planner.ts` é uma **função pura**: o mesmo input produz sempre o mesmo plano, e não usa IA.
 
+**Revisões devidas:** além das tarefas e avaliações, `buildPlannerContext` junta um item `review` quando há perguntas de repetição espaçada devidas até ao fim do dia e o período do plano inclui hoje: prazo às 23:59, prioridade média e 1,5 min por pergunta em blocos de 5 (estimativa fixa; passa a média real das revisões quando houver histórico), com teto de um quarto do limite diário, menos o tempo já reservado hoje em blocos de revisão fixados ou a decorrer (o que já foi revisto deixa de estar devido, por isso não se desconta duas vezes). A confirmação deixa cair o bloco se entretanto já não houver perguntas devidas. As sessões confirmadas ficam com `PlannedSession.isReview` (migração aditiva), aparecem como «Estudar · Revisões» e levam à página das revisões («Rever agora») em vez do temporizador.
+
 **Construção do plano:**
 
 1. **Janelas livres:** a disponibilidade semanal, em hora local, menos os blocos ocupados (aulas, eventos e sessões protegidas) e menos o passado. A grelha é de 5 minutos.

@@ -2,10 +2,14 @@
 // pergunta: as perguntas passam a cartões FSRS. As revisões diárias não usam IA (autoavaliação na resposta curta).
 import { Router } from 'express';
 import {
+  DEFAULT_TIMEZONE,
+  addDaysToKey,
   cardReviewSchema,
   idParamSchema,
   quizAnswerSchema,
   quizCreateSchema,
+  startOfZonedDay,
+  zonedDayKey,
   type QuizResultQuestion,
   type QuizSummary,
   type QuizVerdict,
@@ -145,6 +149,8 @@ quizzesRouter.post('/:id/answer', requireAi, async (req, res) => {
     throw validationError([{ path: 'answers', message: 'Responde (ou deixa em branco) a todas as perguntas' }]);
   }
 
+  // shortcut: a correção pela IA corre antes de reclamar o quiz; dois envios em simultâneo pagam dois pedidos à IA
+  // (só um grava). O botão fica desativado enquanto corrige; um marcador «a corrigir» resolve se for preciso.
   const shortIndexes = questions.flatMap((q, i) => (q.kind === 'SHORT' ? [i] : []));
   const shortGrades = await gradeShortAnswers(
     aiProvider()!,
@@ -215,14 +221,14 @@ function cardView(card: StudyCard): ReviewCardView {
   };
 }
 
-// GET /api/reviews — perguntas devidas agora (as mais atrasadas primeiro).
+// GET /api/reviews — perguntas devidas até ao fim de hoje (o mesmo limite do planeador), as mais atrasadas primeiro.
 reviewsRouter.get('/', async (req, res) => {
-  const now = new Date();
-  const where = { userId: req.userId, due: { lte: now } };
+  const endOfToday = startOfZonedDay(addDaysToKey(zonedDayKey(new Date(), DEFAULT_TIMEZONE), 1), DEFAULT_TIMEZONE);
+  const where = { userId: req.userId, due: { lt: endOfToday } };
   const [cards, dueCount, next] = await Promise.all([
     prisma.studyCard.findMany({ where, orderBy: [{ due: 'asc' }, { id: 'asc' }], take: 50 }),
     prisma.studyCard.count({ where }),
-    prisma.studyCard.findFirst({ where: { userId: req.userId, due: { gt: now } }, orderBy: { due: 'asc' } }),
+    prisma.studyCard.findFirst({ where: { userId: req.userId, due: { gte: endOfToday } }, orderBy: { due: 'asc' } }),
   ]);
   const queue: ReviewQueue = { cards: cards.map(cardView), dueCount, nextDue: next?.due.toISOString() ?? null };
   res.json(queue);
@@ -243,11 +249,16 @@ reviewsRouter.post('/:id', async (req, res) => {
   const next = await nextAssessments(req.userId, [card.disciplineId], now);
   const retention = retentionFor(next.get(card.disciplineId ?? -1) ?? null, now);
   const { card: state, log } = reviewCard(card, rating as Grade, now, retention);
-  const updated = await prisma.studyCard.update({
-    where: { id },
-    data: { ...state, reviews: { create: { ...log, userId: req.userId } } },
+  await prisma.$transaction(async (tx) => {
+    // Só grava se ninguém a reviu entretanto (outro separador, pedido repetido): sem revisões perdidas.
+    const { count } = await tx.studyCard.updateMany({
+      where: { id, userId: req.userId, reps: card.reps },
+      data: state,
+    });
+    if (!count) throw new HttpError(409, 'CARD_ALREADY_REVIEWED', 'Esta pergunta acabou de ser revista.');
+    await tx.cardReview.create({ data: { ...log, cardId: id, userId: req.userId } });
   });
-  res.json({ due: updated.due.toISOString(), retention });
+  res.json({ due: state.due.toISOString(), retention });
 });
 
 // DELETE /api/reviews/:id — apaga uma pergunta (por exemplo, mal feita pela IA) e o histórico dela.

@@ -75,6 +75,7 @@ export async function generateQuiz(ai: AiProvider, text: string, count: number) 
 const gradeSchema = z.object({
   grades: z.array(
     z.object({
+      n: z.number().int().describe('Número da resposta corrigida'),
       verdict: z.enum(['correct', 'partial', 'wrong']),
       feedback: z.string().describe('Uma ou duas frases: o que está certo e o que falta'),
     }),
@@ -99,17 +100,19 @@ export async function gradeShortAnswers(
   }));
   if (toGrade.length === 0) return results;
 
+  // Cada resposta vai como JSON (o texto do estudante entre aspas, não solto no pedido).
   const listing = toGrade
-    .map(
-      (g, n) => `${n + 1}. Pergunta: ${g.question}\nEsperado: ${g.expectedAnswer}\nResposta do estudante: ${g.answer}`,
-    )
-    .join('\n\n');
+    .map((g, n) => JSON.stringify({ n: n + 1, pergunta: g.question, esperado: g.expectedAnswer, resposta: g.answer }))
+    .join('\n');
   const { grades } = await ai.generateJson(gradeSchema, [{ text: listing }], { system: GRADE_PROMPT });
-  if (grades.length !== toGrade.length) {
-    throw new AiError('AI_INVALID_RESPONSE', 'A correção da IA não veio no formato esperado.');
-  }
+  // Liga cada correção ao seu número: uma resposta reordenada, repetida ou em falta é recusada.
+  const byNumber = new Map(grades.map((g) => [g.n, g]));
+  const invalid = () => new AiError('AI_INVALID_RESPONSE', 'A correção da IA não veio no formato esperado.');
+  if (grades.length !== toGrade.length || byNumber.size !== toGrade.length) throw invalid();
   toGrade.forEach((g, n) => {
-    results[g.i] = { verdict: grades[n]!.verdict, feedback: grades[n]!.feedback.trim().slice(0, 500) || null };
+    const grade = byNumber.get(n + 1);
+    if (!grade) throw invalid();
+    results[g.i] = { verdict: grade.verdict, feedback: grade.feedback.trim().slice(0, 500) || null };
   });
   return results;
 }

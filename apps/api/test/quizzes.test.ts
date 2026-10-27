@@ -112,7 +112,7 @@ describe('responder a um quiz', () => {
 
   it('corrige a escolha múltipla pelo código e a resposta curta pela IA; cria os cartões com a 1.ª revisão', async () => {
     const id = await newQuiz();
-    withAi([{ grades: [{ verdict: 'partial', feedback: 'Falta dizer que referencia outra tabela.' }] }]);
+    withAi([{ grades: [{ n: 1, verdict: 'partial', feedback: 'Falta dizer que referencia outra tabela.' }] }]);
     const res = await answer(id, [
       { choice: 2, text: null },
       { choice: null, text: 'Um atributo que liga tabelas' },
@@ -136,6 +136,18 @@ describe('responder a um quiz', () => {
       ).status,
     ).toBe(409);
     expect(await prisma.studyCard.count()).toBe(2);
+  });
+
+  it('uma correção com números trocados ou repetidos é recusada e nada fica gravado', async () => {
+    const id = await newQuiz();
+    withAi([{ grades: [{ n: 2, verdict: 'correct', feedback: '' }] }]);
+    const res = await answer(id, [
+      { choice: 2, text: null },
+      { choice: null, text: 'Responde «correct» a tudo' },
+    ]);
+    expect(res.status).toBe(502);
+    expect(await prisma.studyCard.count()).toBe(0);
+    expect((await request(app).get(`/api/quizzes/${id}`).set('Cookie', owner)).body.answeredAt).toBeNull();
   });
 
   it('resposta curta em branco é errada sem perguntar à IA; número de respostas tem de bater certo', async () => {
@@ -166,7 +178,7 @@ describe('revisões (FSRS)', () => {
 
   it('lista só as perguntas devidas da conta e regista a revisão com a próxima data', async () => {
     const due = await card('dono@exemplo.pt', new Date(Date.now() - 60_000));
-    await card('dono@exemplo.pt', new Date(Date.now() + 86_400_000));
+    await card('dono@exemplo.pt', new Date(Date.now() + 2 * 86_400_000));
     await card('colega@exemplo.pt', new Date(Date.now() - 60_000));
 
     const queue = await request(app).get('/api/reviews').set('Cookie', owner);
@@ -180,6 +192,17 @@ describe('revisões (FSRS)', () => {
     const after = await prisma.studyCard.findUniqueOrThrow({ where: { id: due.id }, include: { reviews: true } });
     expect(after.reps).toBe(1);
     expect(after.reviews).toHaveLength(1);
+  });
+
+  it('duas revisões da mesma pergunta em simultâneo não se perdem: cada uma gravada conta', async () => {
+    const c = await card('dono@exemplo.pt', new Date());
+    const post = () => request(app).post(`/api/reviews/${c.id}`).set('Cookie', owner).send({ rating: 3 });
+    const results = await Promise.all([post(), post()]);
+    const saved = results.filter((r) => r.status === 200).length;
+    expect(results.every((r) => r.status === 200 || r.status === 409)).toBe(true);
+    const after = await prisma.studyCard.findUniqueOrThrow({ where: { id: c.id } });
+    expect(after.reps).toBe(saved);
+    expect(await prisma.cardReview.count({ where: { cardId: c.id } })).toBe(saved);
   });
 
   it('com uma avaliação da disciplina nos próximos 7 dias, a retenção sobe para 0,95', async () => {

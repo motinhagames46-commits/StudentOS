@@ -115,7 +115,7 @@ meRouter.get('/calendar.ics', async (req, res) => {
   const events: ExportEvent[] = [
     ...sessions.map((s) => ({
       uid: `planned-session-${s.id}@studentos`,
-      summary: title('Estudar', s.discipline?.code, s.task?.title ?? s.assessment?.name),
+      summary: title('Estudar', s.discipline?.code, s.isReview ? 'Revisões' : (s.task?.title ?? s.assessment?.name)),
       description: title(`Sessão de estudo planeada no StudentOS (${s.plannedMinutes} min)`, s.discipline?.name),
       lastModified: s.updatedAt,
       when: { start: s.startAt, end: s.endAt },

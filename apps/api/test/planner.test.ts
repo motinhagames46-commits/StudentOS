@@ -281,6 +281,113 @@ describe('confirmação e replaneamento', () => {
   });
 });
 
+describe('revisões devidas (repetição espaçada)', () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('entram no plano de hoje com tempo pelas perguntas devidas e ficam guardadas como revisões', async () => {
+    const day = tomorrow(); // antes de mudar a hora: depois, «amanhã» já seria outro dia
+    const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+    const nine = zonedToInstant(y, m, d, 9, 0, DEFAULT_TIMEZONE);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(nine);
+    await setAvailability(ines);
+    const due = new Date(nine.getTime() - HOUR);
+    await prisma.studyCard.createMany({
+      data: Array.from({ length: 7 }, (_, i) => ({
+        kind: 'SHORT' as const,
+        question: `P${i}`,
+        due,
+        userId: inesUserId,
+      })),
+    });
+    // Devida amanhã: não conta para hoje.
+    await prisma.studyCard.create({
+      data: { kind: 'SHORT', question: 'Depois', due: new Date(nine.getTime() + DAY), userId: inesUserId },
+    });
+
+    const { body: plan } = await preview(ines);
+    const reviews = plan.proposal.sessions.filter((s: { type: string }) => s.type === 'review');
+    expect(reviews).toHaveLength(1);
+    // 7 perguntas × 1,5 min = 10,5 → 15 min (blocos de 5)
+    expect(reviews[0]).toMatchObject({ minutes: 15, title: 'Revisões (7 perguntas)', itemId: 0 });
+    expect(zonedDayKey(new Date(reviews[0].start), DEFAULT_TIMEZONE)).toBe(day);
+    expect(reviews[0].reason).toMatch(/Repetição espaçada «Revisões \(7 perguntas\)» é hoje/);
+
+    await request(app).post(`/api/planner/${plan.id}/confirm`).set('Cookie', ines);
+    const stored = await prisma.plannedSession.findFirstOrThrow({ where: { isReview: true } });
+    expect(stored).toMatchObject({ taskId: null, assessmentId: null, plannedMinutes: 15 });
+  });
+
+  it('desconta só o tempo reservado (não o já revisto), tem teto diário e não entra em planos de outros dias', async () => {
+    const day = tomorrow();
+    const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+    const nine = zonedToInstant(y, m, d, 9, 0, DEFAULT_TIMEZONE);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(nine);
+    await setAvailability(ines);
+    expect((await preview(ines)).body.proposal.sessions).toEqual([]);
+
+    const addDue = (n: number) =>
+      prisma.studyCard.createMany({
+        data: Array.from({ length: n }, (_, i) => ({
+          kind: 'SHORT' as const,
+          question: `P${i}`,
+          due: new Date(nine.getTime() - HOUR),
+          userId: inesUserId,
+        })),
+      });
+    const reviewOf = (body: { proposal: { sessions: { type: string; minutes: number }[] } }) =>
+      body.proposal.sessions.filter((s) => s.type === 'review').reduce((sum, s) => sum + s.minutes, 0);
+    const reviewBlock = (status: 'COMPLETED' | 'PLANNED', offset: number) =>
+      prisma.plannedSession.create({
+        data: {
+          userId: inesUserId,
+          isReview: true,
+          status,
+          pinned: status === 'PLANNED',
+          startAt: new Date(nine.getTime() + offset),
+          endAt: new Date(nine.getTime() + offset + 10 * 60_000),
+          plannedMinutes: 10,
+          reason: 'Revisões',
+        },
+      });
+
+    await addDue(7);
+    // Um bloco já concluído não desconta: as perguntas que foram revistas já não estão devidas.
+    await reviewBlock('COMPLETED', -2 * HOUR);
+    expect(reviewOf((await preview(ines)).body)).toBe(15);
+    // Um bloco fixado mais logo reserva 10 min: falta propor 5.
+    await reviewBlock('PLANNED', 3 * HOUR);
+    expect(reviewOf((await preview(ines)).body)).toBe(5);
+
+    // Atraso grande: no máximo um quarto do limite diário (180 min → 45), menos os 10 reservados.
+    await addDue(40);
+    expect(reviewOf((await preview(ines)).body)).toBe(35);
+
+    // Um plano que só começa noutro dia não leva as revisões de hoje (nem avisa de falta de tempo).
+    const { body: later } = await preview(ines, { from: addDaysToKey(day, 1) });
+    expect(reviewOf(later)).toBe(0);
+    expect(later.proposal.unplanned).toEqual([]);
+  });
+
+  it('se as perguntas forem revistas antes de confirmar, a confirmação não cria o bloco de revisões', async () => {
+    const day = tomorrow();
+    const [y, m, d] = day.split('-').map(Number) as [number, number, number];
+    const nine = zonedToInstant(y, m, d, 9, 0, DEFAULT_TIMEZONE);
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(nine);
+    await setAvailability(ines);
+    await prisma.studyCard.create({
+      data: { kind: 'SHORT', question: 'P', due: new Date(nine.getTime() - HOUR), userId: inesUserId },
+    });
+    const { body: plan } = await preview(ines);
+    expect(plan.proposal.sessions).toHaveLength(1);
+    await prisma.studyCard.updateMany({ data: { due: new Date(nine.getTime() + 3 * DAY) } });
+    await request(app).post(`/api/planner/${plan.id}/confirm`).set('Cookie', ines);
+    expect(await prisma.plannedSession.count({ where: { isReview: true } })).toBe(0);
+  });
+});
+
 describe('isolamento por utilizador', () => {
   it('outro utilizador não confirma o plano nem mexe nas sessões (404)', async () => {
     await setAvailability(ines);

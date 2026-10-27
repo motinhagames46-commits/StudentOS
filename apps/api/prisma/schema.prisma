@@ -357,6 +357,8 @@ model PlannedSession {
   status         PlannedSessionStatus @default(PLANNED)
   pinned         Boolean              @default(false)
   reason         String
+  /// Sessão para as revisões devidas (repetição espaçada), sem tarefa nem avaliação.
+  isReview       Boolean              @default(false)
   completedAt    DateTime?
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt

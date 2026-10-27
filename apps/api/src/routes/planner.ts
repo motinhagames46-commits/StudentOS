@@ -160,10 +160,12 @@ plannerRouter.post('/:id/confirm', async (req, res) => {
   }
 
   const proposal = plan.proposal as unknown as StoredProposal;
-  // O que começou entretanto (o estudante demorou a confirmar) fica de fora, em vez de anular a proposta toda.
-  const sessions = proposal.sessions.filter((s) => new Date(s.start) >= now);
   const removals = proposal.removals.filter((r) => new Date(r.startAt) > now);
   const context = await buildPlannerContext(req.userId, plan.fromDate, plan.toDate, now);
+  // O que começou entretanto (o estudante demorou a confirmar) fica de fora, em vez de anular a proposta toda;
+  // e as revisões também, se entretanto já não houver perguntas devidas.
+  const reviewsDue = context.input.items.some((i) => i.type === 'review');
+  const sessions = proposal.sessions.filter((s) => new Date(s.start) >= now && (s.type !== 'review' || reviewsDue));
   const stale =
     sessions.some((s) => context.busy.some((b) => overlaps(b, { start: new Date(s.start), end: new Date(s.end) }))) ||
     removals.some((r) => !context.replaceable.some((c) => c.id === r.id));
@@ -195,6 +197,7 @@ plannerRouter.post('/:id/confirm', async (req, res) => {
         reason: s.reason,
         taskId: s.type === 'task' ? s.itemId : null,
         assessmentId: s.type === 'assessment' ? s.itemId : null,
+        isReview: s.type === 'review',
         disciplineId: s.disciplineId,
         planId: plan.id,
       })),
@@ -262,7 +265,9 @@ plannerRouter.get('/suggestion', async (req, res) => {
   if (current) {
     const item = input.items.find(
       (i) =>
-        (i.type === 'task' && i.id === current.taskId) || (i.type === 'assessment' && i.id === current.assessmentId),
+        (i.type === 'task' && i.id === current.taskId) ||
+        (i.type === 'assessment' && i.id === current.assessmentId) ||
+        (i.type === 'review' && current.isReview),
     );
     res.json({ kind: 'session', session: current, message: item ? describe(item) : 'Sessão de estudo planeada.' });
     return;

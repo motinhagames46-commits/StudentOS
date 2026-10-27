@@ -150,6 +150,7 @@ export interface PlannedSession {
   status: PlannedSessionStatus;
   pinned: boolean;
   reason: string;
+  isReview: boolean;
   protected?: boolean;
   task: { id: number; title: string; status: string } | null;
   assessment: { id: number; name: string; date: string | null } | null;
@@ -188,7 +189,7 @@ export type Suggestion =
   | { kind: 'session'; session: PlannedSession; message: string }
   | {
       kind: 'item';
-      item: { type: 'task' | 'assessment'; id: number; title: string; disciplineId: number | null };
+      item: { type: 'task' | 'assessment' | 'review'; id: number; title: string; disciplineId: number | null };
       /** O item mais urgente ainda não tem duração estimada: o planeador não lhe consegue reservar tempo. */
       needsEstimate?: boolean;
       message: string;

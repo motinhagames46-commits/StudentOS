@@ -41,7 +41,8 @@ export interface Interval {
   end: Date;
 }
 
-export type WorkRefType = 'task' | 'assessment';
+/** `review`: as perguntas de repetição espaçada devidas hoje (um item por dia, sem id próprio). */
+export type WorkRefType = 'task' | 'assessment' | 'review';
 
 export interface WorkItem {
   type: WorkRefType;

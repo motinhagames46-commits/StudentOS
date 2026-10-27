@@ -12,6 +12,7 @@ it('«Começar agora» numa sessão planeada liga o foco a essa sessão', () => 
     status: 'PLANNED',
     pinned: false,
     reason: '',
+    isReview: false,
     task: null,
     assessment: null,
     discipline: { id: 3, name: 'Programação Web', code: 'PW', color: null },
@@ -23,6 +24,11 @@ it('«Começar agora» num item usa a disciplina do item, ou nenhuma', () => {
   const item = { type: 'task' as const, id: 7, title: 'Relatório', disciplineId: 3 };
   expect(focusStartFor({ kind: 'item', item, message: '' })).toEqual({ disciplineId: 3 });
   expect(focusStartFor({ kind: 'item', item: { ...item, disciplineId: null }, message: '' })).toEqual({});
+});
+
+it('revisões devidas não começam o temporizador: fazem-se na página das revisões', () => {
+  const item = { type: 'review' as const, id: 0, title: 'Revisões (3 perguntas)', disciplineId: null };
+  expect(focusStartFor({ kind: 'item', item, message: '' })).toBeNull();
 });
 
 it('sem trabalho pendente não há nada para começar', () => {

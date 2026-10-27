@@ -149,7 +149,8 @@ function NewQuizCard() {
           {create.isPending && <span className="text-sm text-stone-600">A preparar as perguntas…</span>}
         </div>
         <p className="text-xs text-stone-600">
-          O texto dos documentos vai para a Google (Gemini) para criar as perguntas. Revê-as: a IA pode enganar-se.
+          O texto dos documentos vai para a Google (Gemini) para criar as perguntas. A IA pode enganar-se: se uma
+          pergunta estiver errada, apaga-a durante a revisão.
         </p>
       </div>
     </Card>

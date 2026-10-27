@@ -138,6 +138,8 @@ O tempo de foco de uma sessão é `endedAt − startedAt − pausedSeconds`. Ao 
 
 No painel, «Começar agora» aceita a sugestão (spec §11.7): chama `POST /api/study-sessions/start` com o `plannedSessionId` quando a sugestão é uma sessão planeada, ou com o `disciplineId` do item (tarefa ou avaliação), e abre as Sessões. Se já houver uma sessão em curso, o 409 leva a essa sessão em vez de criar outra.
 
+As perguntas de repetição espaçada devidas hoje entram na proposta como sessões `type: "review"` (`itemId: 0`); depois de confirmadas são sessões planeadas com `isReview: true`, sem tarefa nem avaliação.
+
 > **Diferença em relação ao spec §13:** o spec sugere `/api/study-sessions/:id/complete` e `/miss`. Aqui, `/api/study-sessions` regista o tempo real de foco e as sessões **planeadas** ficam em `/api/planned-sessions`. A confirmação do plano é `/api/planner/:id/confirm`, porque cada proposta tem identificador próprio.
 
 ## Transferir disciplinas para outra conta
@@ -187,8 +189,8 @@ Criar e corrigir quizzes exige a IA ativa; ver quizzes e fazer revisões não. Q
 | GET    | `/api/quizzes`            | Lista com a percentagem de acerto.                                                                                                                                                                                                                                    |
 | GET    | `/api/quizzes/:id`        | O quiz; as soluções só depois de corrigido.                                                                                                                                                                                                                           |
 | POST   | `/api/quizzes/:id/answer` | `{ answers: [{ choice, text }] }`, uma por pergunta. Escolha múltipla corrigida pelo código; resposta curta pela IA (em branco é errada). Cria um cartão FSRS por pergunta com a primeira revisão. 409 `QUIZ_ALREADY_ANSWERED`.                                       |
-| GET    | `/api/reviews`            | Perguntas devidas (até 50, as mais atrasadas primeiro), `dueCount` e `nextDue`.                                                                                                                                                                                       |
-| POST   | `/api/reviews/:id`        | `{ rating }` (1 errei, 2 difícil, 3 bem, 4 fácil): FSRS agenda a próxima; retenção 0,95 se houver avaliação da disciplina nos próximos 7 dias, senão 0,90.                                                                                                            |
+| GET    | `/api/reviews`            | Perguntas devidas até ao fim do dia (o mesmo limite do planeador; até 50, as mais atrasadas primeiro), `dueCount` e `nextDue`.                                                                                                                                        |
+| POST   | `/api/reviews/:id`        | `{ rating }` (1 errei, 2 difícil, 3 bem, 4 fácil): FSRS agenda a próxima; retenção 0,95 se houver avaliação da disciplina nos próximos 7 dias, senão 0,90. Duas revisões em simultâneo: a segunda dá 409 `CARD_ALREADY_REVIEWED`.                                     |
 | DELETE | `/api/reviews/:id`        | Apaga a pergunta e o histórico dela.                                                                                                                                                                                                                                  |
 
 ## Integrações

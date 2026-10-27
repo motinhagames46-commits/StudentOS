@@ -39,7 +39,7 @@ const statusTone = { PLANNED: 'accent', COMPLETED: 'green', MISSED: 'red', CANCE
 const longDay = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ });
 
 function sessionTitle(s: PlannedSession) {
-  return studyTitle(s.task?.title ?? s.assessment?.name, s.discipline?.code);
+  return studyTitle(s.isReview ? 'Revisões' : (s.task?.title ?? s.assessment?.name), s.discipline?.code);
 }
 
 /** Plano de estudo (spec §11.6): proposta → confirmação; ações por sessão; replaneamento. */
@@ -377,10 +377,20 @@ function SessionCard({
       {s.status === 'PLANNED' && (
         <div className="mt-3 space-y-3">
           <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" loading={startFocus.isPending} onClick={() => startFocus.mutate()}>
-              <Play aria-hidden="true" className="size-4" />
-              Começar foco
-            </Button>
+            {s.isReview ? (
+              <Link
+                to="/revisoes"
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+              >
+                <Play aria-hidden="true" className="size-4" />
+                Rever agora
+              </Link>
+            ) : (
+              <Button variant="secondary" loading={startFocus.isPending} onClick={() => startFocus.mutate()}>
+                <Play aria-hidden="true" className="size-4" />
+                Começar foco
+              </Button>
+            )}
             {started && (
               <div className="flex items-end gap-2">
                 <TextField
