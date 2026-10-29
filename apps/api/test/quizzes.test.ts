@@ -95,6 +95,28 @@ describe('POST /api/quizzes', () => {
     expect((await create({})).status).toBe(400);
   });
 
+  it('a IA lê o ficheiro original do documento quando está guardado', async () => {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
+    const pdf = Buffer.from('%PDF-1.4 esquema');
+    await prisma.documentFile.create({
+      data: {
+        documentId,
+        userId: user.id,
+        ordinal: 0,
+        filename: 'bd.pdf',
+        mimeType: 'application/pdf',
+        size: pdf.length,
+        data: new Uint8Array(pdf),
+      },
+    });
+    withAi([generated]);
+    expect((await create({ documentId })).status).toBe(201);
+    expect(fake.requests[0]).toContainEqual({
+      inlineData: { mimeType: 'application/pdf', data: pdf.toString('base64') },
+    });
+    expect(JSON.stringify(fake.requests[0])).not.toContain('A 3FN elimina');
+  });
+
   it('só com a IA ativa', async () => {
     const res = await create({ documentId }, other);
     expect(res.status).toBe(403);

@@ -157,6 +157,33 @@ describe('POST /api/assistant/ask', () => {
   });
 });
 
+describe('o assistente lê os documentos originais', () => {
+  it('envia o ficheiro guardado (com imagens) em vez do texto; sem ficheiro, envia o texto', async () => {
+    const withFile = await addChunk('dono@exemplo.pt', 'Diagrama ER', 'texto transcrito do diagrama', 0);
+    await addChunk('dono@exemplo.pt', 'Notas antigas', 'notas sem ficheiro guardado', 1);
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
+    const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2]);
+    await prisma.documentFile.create({
+      data: {
+        documentId: withFile,
+        userId: user.id,
+        ordinal: 0,
+        filename: 'er.png',
+        mimeType: 'image/png',
+        size: png.length,
+        data: new Uint8Array(png),
+      },
+    });
+
+    await ask([{ sufficient: true, answer: 'Resposta [1].', citations: [1] }], { question: 'Que entidades há?' });
+    const parts = fake.requests[0]!;
+    expect(parts).toContainEqual({ text: 'Documento [1]: «Diagrama ER»' });
+    expect(parts).toContainEqual({ inlineData: { mimeType: 'image/png', data: png.toString('base64') } });
+    expect(JSON.stringify(parts)).not.toContain('texto transcrito do diagrama');
+    expect(parts).toContainEqual({ text: 'notas sem ficheiro guardado' });
+  });
+});
+
 describe('Gemini com pesquisa Google', () => {
   it('pede a ferramenta google_search e devolve fontes sem repetidos e as sugestões de pesquisa', async () => {
     const body = {
@@ -189,4 +216,35 @@ describe('Gemini com pesquisa Google', () => {
     });
     expect(JSON.parse(String(fetchMock.mock.calls[0]![1]?.body)).tools).toEqual([{ google_search: {} }]);
   });
+});
+
+it('documentParts: os ficheiros entram enquanto couberem no limite; os outros vão em texto', async () => {
+  const { documentParts, MAX_INLINE_BYTES } = await import('../src/ai/document-parts.js');
+  const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
+  const docs = [];
+  for (const title of ['Grande', 'Pequeno']) {
+    const doc = await prisma.studyDocument.create({
+      data: { title, source: 'PDF', status: 'READY', text: `texto de ${title}`, userId: user.id },
+    });
+    await prisma.documentFile.create({
+      data: {
+        documentId: doc.id,
+        userId: user.id,
+        ordinal: 0,
+        filename: `${title}.pdf`,
+        mimeType: 'application/pdf',
+        // O tamanho registado decide; o conteúdo do teste é pequeno.
+        size: title === 'Grande' ? MAX_INLINE_BYTES : 10,
+        data: new Uint8Array(Buffer.from('%PDF-1.4')),
+      },
+    });
+    docs.push({ id: doc.id, title, fallbackText: `texto de ${title}` });
+  }
+  const parts = await documentParts(user.id, docs);
+  expect(parts).toEqual([
+    { text: 'Documento [1]: «Grande»' },
+    { inlineData: { mimeType: 'application/pdf', data: Buffer.from('%PDF-1.4').toString('base64') } },
+    { text: 'Documento [2]: «Pequeno»' },
+    { text: 'texto de Pequeno' }, // já não cabia
+  ]);
 });

@@ -2,7 +2,7 @@
 // «A IA propõe, o código valida»: as respostas estruturadas são sempre validadas com o mesmo esquema Zod.
 import type { z } from 'zod';
 
-/** Parte de um pedido: texto, ou uma imagem/PDF em base64 (o ficheiro não fica guardado). */
+/** Parte de um pedido: texto, ou uma imagem/PDF em base64. */
 export type AiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
 
 /** Dimensão dos vetores dos excertos (o Gemini reduz para esta dimensão; normalizamos a seguir). */

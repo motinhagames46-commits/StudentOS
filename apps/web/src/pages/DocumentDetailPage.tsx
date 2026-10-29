@@ -25,7 +25,8 @@ export function DocumentDetailPage() {
   async function handleDelete() {
     const ok = await confirm({
       title: `Eliminar «${d.title}»?`,
-      message: 'O texto transcrito é apagado. As avaliações e tarefas que já gravaste a partir dele ficam.',
+      message:
+        'O ficheiro e o texto transcrito são apagados. As avaliações e tarefas que já gravaste a partir dele ficam.',
       confirmLabel: 'Eliminar documento',
     });
     if (!ok) return;

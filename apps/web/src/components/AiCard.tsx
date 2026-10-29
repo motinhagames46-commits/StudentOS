@@ -58,8 +58,12 @@ export function AiCard() {
             <ul className="list-disc space-y-1 pl-5">
               <li>
                 Só o que escolheres analisar vai para a Google (API Gemini): fotografias e PDFs de apontamentos,
-                perguntas ao assistente, o texto dos documentos para criar quizzes e as tuas respostas escritas para as
-                corrigir, e totais agregados das finanças. As imagens não ficam guardadas no StudentOS.
+                perguntas ao assistente com os documentos que lhes respondem, os documentos para criar quizzes, as tuas
+                respostas escritas para as corrigir e totais agregados das finanças.
+              </li>
+              <li>
+                Os ficheiros dos documentos (fotografias e PDF) ficam guardados no StudentOS para a IA os voltar a ler,
+                com imagens e tabelas, nas perguntas e nos quizzes. Apagar o documento apaga-os.
               </li>
               <li>
                 Quando os teus documentos não chegam para responder, o assistente pesquisa a pergunta na Pesquisa

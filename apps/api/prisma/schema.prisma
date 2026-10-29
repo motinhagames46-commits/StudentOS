@@ -119,6 +119,7 @@ model User {
   transfersSent     DisciplineTransfer[]
   studyDocuments    StudyDocument[]
   documentChunks    DocumentChunk[]
+  documentFiles     DocumentFile[]
   studyCards        StudyCard[]
   cardReviews       CardReview[]
   quizzes           Quiz[]
@@ -413,10 +414,29 @@ model StudyDocument {
   disciplineId  Int?
   discipline    Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
   chunks        DocumentChunk[]
+  files         DocumentFile[]
   cards         StudyCard[]
   quizzes       Quiz[]
 
   @@index([userId, createdAt])
+}
+
+// Ficheiro original de um documento (fotografia ou PDF): a IA volta a lê-lo nas perguntas e nos quizzes, com
+// imagens, figuras e tabelas. Apaga-se com o documento.
+model DocumentFile {
+  id         Int           @id @default(autoincrement())
+  ordinal    Int
+  filename   String
+  mimeType   String
+  size       Int
+  data       Bytes
+  documentId Int
+  document   StudyDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, ordinal])
+  @@index([userId])
 }
 
 // Excerto de um documento com o seu vetor (normalizado). Busca exata em SQL: para uma pessoa chega;

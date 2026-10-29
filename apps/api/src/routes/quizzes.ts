@@ -19,6 +19,7 @@ import {
 } from '@studentos/shared';
 import type { Grade } from 'ts-fsrs';
 import { aiProvider } from '../ai/access.js';
+import { documentParts } from '../ai/document-parts.js';
 import { generateQuiz, gradeShortAnswers, type StoredQuestion } from '../ai/quiz.js';
 import type { Quiz, StudyCard } from '../generated/prisma/client.js';
 import { newCardState, retentionFor, reviewCard } from '../lib/fsrs.js';
@@ -30,8 +31,8 @@ import { requireAi } from '../middleware/ai.js';
 export const quizzesRouter = Router();
 export const reviewsRouter = Router();
 
-/** Texto enviado à IA para um quiz (os documentos mais recentes primeiro). */
-const MAX_SOURCE_CHARS = 30_000;
+/** Documentos de uma disciplina lidos num quiz (os mais recentes; os ficheiros entram enquanto couberem). */
+const MAX_QUIZ_DOCUMENTS = 5;
 const DEFAULT_QUESTIONS = 5;
 const RATING: Record<QuizVerdict, Grade> = { correct: 3, partial: 2, wrong: 1 };
 
@@ -84,32 +85,34 @@ async function nextAssessments(userId: number, disciplineIds: (number | null)[],
 // POST /api/quizzes — gera um quiz a partir de um documento ou dos documentos de uma disciplina.
 quizzesRouter.post('/', requireAi, async (req, res) => {
   const input = parse(quizCreateSchema, req.body);
-  let text: string;
-  let disciplineId: number | null;
-  if (input.documentId) {
-    const doc = await prisma.studyDocument.findFirst({ where: { id: input.documentId, userId: req.userId } });
-    if (!doc) throw notFound('DOCUMENT_NOT_FOUND', 'Documento não encontrado');
-    text = doc.text;
-    disciplineId = doc.disciplineId;
-  } else {
-    disciplineId = (await findOwnedDiscipline(req.userId, input.disciplineId!)).id;
-    const docs = await prisma.studyDocument.findMany({
-      where: { userId: req.userId, disciplineId },
-      orderBy: { createdAt: 'desc' },
-      select: { text: true },
-    });
-    text = docs.map((d) => d.text).join('\n\n');
+  // Só documentos já lidos; de uma disciplina, os mais recentes (a IA lê os ficheiros originais).
+  const where = input.documentId
+    ? { id: input.documentId, userId: req.userId }
+    : { userId: req.userId, disciplineId: (await findOwnedDiscipline(req.userId, input.disciplineId!)).id };
+  const docs = await prisma.studyDocument.findMany({
+    where: { ...where, status: 'READY' },
+    orderBy: { createdAt: 'desc' },
+    take: MAX_QUIZ_DOCUMENTS,
+    select: { id: true, title: true, text: true, disciplineId: true },
+  });
+  if (input.documentId && docs.length === 0) {
+    const exists = await prisma.studyDocument.count({ where });
+    if (!exists) throw notFound('DOCUMENT_NOT_FOUND', 'Documento não encontrado');
   }
-  text = text.slice(0, MAX_SOURCE_CHARS).trim();
-  if (!text) {
+  if (docs.length === 0) {
     throw new HttpError(
       422,
       'NO_STUDY_TEXT',
       'Ainda não há documentos lidos para fazer um quiz. Lê um documento primeiro.',
     );
   }
+  const disciplineId = input.documentId ? docs[0]!.disciplineId : input.disciplineId!;
+  const parts = await documentParts(
+    req.userId,
+    docs.map((d) => ({ id: d.id, title: d.title, fallbackText: d.text })),
+  );
 
-  const generated = await generateQuiz(aiProvider()!, text, input.count ?? DEFAULT_QUESTIONS);
+  const generated = await generateQuiz(aiProvider()!, parts, input.count ?? DEFAULT_QUESTIONS);
   if (generated.questions.length === 0) {
     throw new HttpError(502, 'AI_INVALID_RESPONSE', 'A IA não devolveu perguntas válidas. Tenta outra vez.');
   }

@@ -1,5 +1,6 @@
 // Documentos (passo 2 da IA): fotografias ou PDF → o Gemini transcreve e propõe datas → o estudante revê e
-// confirma. Os ficheiros não ficam guardados: só o texto, os excertos com vetores e as propostas por rever.
+// confirma. Os ficheiros ficam guardados para a IA os reler (com imagens) nas perguntas e nos quizzes; o texto
+// transcrito serve a busca dos excertos.
 import express, { Router } from 'express';
 import {
   DEFAULT_TIMEZONE,
@@ -39,17 +40,23 @@ const signatures: Record<DocumentMimeType, (b: Buffer) => boolean> = {
   'application/pdf': (b) => b.toString('latin1', 0, 5) === '%PDF-',
 };
 
-function checkFiles(files: { filename: string; mimeType: DocumentMimeType; data: string }[]) {
-  let total = 0;
-  files.forEach((file, i) => {
+/** Confirma o formato pelos primeiros bytes e devolve o conteúdo já descodificado. */
+function checkFiles(files: { filename: string; mimeType: DocumentMimeType; data: string }[]): Buffer[] {
+  const decoded = files.map((file, i) => {
     const bytes = /^[A-Za-z0-9+/]+={0,2}$/.test(file.data) ? Buffer.from(file.data, 'base64') : null;
     if (!bytes || !signatures[file.mimeType](bytes)) {
       throw validationError([{ path: `files.${i}`, message: `«${file.filename}» não é uma imagem nem um PDF válido` }]);
     }
-    total += bytes.length;
+    return bytes;
   });
-  if (total > DOCUMENT_MAX_BYTES) throw validationError([{ path: 'files', message: 'O documento tem mais de 10 MB' }]);
+  if (decoded.reduce((sum, b) => sum + b.length, 0) > DOCUMENT_MAX_BYTES) {
+    throw validationError([{ path: 'files', message: 'O documento tem mais de 10 MB' }]);
+  }
+  return decoded;
 }
+
+/** Espaço para ficheiros guardados por conta: a base de dados gratuita é pequena e cheia pararia a app toda. */
+export const FILE_STORAGE_PER_USER_BYTES = 300 * 1024 * 1024;
 
 async function findOwnedDocument(userId: number, id: number) {
   const document = await prisma.studyDocument.findFirst({ where: { id, userId } });
@@ -195,18 +202,41 @@ async function readDocument(id: number, userId: number, files: UploadFile[]) {
 // Até 10 MB em base64 (mais um terço), lidos só depois da sessão, dos limites de pedidos e do acesso à IA.
 documentsRouter.post('/', requireAi, express.json({ limit: '15mb' }), async (req, res) => {
   const input = parse(documentCreateSchema, req.body);
-  checkFiles(input.files);
+  const bytes = checkFiles(input.files);
   if (input.disciplineId) await findOwnedDiscipline(req.userId, input.disciplineId);
+  const incoming = bytes.reduce((sum, b) => sum + b.length, 0);
 
-  const doc = await prisma.studyDocument.create({
-    data: {
-      title: input.files[0]!.filename.slice(0, 120),
-      source: input.files.some((f) => f.mimeType === 'application/pdf') ? 'PDF' : 'SCAN',
-      status: 'PROCESSING',
-      pageCount: input.files.length,
-      userId: req.userId,
-      disciplineId: input.disciplineId ?? null,
-    },
+  // Conta e grava sob a mesma tranca da conta: dois envios em simultâneo não passam juntos do teto.
+  const doc = await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${req.userId} FOR UPDATE`;
+    const used = await tx.documentFile.aggregate({ where: { userId: req.userId }, _sum: { size: true } });
+    if ((used._sum.size ?? 0) + incoming > FILE_STORAGE_PER_USER_BYTES) {
+      throw new HttpError(
+        413,
+        'DOCUMENT_STORAGE_FULL',
+        'O espaço para documentos (300 MB) está cheio. Apaga documentos antigos para enviares mais.',
+      );
+    }
+    return tx.studyDocument.create({
+      data: {
+        title: input.files[0]!.filename.slice(0, 120),
+        source: input.files.some((f) => f.mimeType === 'application/pdf') ? 'PDF' : 'SCAN',
+        status: 'PROCESSING',
+        pageCount: input.files.length,
+        userId: req.userId,
+        disciplineId: input.disciplineId ?? null,
+        files: {
+          create: input.files.map((f, ordinal) => ({
+            ordinal,
+            filename: f.filename.slice(0, 255),
+            mimeType: f.mimeType,
+            size: bytes[ordinal]!.length,
+            data: new Uint8Array(bytes[ordinal]!),
+            userId: req.userId,
+          })),
+        },
+      },
+    });
   });
   void readDocument(doc.id, req.userId, input.files);
   res.status(202).json(await view(req.userId, doc));

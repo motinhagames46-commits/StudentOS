@@ -69,6 +69,10 @@ meRouter.get('/export', async (req, res) => {
       studyDocuments: true,
       // Os vetores são derivados do texto (e grandes): exporta-se o texto de cada excerto.
       documentChunks: { select: { id: true, documentId: true, ordinal: true, content: true } },
+      // Os ficheiros originais ficam fora do JSON (são os que a pessoa enviou); seguem os dados de cada um.
+      documentFiles: {
+        select: { id: true, documentId: true, ordinal: true, filename: true, mimeType: true, size: true },
+      },
       studyCards: true,
       cardReviews: true,
       quizzes: true,

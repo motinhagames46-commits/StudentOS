@@ -130,6 +130,21 @@ describe('POST /api/documents', () => {
     expect(await prisma.documentChunk.count()).toBe(0);
   });
 
+  it('guarda o ficheiro original (para a IA o reler) e recusa quando o espaço da conta enche', async () => {
+    const res = await upload(owner, [extraction()]);
+    await readDone(res.body.id);
+    const [file] = await prisma.documentFile.findMany({ where: { documentId: res.body.id } });
+    expect(file).toMatchObject({ ordinal: 0, filename: 'apontamentos.jpg', mimeType: 'image/jpeg', size: 10 });
+    expect(Buffer.from(file!.data).toString('base64')).toBe(jpeg);
+
+    // Ocupa o espaço todo (o teto conta o tamanho registado, não o conteúdo).
+    await prisma.documentFile.update({ where: { id: file!.id }, data: { size: 300 * 1024 * 1024 } });
+    const full = await upload(owner, [extraction()]);
+    expect(full.status).toBe(413);
+    expect(full.body.error.code).toBe('DOCUMENT_STORAGE_FULL');
+    expect(fake.requests).toHaveLength(0);
+  });
+
   it('uma leitura parada há mais de 15 min (servidor reiniciado) passa a FAILED', async () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
     const doc = await prisma.studyDocument.create({
@@ -263,11 +278,13 @@ describe('revisão e confirmação das datas', () => {
     expect((await prisma.assessment.findUniqueOrThrow({ where: { id: theirs.id } })).date).toBeNull();
   });
 
-  it('ignorar todas esvazia a revisão; eliminar apaga também os excertos', async () => {
+  it('ignorar todas esvazia a revisão; eliminar apaga também os excertos e o ficheiro', async () => {
     const id = await createDocument([item({})]);
+    expect(await prisma.documentFile.count({ where: { documentId: id } })).toBe(1);
     expect((await confirm(id, [])).body).toEqual({ created: 0, updated: 0 });
     expect((await request(app).delete(`/api/documents/${id}`).set('Cookie', owner)).status).toBe(204);
     expect(await prisma.documentChunk.count()).toBe(0);
+    expect(await prisma.documentFile.count()).toBe(0);
   });
 });
 

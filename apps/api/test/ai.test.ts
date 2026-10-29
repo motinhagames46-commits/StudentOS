@@ -44,7 +44,7 @@ describe('acesso à IA: lista de contas, chave e consentimento', () => {
   it('o consentimento ativa e retirá-lo desativa; fica registada a versão e a data', async () => {
     expect((await status(owner)).body).toMatchObject({ status: 'NEEDS_CONSENT', model: 'fake' });
     const given = await request(app).post('/api/ai/consent').set('Cookie', owner);
-    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-27' });
+    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-29' });
     expect(given.body.consentAt).toEqual(expect.any(String));
 
     expect((await request(app).delete('/api/ai/consent').set('Cookie', owner)).status).toBe(204);
@@ -169,6 +169,17 @@ describe('dados novos na exportação e na eliminação da conta', () => {
         embeddingModel: 'm',
       },
     });
+    await prisma.documentFile.create({
+      data: {
+        documentId: doc.id,
+        userId: user.id,
+        ordinal: 0,
+        filename: 'a.jpg',
+        mimeType: 'image/jpeg',
+        size: 3,
+        data: new Uint8Array([255, 216, 255]),
+      },
+    });
     await prisma.studyCard.create({ data: { kind: 'SHORT', question: 'O que é a 3FN?', userId: user.id } });
     await prisma.financeTransaction.create({
       data: { kind: 'EXPENSE', amountCents: 450, occurredOn: new Date('2026-10-20'), userId: user.id },
@@ -187,6 +198,17 @@ describe('dados novos na exportação e na eliminação da conta', () => {
       content: 'Normalização',
     });
     expect(body.studyCards).toHaveLength(1);
+    // Do ficheiro original seguem só os dados (nome, tipo, tamanho), não o conteúdo.
+    expect(body.documentFiles).toEqual([
+      {
+        id: expect.any(Number),
+        documentId: expect.any(Number),
+        ordinal: 0,
+        filename: 'a.jpg',
+        mimeType: 'image/jpeg',
+        size: 3,
+      },
+    ]);
     expect(body.transactions[0]).toMatchObject({ amountCents: 450, kind: 'EXPENSE' });
   });
 
@@ -200,6 +222,7 @@ describe('dados novos na exportação e na eliminação da conta', () => {
     const where = { where: { userId: user.id } };
     expect(await prisma.studyDocument.count(where)).toBe(0);
     expect(await prisma.documentChunk.count(where)).toBe(0);
+    expect(await prisma.documentFile.count(where)).toBe(0);
     expect(await prisma.studyCard.count(where)).toBe(0);
     expect(await prisma.financeTransaction.count(where)).toBe(0);
   });

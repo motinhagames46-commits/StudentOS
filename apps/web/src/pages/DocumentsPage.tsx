@@ -215,8 +215,9 @@ function UploadCard() {
         </SelectField>
 
         <p className="text-xs text-stone-600">
-          Os ficheiros vão para a Google (Gemini) só para serem lidos e não ficam guardados no StudentOS: fica o texto
-          transcrito. Até {DOCUMENT_MAX_FILES} fotografias ou um PDF, no máximo 10 MB.
+          Os ficheiros vão para a Google (Gemini) para serem lidos e ficam guardados no StudentOS, para a IA os voltar a
+          ler (com imagens e tabelas) nas perguntas e nos quizzes; apagas o documento e eles saem. Espaço: 300 MB. Até{' '}
+          {DOCUMENT_MAX_FILES} fotografias ou um PDF, no máximo 10 MB.
         </p>
         <FormError message={error} />
         <div aria-live="polite" className="flex flex-wrap items-center gap-3">
