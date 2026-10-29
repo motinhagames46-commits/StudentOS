@@ -63,7 +63,8 @@ export function AiCard() {
               </li>
               <li>
                 Os ficheiros dos documentos (fotografias e PDF) ficam guardados no StudentOS para a IA os voltar a ler,
-                com imagens e tabelas, nas perguntas e nos quizzes. Apagar o documento apaga-os.
+                com imagens e tabelas, nas perguntas e nos quizzes. Apagar o documento apaga-os. Para não os enviar em
+                cada pergunta, a Google guarda uma cópia de cada ficheiro durante 48 horas.
               </li>
               <li>
                 Quando os teus documentos não chegam para responder, o assistente pesquisa a pergunta na Pesquisa

@@ -1,8 +1,21 @@
 // Gemini pela API REST (sem SDK): a chave vai no cabeçalho x-goog-api-key, nunca no URL nem em logs.
+import { createHash } from 'node:crypto';
 import { z } from 'zod';
-import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider, type WebAnswer } from './provider.js';
+import {
+  AiError,
+  EMBEDDING_DIMENSIONS,
+  normalize,
+  type AiPart,
+  type AiProvider,
+  type UploadedFile,
+  type WebAnswer,
+} from './provider.js';
 
-const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
+const ROOT_URL = 'https://generativelanguage.googleapis.com';
+const BASE_URL = `${ROOT_URL}/v1beta/models`;
+/** Um ficheiro acabado de enviar pode ainda estar a ser processado: espera até isto. */
+const FILE_READY_TRIES = 10;
+const FILE_READY_WAIT_MS = 1000;
 // Com raciocínio alto, um PDF com várias páginas leva minutos (a leitura de documentos corre em segundo plano).
 const TIMEOUT_MS = 300_000;
 
@@ -25,6 +38,12 @@ const generateResponse = z.object({
     .optional(),
 });
 const embedResponse = z.object({ embeddings: z.array(z.object({ values: z.array(z.number()) })) });
+const fileInfo = z.object({
+  name: z.string(),
+  uri: z.string(),
+  state: z.string().optional(),
+  expirationTime: z.string(),
+});
 
 /**
  * Pedido que nem chegou a ter resposta: diz qual foi a razão. Para o registo do servidor seguem só o nome e o
@@ -47,20 +66,32 @@ function unreachable(err: unknown): AiError {
 }
 
 export class GeminiProvider implements AiProvider {
+  readonly fileScope: string;
+
   constructor(
     private readonly apiKey: string,
     readonly model: string,
     readonly embeddingModel: string,
     private readonly fetchImpl: typeof fetch = fetch,
-  ) {}
+  ) {
+    this.fileScope = createHash('sha256').update(apiKey).digest('hex').slice(0, 16);
+  }
 
-  private async call(path: string, body: unknown): Promise<unknown> {
+  private call(path: string, body: unknown): Promise<unknown> {
+    return this.request(`${BASE_URL}/${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }).then((res) => res.json().catch(() => null));
+  }
+
+  /** Pedido com a chave no cabeçalho; erros de rede e estados HTTP viram erros da app. */
+  private async request(url: string, init: RequestInit): Promise<Response> {
     let res: Response;
     try {
-      res = await this.fetchImpl(`${BASE_URL}/${path}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-        body: JSON.stringify(body),
+      res = await this.fetchImpl(url, {
+        ...init,
+        headers: { ...(init.headers as Record<string, string>), 'x-goog-api-key': this.apiKey },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
     } catch (err) {
@@ -76,7 +107,45 @@ export class GeminiProvider implements AiProvider {
         `Gemini HTTP ${res.status}`,
       );
     }
-    return res.json().catch(() => null);
+    return res;
+  }
+
+  /** Envio retomável da Files API (início, depois conteúdo e fim); espera que o ficheiro fique ACTIVE. */
+  async uploadFile(data: Uint8Array, mimeType: string, displayName: string): Promise<UploadedFile> {
+    const start = await this.request(`${ROOT_URL}/upload/v1beta/files`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': String(data.length),
+        'X-Goog-Upload-Header-Content-Type': mimeType,
+      },
+      body: JSON.stringify({ file: { display_name: displayName.slice(0, 120) } }),
+    });
+    const uploadUrl = start.headers.get('x-goog-upload-url');
+    const invalid = (detail: string) =>
+      new AiError('AI_INVALID_RESPONSE', 'O envio do ficheiro para a IA não correu bem.', detail);
+    if (!uploadUrl?.startsWith(`${ROOT_URL}/`)) throw invalid('Gemini upload sem URL');
+
+    const done = await this.request(uploadUrl, {
+      method: 'POST',
+      headers: { 'X-Goog-Upload-Offset': '0', 'X-Goog-Upload-Command': 'upload, finalize' },
+      body: data,
+    });
+    const parsed = z.object({ file: fileInfo }).safeParse(await done.json().catch(() => null));
+    if (!parsed.success) throw invalid('Gemini upload sem ficheiro');
+    let file = parsed.data.file;
+    for (let i = 0; file.state === 'PROCESSING' && i < FILE_READY_TRIES; i++) {
+      await new Promise((r) => setTimeout(r, FILE_READY_WAIT_MS));
+      const again = fileInfo.safeParse(
+        await (await this.request(`${ROOT_URL}/v1beta/${file.name}`, { method: 'GET' })).json().catch(() => null),
+      );
+      if (!again.success) throw invalid('Gemini ficheiro ilegível');
+      file = again.data;
+    }
+    if (file.state && file.state !== 'ACTIVE') throw invalid(`Gemini ficheiro ${file.state}`);
+    return { uri: file.uri, expiresAt: new Date(file.expirationTime) };
   }
 
   /** Primeiro candidato com texto; resposta cortada ou vazia viram erros da app. */

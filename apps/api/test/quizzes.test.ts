@@ -111,9 +111,7 @@ describe('POST /api/quizzes', () => {
     });
     withAi([generated]);
     expect((await create({ documentId })).status).toBe(201);
-    expect(fake.requests[0]).toContainEqual({
-      inlineData: { mimeType: 'application/pdf', data: pdf.toString('base64') },
-    });
+    expect(fake.requests[0]).toContainEqual({ fileData: { mimeType: 'application/pdf', fileUri: 'fake://files/1' } });
     expect(JSON.stringify(fake.requests[0])).not.toContain('A 3FN elimina');
   });
 

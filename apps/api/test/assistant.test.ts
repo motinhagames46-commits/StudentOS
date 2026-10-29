@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { setAiProviderForTests } from '../src/ai/access.js';
 import { GeminiProvider } from '../src/ai/gemini.js';
 import { EMBEDDING_DIMENSIONS } from '../src/ai/provider.js';
+import { documentParts, MAX_INLINE_BYTES } from '../src/ai/document-parts.js';
 import { app } from '../src/app.js';
 import { env } from '../src/lib/env.js';
 import { prisma } from '../src/lib/prisma.js';
@@ -178,7 +179,8 @@ describe('o assistente lê os documentos originais', () => {
     await ask([{ sufficient: true, answer: 'Resposta [1].', citations: [1] }], { question: 'Que entidades há?' });
     const parts = fake.requests[0]!;
     expect(parts).toContainEqual({ text: 'Documento [1]: «Diagrama ER»' });
-    expect(parts).toContainEqual({ inlineData: { mimeType: 'image/png', data: png.toString('base64') } });
+    expect(parts).toContainEqual({ fileData: { mimeType: 'image/png', fileUri: 'fake://files/1' } });
+    expect(fake.uploads).toEqual([{ mimeType: 'image/png', size: png.length }]);
     expect(JSON.stringify(parts)).not.toContain('texto transcrito do diagrama');
     expect(parts).toContainEqual({ text: 'notas sem ficheiro guardado' });
   });
@@ -218,33 +220,63 @@ describe('Gemini com pesquisa Google', () => {
   });
 });
 
-it('documentParts: os ficheiros entram enquanto couberem no limite; os outros vão em texto', async () => {
-  const { documentParts, MAX_INLINE_BYTES } = await import('../src/ai/document-parts.js');
-  const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
-  const docs = [];
-  for (const title of ['Grande', 'Pequeno']) {
+describe('documentParts (Files API do Gemini)', () => {
+  async function docWithFile(title: string, size: number) {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
     const doc = await prisma.studyDocument.create({
       data: { title, source: 'PDF', status: 'READY', text: `texto de ${title}`, userId: user.id },
     });
-    await prisma.documentFile.create({
+    const file = await prisma.documentFile.create({
       data: {
         documentId: doc.id,
         userId: user.id,
         ordinal: 0,
         filename: `${title}.pdf`,
         mimeType: 'application/pdf',
-        // O tamanho registado decide; o conteúdo do teste é pequeno.
-        size: title === 'Grande' ? MAX_INLINE_BYTES : 10,
+        // O tamanho registado decide o teto; o conteúdo do teste é pequeno.
+        size,
         data: new Uint8Array(Buffer.from('%PDF-1.4')),
       },
     });
-    docs.push({ id: doc.id, title, fallbackText: `texto de ${title}` });
+    return { user, source: { id: doc.id, title, fallbackText: `texto de ${title}` }, fileId: file.id };
   }
-  const parts = await documentParts(user.id, docs);
-  expect(parts).toEqual([
-    { text: 'Documento [1]: «Grande»' },
-    { inlineData: { mimeType: 'application/pdf', data: Buffer.from('%PDF-1.4').toString('base64') } },
-    { text: 'Documento [2]: «Pequeno»' },
-    { text: 'texto de Pequeno' }, // já não cabia
-  ]);
+
+  it('envia uma vez, reutiliza o endereço e só volta a enviar quando expira ou a chave muda', async () => {
+    const { user, source, fileId } = await docWithFile('BD', 10);
+    const ai = new FakeAiProvider();
+    const first = await documentParts(ai, user.id, [source]);
+    expect(first).toEqual([
+      { text: 'Documento [1]: «BD»' },
+      { fileData: { mimeType: 'application/pdf', fileUri: 'fake://files/1' } },
+    ]);
+    // Segunda pergunta: o mesmo endereço, sem novo envio.
+    expect(await documentParts(ai, user.id, [source])).toEqual(first);
+    expect(ai.uploads).toHaveLength(1);
+
+    // Prestes a expirar: volta a enviar.
+    await prisma.documentFile.update({
+      where: { id: fileId },
+      data: { geminiExpiresAt: new Date(Date.now() + 60_000) },
+    });
+    await documentParts(ai, user.id, [source]);
+    expect(ai.uploads).toHaveLength(2);
+    // Outra chave: o endereço da anterior não serve.
+    ai.fileScope = 'outra-chave';
+    await documentParts(ai, user.id, [source]);
+    expect(ai.uploads).toHaveLength(3);
+  });
+
+  it('o que não cabe no teto vai em texto; se a Files API falhar, o ficheiro vai no pedido', async () => {
+    const big = await docWithFile('Grande', MAX_INLINE_BYTES);
+    const small = await docWithFile('Pequeno', 10);
+    const ai = new FakeAiProvider();
+    ai.failUploads = true;
+    const parts = await documentParts(ai, big.user.id, [big.source, small.source]);
+    expect(parts).toEqual([
+      { text: 'Documento [1]: «Grande»' },
+      { inlineData: { mimeType: 'application/pdf', data: Buffer.from('%PDF-1.4').toString('base64') } },
+      { text: 'Documento [2]: «Pequeno»' },
+      { text: 'texto de Pequeno' }, // já não cabia
+    ]);
+  });
 });

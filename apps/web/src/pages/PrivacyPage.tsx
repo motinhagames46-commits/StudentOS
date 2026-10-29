@@ -84,9 +84,10 @@ export function PrivacyPage() {
           StudentOS, com consentimento dado na página Integrações. Nas restantes contas, nenhum dado é enviado a
           fornecedores de IA. Quando ativadas, só o que a pessoa escolhe analisar é enviado. Os ficheiros dos documentos
           (fotografias e PDF) ficam guardados para a IA os voltar a ler nas perguntas e nos quizzes, até a pessoa apagar
-          o documento; guarda-se também a data e a versão do consentimento. Se os documentos não chegarem para responder
-          a uma pergunta ao assistente, a pergunta segue para a Pesquisa Google, que a guarda com a resposta durante 30
-          dias; a conversa não fica guardada no StudentOS.
+          o documento; para não os enviar em cada pergunta, a Google guarda uma cópia de cada ficheiro durante 48 horas.
+          Guarda-se também a data e a versão do consentimento. Se os documentos não chegarem para responder a uma
+          pergunta ao assistente, a pergunta segue para a Pesquisa Google, que a guarda com a resposta durante 30 dias;
+          a conversa não fica guardada no StudentOS.
         </p>
 
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os teus direitos</h2>

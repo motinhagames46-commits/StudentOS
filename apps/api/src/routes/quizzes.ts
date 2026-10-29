@@ -108,6 +108,7 @@ quizzesRouter.post('/', requireAi, async (req, res) => {
   }
   const disciplineId = input.documentId ? docs[0]!.disciplineId : input.disciplineId!;
   const parts = await documentParts(
+    aiProvider()!,
     req.userId,
     docs.map((d) => ({ id: d.id, title: d.title, fallbackText: d.text })),
   );

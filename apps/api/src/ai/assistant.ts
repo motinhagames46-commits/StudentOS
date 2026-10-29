@@ -82,6 +82,7 @@ export async function answerQuestion(
       select: { id: true, text: true },
     });
     const parts = await documentParts(
+      ai,
       userId,
       docs.map((d) => ({
         id: d.id,

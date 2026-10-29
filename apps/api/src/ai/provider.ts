@@ -3,7 +3,16 @@
 import type { z } from 'zod';
 
 /** Parte de um pedido: texto, ou uma imagem/PDF em base64. */
-export type AiPart = { text: string } | { inlineData: { mimeType: string; data: string } };
+export type AiPart =
+  | { text: string }
+  | { inlineData: { mimeType: string; data: string } }
+  /** Ficheiro já na Files API do Gemini (válido 48 h): o pedido leva só o endereço. */
+  | { fileData: { mimeType: string; fileUri: string } };
+
+export interface UploadedFile {
+  uri: string;
+  expiresAt: Date;
+}
 
 /** Dimensão dos vetores dos excertos (o Gemini reduz para esta dimensão; normalizamos a seguir). */
 export const EMBEDDING_DIMENSIONS = 768;
@@ -11,6 +20,10 @@ export const EMBEDDING_DIMENSIONS = 768;
 export interface AiProvider {
   readonly model: string;
   readonly embeddingModel: string;
+  /** Identifica a chave: um ficheiro enviado com outra chave não pode ser usado com esta. */
+  readonly fileScope: string;
+  /** Envia um ficheiro para o fornecedor guardar uns dias e o reutilizar por endereço. */
+  uploadFile(data: Uint8Array, mimeType: string, displayName: string): Promise<UploadedFile>;
   /** JSON que cumpre o esquema (enviado como JSON Schema) e validado com o mesmo Zod; senão, AiError. */
   generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options?: { system?: string }): Promise<z.output<T>>;
   /** Um vetor normalizado (comprimento 1) por texto, para a semelhança ser um produto interno. */

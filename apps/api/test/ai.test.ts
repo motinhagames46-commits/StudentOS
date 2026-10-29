@@ -44,7 +44,7 @@ describe('acesso à IA: lista de contas, chave e consentimento', () => {
   it('o consentimento ativa e retirá-lo desativa; fica registada a versão e a data', async () => {
     expect((await status(owner)).body).toMatchObject({ status: 'NEEDS_CONSENT', model: 'fake' });
     const given = await request(app).post('/api/ai/consent').set('Cookie', owner);
-    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-29' });
+    expect(given.body).toMatchObject({ status: 'ENABLED', consentVersion: '2026-10-29.2' });
     expect(given.body.consentAt).toEqual(expect.any(String));
 
     expect((await request(app).delete('/api/ai/consent').set('Cookie', owner)).status).toBe(204);
@@ -150,6 +150,59 @@ describe('Gemini pela API REST', () => {
     const wrong = new GeminiProvider('k', 'm', 'e', (() =>
       ok({ embeddings: [{ values: [1, 2] }] })) as unknown as typeof fetch);
     await expect(wrong.embed(['texto'], 'document')).rejects.toMatchObject({ code: 'AI_INVALID_RESPONSE' });
+  });
+});
+
+describe('Files API do Gemini', () => {
+  const ROOT = 'https://generativelanguage.googleapis.com';
+  const file = (state: string) => ({
+    name: 'files/abc',
+    uri: `${ROOT}/v1beta/files/abc`,
+    state,
+    expirationTime: '2026-10-31T10:00:00Z',
+  });
+
+  it('envio retomável: início com os metadados, conteúdo para o URL devolvido e espera até ACTIVE', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout'] });
+    const calls: { url: string; init?: RequestInit }[] = [];
+    const replies = [
+      new Response('{}', { status: 200, headers: { 'x-goog-upload-url': `${ROOT}/upload/v1beta/files?upload_id=1` } }),
+      new Response(JSON.stringify({ file: file('PROCESSING') }), { status: 200 }),
+      new Response(JSON.stringify(file('ACTIVE')), { status: 200 }),
+    ];
+    const fetchMock = (url: string, init?: RequestInit) => {
+      calls.push({ url, init });
+      return Promise.resolve(replies.shift()!);
+    };
+    const gemini = new GeminiProvider('chave', 'm', 'e', fetchMock as unknown as typeof fetch);
+    const pending = gemini.uploadFile(new Uint8Array([1, 2, 3]), 'application/pdf', 'BD.pdf');
+    await vi.runAllTimersAsync();
+    expect(await pending).toEqual({ uri: `${ROOT}/v1beta/files/abc`, expiresAt: new Date('2026-10-31T10:00:00Z') });
+    vi.useRealTimers();
+
+    expect(calls[0]!.url).toBe(`${ROOT}/upload/v1beta/files`);
+    expect(calls[0]!.init?.headers).toMatchObject({
+      'X-Goog-Upload-Protocol': 'resumable',
+      'X-Goog-Upload-Command': 'start',
+      'X-Goog-Upload-Header-Content-Length': '3',
+      'X-Goog-Upload-Header-Content-Type': 'application/pdf',
+      'x-goog-api-key': 'chave',
+    });
+    expect(calls[1]!.url).toBe(`${ROOT}/upload/v1beta/files?upload_id=1`);
+    expect(calls[1]!.init?.headers).toMatchObject({ 'X-Goog-Upload-Command': 'upload, finalize' });
+    expect(calls[2]!.url).toBe(`${ROOT}/v1beta/files/abc`);
+  });
+
+  it('recusa um URL de envio fora da Google e uma chave diferente tem outro âmbito', async () => {
+    const elsewhere = new GeminiProvider('chave', 'm', 'e', (() =>
+      Promise.resolve(
+        new Response('{}', { status: 200, headers: { 'x-goog-upload-url': 'https://evil.example/upload' } }),
+      )) as unknown as typeof fetch);
+    await expect(elsewhere.uploadFile(new Uint8Array([1]), 'image/png', 'a.png')).rejects.toMatchObject({
+      code: 'AI_INVALID_RESPONSE',
+    });
+    expect(new GeminiProvider('outra', 'm', 'e').fileScope).not.toBe(elsewhere.fileScope);
+    expect(elsewhere.fileScope).not.toContain('chave');
   });
 });
 
