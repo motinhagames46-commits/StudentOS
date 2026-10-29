@@ -220,6 +220,13 @@ importsRouter.post('/:id/confirm', async (req, res) => {
 
   const origin = job.kind === 'ICS' ? 'IMPORT_ICS' : 'IMPORT_CSV';
   const counts = await prisma.$transaction(async (tx) => {
+    // Reclama a importação antes de gravar: uma segunda confirmação (outro separador, pedido repetido) não grava
+    // nada. As linhas de um CSV não têm identificador, por isso a base de dados não apanharia os duplicados.
+    const claimed = await tx.importJob.updateMany({
+      where: { id: job.id, userId: req.userId, status: 'NEEDS_REVIEW' },
+      data: { status: 'CONFIRMED', confirmedAt: new Date() },
+    });
+    if (!claimed.count) throw new HttpError(409, 'IMPORT_ALREADY_CONFIRMED', 'Esta importação já foi confirmada');
     const result = { created: 0, updated: 0, skipped: items.length - chosen.length, failed: 0 };
     for (const item of chosen) {
       if (item.target === 'task') {
@@ -288,10 +295,7 @@ importsRouter.post('/:id/confirm', async (req, res) => {
     }
 
     // Minimização de dados: os itens da pré-visualização deixam de ser necessários.
-    await tx.importJob.update({
-      where: { id: job.id },
-      data: { status: 'CONFIRMED', confirmedAt: new Date(), items: [], counts: result },
-    });
+    await tx.importJob.update({ where: { id: job.id }, data: { items: [], counts: result } });
     return result;
   });
 

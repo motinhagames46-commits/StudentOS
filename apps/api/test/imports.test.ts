@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import request from 'supertest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { app } from '../src/app.js';
 import { prisma } from '../src/lib/prisma.js';
 import { createUserAndLogin, resetDb } from './helpers.js';
@@ -147,6 +147,33 @@ describe('confirmação', () => {
     const ok = await confirmAll(ines, chosen);
     expect(ok.status).toBe(200);
     expect(ok.body.counts.created).toBe(2); // o Workshop sem hora de fim fica de fora
+  });
+
+  it('duas confirmações em simultâneo gravam uma só vez (o CSV não tem identificador por linha)', async () => {
+    const { body: job } = await upload(ines, {
+      kind: 'CSV',
+      filename: 'eventos.csv',
+      content: fixture('eventos.csv'),
+      csv: { dateFormat: 'DMY' },
+    });
+    // Barreira: as duas transações só começam quando ambos os pedidos já passaram as verificações iniciais,
+    // como acontece com dois separadores ou um pedido repetido pela rede.
+    const original = prisma.$transaction.bind(prisma) as (...args: unknown[]) => Promise<unknown>;
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    let entered = 0;
+    const spy = vi.spyOn(prisma, '$transaction').mockImplementation((async (...args: unknown[]) => {
+      if (++entered === 2) release();
+      await gate;
+      return original(...args);
+    }) as never);
+    try {
+      const results = await Promise.all([confirmAll(ines, job), confirmAll(ines, job)]);
+      expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
+    } finally {
+      spy.mockRestore();
+    }
+    expect(await prisma.scheduleBlock.count()).toBe(2);
   });
 
   it('anular uma importação apaga só o que ela criou', async () => {
