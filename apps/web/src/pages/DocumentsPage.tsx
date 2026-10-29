@@ -73,6 +73,8 @@ export function DocumentsPage() {
                           {discipline && <DisciplineChip discipline={discipline} />}
                         </span>
                       </span>
+                      {doc.status === 'PROCESSING' && <Badge>A ler…</Badge>}
+                      {doc.status === 'FAILED' && <Badge tone="red">Falhou</Badge>}
                       {doc.pendingProposals > 0 && (
                         <Badge tone="amber">
                           {doc.pendingProposals === 1 ? '1 data por rever' : `${doc.pendingProposals} datas por rever`}
@@ -131,8 +133,7 @@ function UploadCard() {
         files: upload,
         disciplineId: disciplineId ? Number(disciplineId) : null,
       });
-      const n = doc.proposals.length;
-      toast({ message: n === 0 ? 'Documento lido. Não encontrei datas.' : `Documento lido: ${n} para rever.` });
+      toast({ message: 'Documento enviado. A IA está a lê-lo; podes sair desta página.' });
       void navigate(`/documentos/${doc.id}`);
     } catch (err) {
       setError(errorMessage(err));
@@ -222,7 +223,7 @@ function UploadCard() {
           <Button loading={busy} disabled={files.length === 0} onClick={() => void analyse()}>
             Ler com IA
           </Button>
-          {busy && <span className="text-sm text-stone-600">A ler o documento… pode demorar até um minuto.</span>}
+          {busy && <span className="text-sm text-stone-600">A enviar…</span>}
         </div>
       </div>
     </Card>

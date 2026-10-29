@@ -23,7 +23,7 @@ export function AiCard() {
   const consent = useMutation({ mutationFn: () => api('/ai/consent', { method: 'POST' }), onSuccess: refresh });
   const withdraw = useMutation({ mutationFn: () => api('/ai/consent', { method: 'DELETE' }), onSuccess: refresh });
   const check = useMutation({
-    mutationFn: () => api<{ ok: boolean; model: string }>('/ai/check', { method: 'POST' }),
+    mutationFn: () => api<{ ok: boolean; model: string }>('/ai/check', { method: 'POST', expectSlow: true }),
     onSuccess: (r) => toast({ message: `Ligação verificada: o Gemini respondeu (${r.model}).` }),
   });
 

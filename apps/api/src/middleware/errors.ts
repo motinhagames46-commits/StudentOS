@@ -7,6 +7,16 @@ import { HttpError } from '../lib/http.js';
 
 const INCOMING_ID = /^[A-Za-z0-9_-]{8,64}$/;
 
+/** Registo no servidor (Render): de um erro da IA só o detalhe seguro, nunca a mensagem nem segredos. */
+export function logServerError(context: string, err: unknown): void {
+  if (env.isTest) return;
+  if (err instanceof AiError) {
+    if (err.detail) console.error(`${context} ${err.detail}`);
+    return;
+  }
+  console.error(context, err);
+}
+
 /** Identificador de pedido (spec §13.2): reutiliza o do proxy se for seguro, senão gera um. */
 export function requestId(req: Request, res: Response, next: NextFunction): void {
   const incoming = req.get('x-request-id');
@@ -36,7 +46,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     error = err;
   } else if (err instanceof AiError) {
     // Só o detalhe seguro (nome/código do erro ou estado HTTP), para se perceber no Render porque falhou.
-    if (!env.isTest && err.detail) console.error(`[${req.requestId}] ${req.method} ${req.path} ${err.detail}`);
+    logServerError(`[${req.requestId}] ${req.method} ${req.path}`, err);
     error = new HttpError(err.code === 'AI_RATE_LIMITED' ? 429 : 502, err.code, err.message);
   } else if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
     error = new HttpError(409, 'CONFLICT', 'Já existe um registo com estes dados');
@@ -48,7 +58,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     error = new HttpError(400, 'INVALID_JSON', 'O corpo do pedido não é JSON válido');
   } else {
     // Detalhe técnico só no log do servidor, associado ao requestId; nunca na resposta.
-    if (!env.isTest) console.error(`[${req.requestId}] ${req.method} ${req.path}`, err);
+    logServerError(`[${req.requestId}] ${req.method} ${req.path}`, err);
     error = new HttpError(500, 'INTERNAL_ERROR', 'Ocorreu um erro inesperado');
   }
 

@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { AiError, EMBEDDING_DIMENSIONS, normalize, type AiPart, type AiProvider, type WebAnswer } from './provider.js';
 
 const BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
-// Um PDF com várias páginas pode levar bem mais de um minuto a transcrever.
-const TIMEOUT_MS = 120_000;
+// Com raciocínio alto, um PDF com várias páginas leva minutos (a leitura de documentos corre em segundo plano).
+const TIMEOUT_MS = 300_000;
 
 const generateResponse = z.object({
   candidates: z
@@ -80,12 +80,19 @@ export class GeminiProvider implements AiProvider {
   }
 
   /** Primeiro candidato com texto; resposta cortada ou vazia viram erros da app. */
-  private async generate(parts: AiPart[], system: string | undefined, extra: Record<string, unknown>) {
+  private async generate(
+    parts: AiPart[],
+    system: string | undefined,
+    extra: { generationConfig?: Record<string, unknown>; tools?: unknown[] },
+  ) {
     const data = generateResponse.safeParse(
       await this.call(`${encodeURIComponent(this.model)}:generateContent`, {
         contents: [{ role: 'user', parts }],
         ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
-        ...extra,
+        ...(extra.tools ? { tools: extra.tools } : {}),
+        // Raciocínio alto por escolha do dono (qualidade antes da rapidez); explícito porque nem todos os
+        // modelos Flash o têm por omissão.
+        generationConfig: { thinkingConfig: { thinkingLevel: 'high' }, ...extra.generationConfig },
       }),
     );
     const candidate = data.success ? data.data.candidates?.[0] : undefined;

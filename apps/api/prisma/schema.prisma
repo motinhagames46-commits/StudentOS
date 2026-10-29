@@ -396,23 +396,25 @@ model DisciplineTransfer {
 
 // Documento digitalizado ou carregado. Só se guarda o texto extraído (as imagens não ficam guardadas).
 model StudyDocument {
-  id           Int             @id @default(autoincrement())
-  title        String
-  source       DocumentSource
-  status       DocumentStatus  @default(PROCESSING)
-  pageCount    Int             @default(0)
-  text         String          @default("")
+  id            Int             @id @default(autoincrement())
+  title         String
+  source        DocumentSource
+  status        DocumentStatus  @default(PROCESSING)
+  pageCount     Int             @default(0)
+  text          String          @default("")
   /// Datas propostas pela IA à espera de revisão; esvazia-se ao confirmar (minimização de dados).
-  proposals    Json            @default("[]")
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-  userId       Int
-  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  disciplineId Int?
-  discipline   Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
-  chunks       DocumentChunk[]
-  cards        StudyCard[]
-  quizzes      Quiz[]
+  proposals     Json            @default("[]")
+  /// Porque a leitura falhou (status FAILED), em português, para mostrar ao estudante.
+  failureReason String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  userId        Int
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  disciplineId  Int?
+  discipline    Discipline?     @relation(fields: [disciplineId], references: [id], onDelete: SetNull)
+  chunks        DocumentChunk[]
+  cards         StudyCard[]
+  quizzes       Quiz[]
 
   @@index([userId, createdAt])
 }

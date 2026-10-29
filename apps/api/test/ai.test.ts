@@ -89,6 +89,7 @@ describe('Gemini pela API REST', () => {
     expect(init?.headers).toMatchObject({ 'x-goog-api-key': 'chave-secreta' });
     const body = JSON.parse(String(init?.body)) as { generationConfig: Record<string, unknown> };
     expect(body.generationConfig.responseMimeType).toBe('application/json');
+    expect(body.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'high' });
     expect(body.generationConfig.responseJsonSchema).toMatchObject({
       type: 'object',
       properties: { nota: { type: 'number' } },

@@ -90,6 +90,9 @@ export interface StudyDocumentSummary {
   createdAt: string;
   disciplineId: number | null;
   pendingProposals: number;
+  /** PROCESSING enquanto a IA lê (em segundo plano); FAILED com o motivo em `failureReason`. */
+  status: 'PROCESSING' | 'READY' | 'FAILED';
+  failureReason: string | null;
 }
 
 export interface StudyDocumentView extends StudyDocumentSummary {

@@ -418,14 +418,22 @@ export function usePlannedSessionAction() {
 /** Estado da IA nesta conta (a navegação esconde os Documentos a quem não a pode usar). */
 export const useAiStatus = () => useQuery({ queryKey: ['ai-status'], queryFn: () => api<AiStatusView>('/ai/status') });
 
+/** A IA lê em segundo plano: enquanto houver documentos a ler, a vista atualiza-se sozinha. */
+const READING_POLL_MS = 3000;
+
 export const useDocuments = () =>
-  useQuery({ queryKey: ['documents'], queryFn: () => api<StudyDocumentSummary[]>('/documents') });
+  useQuery({
+    queryKey: ['documents'],
+    queryFn: () => api<StudyDocumentSummary[]>('/documents'),
+    refetchInterval: (query) => (query.state.data?.some((d) => d.status === 'PROCESSING') ? READING_POLL_MS : false),
+  });
 
 export const useDocument = (id: number) =>
   useQuery({
     queryKey: ['document', id],
     queryFn: () => api<StudyDocumentView>(`/documents/${id}`),
     enabled: Number.isInteger(id) && id > 0,
+    refetchInterval: (query) => (query.state.data?.status === 'PROCESSING' ? READING_POLL_MS : false),
   });
 
 export function useCreateDocument() {

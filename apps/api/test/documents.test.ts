@@ -57,6 +57,16 @@ function upload(cookie: string[], responses: unknown[], body: Record<string, unk
     .send({ files: [photo], disciplineId, ...body });
 }
 
+/** A leitura corre em segundo plano: espera até o documento deixar de estar PROCESSING. */
+async function readDone(id: number, cookie = owner) {
+  for (let i = 0; i < 100; i++) {
+    const { body } = await request(app).get(`/api/documents/${id}`).set('Cookie', cookie);
+    if (body.status !== 'PROCESSING') return body;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  throw new Error('A leitura não terminou');
+}
+
 describe('POST /api/documents', () => {
   it('só com a IA ativa: sem consentimento ou fora da lista dá 403 e não chama a IA', async () => {
     await request(app).delete('/api/ai/consent').set('Cookie', owner);
@@ -88,9 +98,18 @@ describe('POST /api/documents', () => {
         item({ title: 'Teste 2', date: '31 de novembro' }), // data inválida e sem peso: descartada
       ]),
     ]);
-    expect(res.status).toBe(201);
-    expect(res.body).toMatchObject({ title: 'Calendário de avaliação de PW', source: 'SCAN', pendingProposals: 2 });
-    expect(res.body.proposals.map((p: { title: string }) => p.title)).toEqual(['Teste 1', 'Entrega do projeto']);
+    // Responde logo (202) e lê em segundo plano.
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({ status: 'PROCESSING', title: 'apontamentos.jpg', pendingProposals: 0 });
+    const doc = await readDone(res.body.id);
+    expect(doc).toMatchObject({
+      status: 'READY',
+      title: 'Calendário de avaliação de PW',
+      source: 'SCAN',
+      pendingProposals: 2,
+      failureReason: null,
+    });
+    expect(doc.proposals.map((p: { title: string }) => p.title)).toEqual(['Teste 1', 'Entrega do projeto']);
     expect(fake.requests[0]![0]).toEqual({ inlineData: { mimeType: 'image/jpeg', data: jpeg } });
 
     const chunks = await prisma.documentChunk.findMany({ where: { documentId: res.body.id } });
@@ -99,16 +118,33 @@ describe('POST /api/documents', () => {
     expect(chunks[0]!.embeddingModel).toBe('fake-embedding');
   });
 
-  it('um documento sem texto legível não fica guardado', async () => {
+  it('se a leitura falhar, o documento fica FAILED com o motivo, sem excertos', async () => {
     const res = await upload(owner, [{ ...extraction(), text: '  ' }]);
-    expect(res.status).toBe(422);
-    expect(await prisma.studyDocument.count()).toBe(0);
+    expect(await readDone(res.body.id)).toMatchObject({
+      status: 'FAILED',
+      failureReason: expect.stringMatching(/Não foi possível ler texto/),
+    });
+    // A IA responde fora do formato: o erro da IA, já em português, fica como motivo.
+    const bad = await upload(owner, [{ nada: true }]);
+    expect((await readDone(bad.body.id)).failureReason).toBe('A resposta da IA não veio no formato esperado.');
+    expect(await prisma.documentChunk.count()).toBe(0);
+  });
+
+  it('uma leitura parada há mais de 15 min (servidor reiniciado) passa a FAILED', async () => {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
+    const doc = await prisma.studyDocument.create({
+      data: { title: 'Antigo', source: 'SCAN', status: 'PROCESSING', userId: user.id },
+    });
+    await prisma.$executeRaw`UPDATE "StudyDocument" SET "updatedAt" = now() - interval '20 minutes' WHERE id = ${doc.id}`;
+    const { body } = await request(app).get('/api/documents').set('Cookie', owner);
+    expect(body[0]).toMatchObject({ status: 'FAILED', failureReason: expect.stringMatching(/interrompida/) });
   });
 });
 
 describe('revisão e confirmação das datas', () => {
   async function createDocument(items: unknown[]) {
     const res = await upload(owner, [extraction(items)]);
+    await readDone(res.body.id);
     return res.body.id as number;
   }
   const confirm = (id: number, items: unknown[], cookie = owner) =>

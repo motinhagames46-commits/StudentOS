@@ -20,12 +20,14 @@ import {
   type StudyDocumentView,
 } from '@studentos/shared';
 import { aiProvider } from '../ai/access.js';
+import { AiError } from '../ai/provider.js';
 import { chunkText, embedChunks, extractDocument } from '../ai/documents.js';
 import type { StudyDocument } from '../generated/prisma/client.js';
 import { HttpError, notFound, parse, validationError } from '../lib/http.js';
 import { findOwnedDiscipline } from '../lib/ownership.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAi } from '../middleware/ai.js';
+import { logServerError } from '../middleware/errors.js';
 
 export const documentsRouter = Router();
 
@@ -66,6 +68,8 @@ function summary(doc: StudyDocument): StudyDocumentSummary {
     createdAt: doc.createdAt.toISOString(),
     disciplineId: doc.disciplineId,
     pendingProposals: proposalsOf(doc).length,
+    status: doc.status,
+    failureReason: doc.failureReason,
   };
 }
 
@@ -116,51 +120,100 @@ async function view(userId: number, doc: StudyDocument): Promise<StudyDocumentVi
   return { ...summary(doc), text: doc.text, proposals: views };
 }
 
-// POST /api/documents — lê o documento com a IA e guarda o texto; as datas ficam por rever.
+/** Uma leitura parada há mais do que isto foi interrompida (o servidor reiniciou ou adormeceu a meio). */
+const STALE_PROCESSING_MS = 15 * 60 * 1000;
+
+/** Limpeza preguiçosa (o plano gratuito não tem tarefas agendadas), como nas importações. */
+async function failStaleReadings(userId: number) {
+  await prisma.studyDocument.updateMany({
+    where: { userId, status: 'PROCESSING', updatedAt: { lt: new Date(Date.now() - STALE_PROCESSING_MS) } },
+    data: { status: 'FAILED', failureReason: 'A leitura foi interrompida. Envia o documento outra vez.' },
+  });
+}
+
+type UploadFile = { filename: string; mimeType: DocumentMimeType; data: string };
+
+/**
+ * Lê o documento com a IA e grava o resultado. Corre depois de responder ao pedido: com raciocínio alto, a
+ * leitura leva minutos. Nunca lança: uma falha fica no documento (FAILED e o motivo) para o estudante ver.
+ */
+async function readDocument(id: number, userId: number, files: UploadFile[]) {
+  try {
+    const ai = aiProvider();
+    if (!ai) throw new AiError('AI_UNAVAILABLE', 'A IA deixou de estar configurada no servidor.');
+    const parts = files.map((f) => ({ inlineData: { mimeType: f.mimeType, data: f.data } }));
+    const extracted = await extractDocument(ai, parts, zonedDayKey(new Date(), DEFAULT_TIMEZONE));
+    if (!extracted.text) {
+      throw new HttpError(
+        422,
+        'DOCUMENT_EMPTY',
+        'Não foi possível ler texto neste documento. Tenta uma fotografia mais nítida.',
+      );
+    }
+    const chunks = chunkText(extracted.text);
+    const vectors = await embedChunks(ai, chunks);
+    // Se o documento foi apagado entretanto, a transação falha e não fica nada para trás.
+    await prisma.$transaction([
+      prisma.documentChunk.createMany({
+        data: chunks.map((content, ordinal) => ({
+          documentId: id,
+          ordinal,
+          content,
+          embedding: vectors[ordinal]!,
+          embeddingModel: ai.embeddingModel,
+          userId,
+        })),
+      }),
+      prisma.studyDocument.update({
+        where: { id },
+        data: {
+          status: 'READY',
+          title: extracted.title || undefined,
+          pageCount: extracted.pageCount || files.length,
+          text: extracted.text,
+          proposals: extracted.proposals as object[],
+        },
+      }),
+    ]);
+  } catch (err) {
+    const known = err instanceof AiError || err instanceof HttpError;
+    // Da IA fica só o detalhe seguro; um documento sem texto não é erro do servidor.
+    if (!(err instanceof HttpError)) logServerError(`Leitura do documento ${id}`, err);
+    await prisma.studyDocument
+      .updateMany({
+        where: { id, status: 'PROCESSING' },
+        data: {
+          status: 'FAILED',
+          failureReason: known ? err.message : 'Ocorreu um erro inesperado ao ler o documento. Tenta outra vez.',
+        },
+      })
+      .catch((e: unknown) => logServerError(`Leitura do documento ${id}`, e));
+  }
+}
+
+// POST /api/documents — recebe o documento e começa a lê-lo em segundo plano (202); o estado vê-se no GET.
 // Até 10 MB em base64 (mais um terço), lidos só depois da sessão, dos limites de pedidos e do acesso à IA.
 documentsRouter.post('/', requireAi, express.json({ limit: '15mb' }), async (req, res) => {
   const input = parse(documentCreateSchema, req.body);
   checkFiles(input.files);
   if (input.disciplineId) await findOwnedDiscipline(req.userId, input.disciplineId);
 
-  const ai = aiProvider()!;
-  const parts = input.files.map((f) => ({ inlineData: { mimeType: f.mimeType, data: f.data } }));
-  const extracted = await extractDocument(ai, parts, zonedDayKey(new Date(), DEFAULT_TIMEZONE));
-  if (!extracted.text) {
-    throw new HttpError(
-      422,
-      'DOCUMENT_EMPTY',
-      'Não foi possível ler texto neste documento. Tenta uma fotografia mais nítida.',
-    );
-  }
-  const chunks = chunkText(extracted.text);
-  const vectors = await embedChunks(ai, chunks);
-
   const doc = await prisma.studyDocument.create({
     data: {
-      title: extracted.title || input.files[0]!.filename.slice(0, 120),
+      title: input.files[0]!.filename.slice(0, 120),
       source: input.files.some((f) => f.mimeType === 'application/pdf') ? 'PDF' : 'SCAN',
-      status: 'READY',
-      pageCount: extracted.pageCount || input.files.length,
-      text: extracted.text,
-      proposals: extracted.proposals as object[],
+      status: 'PROCESSING',
+      pageCount: input.files.length,
       userId: req.userId,
       disciplineId: input.disciplineId ?? null,
-      chunks: {
-        create: chunks.map((content, ordinal) => ({
-          ordinal,
-          content,
-          embedding: vectors[ordinal]!,
-          embeddingModel: ai.embeddingModel,
-          userId: req.userId,
-        })),
-      },
     },
   });
-  res.status(201).json(await view(req.userId, doc));
+  void readDocument(doc.id, req.userId, input.files);
+  res.status(202).json(await view(req.userId, doc));
 });
 
 documentsRouter.get('/', async (req, res) => {
+  await failStaleReadings(req.userId);
   const docs = await prisma.studyDocument.findMany({
     where: { userId: req.userId },
     orderBy: { createdAt: 'desc' },
@@ -170,6 +223,7 @@ documentsRouter.get('/', async (req, res) => {
 });
 
 documentsRouter.get('/:id', async (req, res) => {
+  await failStaleReadings(req.userId);
   const doc = await findOwnedDocument(req.userId, parse(idParamSchema, req.params.id));
   res.json(await view(req.userId, doc));
 });

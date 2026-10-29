@@ -1,4 +1,4 @@
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { DocumentReview } from '../components/DocumentReview';
@@ -58,12 +58,29 @@ export function DocumentDetailPage() {
           </Button>
         }
       />
-      <div className="space-y-4">
-        {d.proposals.length > 0 && <DocumentReview doc={d} />}
-        <Card title="Texto transcrito" collapsible>
-          <p className="text-sm whitespace-pre-wrap text-stone-800">{d.text}</p>
+      {d.status === 'PROCESSING' ? (
+        <Card>
+          <p role="status" className="flex items-start gap-2 text-sm text-stone-700">
+            <Loader2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 animate-spin text-accent" />A IA está a ler o
+            documento com raciocínio alto, o que pode levar alguns minutos. Esta página atualiza-se sozinha e podes sair
+            dela: a leitura continua.
+          </p>
         </Card>
-      </div>
+      ) : d.status === 'FAILED' ? (
+        <Card>
+          <p role="alert" className="text-sm text-red-800">
+            A leitura falhou: {d.failureReason ?? 'motivo desconhecido.'}
+          </p>
+          <p className="mt-2 text-sm text-stone-600">Apaga este documento e envia-o outra vez.</p>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {d.proposals.length > 0 && <DocumentReview doc={d} />}
+          <Card title="Texto transcrito" collapsible>
+            <p className="text-sm whitespace-pre-wrap text-stone-800">{d.text}</p>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

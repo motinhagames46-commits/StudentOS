@@ -20,6 +20,8 @@ const doc = {
   createdAt: '2026-10-26T10:00:00.000Z',
   disciplineId: 5,
   pendingProposals: 2,
+  status: 'READY',
+  failureReason: null,
   text: 'Teste 1: 17 de novembro',
   proposals: [
     {
@@ -105,4 +107,34 @@ it('não marca a troca de uma data já existente e mostra a disciplina mesmo arq
       },
     ],
   });
+});
+
+it('enquanto a IA lê mostra o estado e, se falhar, o motivo', async () => {
+  const responses = [
+    { ...doc, status: 'PROCESSING', proposals: [], text: '' },
+    { ...doc, status: 'FAILED', failureReason: 'A resposta da IA não veio no formato esperado.', proposals: [] },
+  ];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(() => Promise.resolve(json(responses.length > 1 ? responses.shift() : responses[0]))),
+  );
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  render(
+    <QueryClientProvider client={client}>
+      <ToastProvider>
+        <ConfirmProvider>
+          <MemoryRouter initialEntries={['/documentos/1']}>
+            <Routes>
+              <Route path="/documentos/:id" element={<DocumentDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ConfirmProvider>
+      </ToastProvider>
+    </QueryClientProvider>,
+  );
+  expect(await screen.findByText(/A IA está a ler o documento/)).toBeInTheDocument();
+  await client.refetchQueries({ queryKey: ['document', 1] });
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'A leitura falhou: A resposta da IA não veio no formato esperado.',
+  );
 });

@@ -10,14 +10,14 @@ afterEach(() => vi.unstubAllGlobals());
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-it('envia o PDF em base64 com a disciplina escolhida e abre a revisão do documento lido', async () => {
+it('envia o PDF em base64 com a disciplina escolhida e abre o documento enquanto a IA o lê', async () => {
   const posted: unknown[] = [];
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
       if (init?.method === 'POST') {
         posted.push(JSON.parse(String(init.body)));
-        return Promise.resolve(json({ id: 7, proposals: [{}, {}] }, 201));
+        return Promise.resolve(json({ id: 7, status: 'PROCESSING', proposals: [] }, 202));
       }
       if (url === '/api/ai/status') return Promise.resolve(json({ status: 'ENABLED' }));
       if (url.startsWith('/api/disciplines')) {
@@ -62,5 +62,9 @@ it('envia o PDF em base64 com a disciplina escolhida e abre a revisão do docume
       disciplineId: 3,
     },
   ]);
-  await waitFor(() => expect(screen.getByRole('status')).toHaveTextContent('Documento lido: 2 para rever.'));
+  await waitFor(() =>
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Documento enviado. A IA está a lê-lo; podes sair desta página.',
+    ),
+  );
 });
