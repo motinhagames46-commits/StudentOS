@@ -32,6 +32,17 @@ describe('ritmo pelos ECTS (DL 42/2005: 25 h por ECTS)', () => {
     expect(p.weeklyMinutes).toBe(99);
   });
 
+  it('avaliação marcada antes do início do semestre: reparte desde hoje até à data, sem ritmo inflacionado', () => {
+    // Semestre seguinte (começa a 15/2), mas a avaliação ficou a 25/1: dado incoerente, ainda assim por fazer.
+    const next = { start: new Date('2027-02-15T00:00:00Z'), end: new Date('2027-06-30T00:00:00Z') };
+    const p = ok({ ...base, semester: next, assessmentDate: new Date('2027-01-25T09:00:00Z') });
+    // 2160 min ÷ 98,1 dias (de 19/10 a 25/1) ≈ 22 min/dia → ≈ 154 min por semana, e esta semana tem quota.
+    expect(p.weeklyMinutes).toBeGreaterThan(150);
+    expect(p.weeklyMinutes).toBeLessThan(160);
+    // A quota arredonda para cima e o ritmo semanal ao minuto: a diferença é no máximo 1.
+    expect(Math.abs(p.quotaMinutes - p.weeklyMinutes)).toBeLessThanOrEqual(1);
+  });
+
   it('com data marcada, o mesmo orçamento é repartido até à data (sem pico)', () => {
     const p = ok({ ...base, assessmentDate: new Date('2026-11-15T09:00:00Z') });
     // 75,4 dias desde 1/9 → 28,7 min/dia → 7 dias ≈ 201 min

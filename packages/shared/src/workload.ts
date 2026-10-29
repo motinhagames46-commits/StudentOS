@@ -48,10 +48,11 @@ export function ectsPace(input: EctsPaceInput): EctsPace {
   if (!input.ects || input.ects <= 0) return { ok: false, missing: 'ECTS' };
   if (!input.semester) return { ok: false, missing: 'SEMESTER' };
 
-  const start = input.semester.start.getTime();
   const semesterEnd = input.semester.end.getTime() + DAY_MS; // fim do último dia
   const until = input.assessmentDate ? input.assessmentDate.getTime() : semesterEnd;
   if (until <= input.now.getTime()) return { ok: false, missing: 'SEMESTER_OVER' };
+  // Uma avaliação marcada antes do início do semestre (dado incoerente) reparte-se desde hoje até à data.
+  const start = until <= input.semester.start.getTime() ? input.now.getTime() : input.semester.start.getTime();
 
   const autonomousMinutes = Math.max(0, Math.round(input.ects * HOURS_PER_ECTS * 60 - input.contactMinutes));
   const budgetMinutes = Math.round((autonomousMinutes * input.weightPercent) / 100);
