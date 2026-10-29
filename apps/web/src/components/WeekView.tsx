@@ -10,13 +10,12 @@ import { AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { useCalendar } from '../hooks/queries';
 import { errorMessage } from '../lib/api';
-import { formatTime } from '../lib/format';
+import { WEEKDAY_LABELS, formatTime } from '../lib/format';
 import type { BlockOccurrence, CalendarData } from '../lib/types';
 import { Button, ErrorState, IconButton, Skeleton } from './ui';
 
 const TZ = DEFAULT_TIMEZONE;
 const HOUR_PX = 48;
-const WEEKDAY_SHORT = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 
 /** Item posicionável na grelha horária (aula/evento, ou sessão de estudo planeada). */
 export interface TimedItem {
@@ -246,7 +245,7 @@ export function WeekView({
                         : 'text-stone-600'
                   }`}
                 >
-                  {WEEKDAY_SHORT[i]}
+                  {WEEKDAY_LABELS[i]}
                   <span className="block text-sm font-semibold">{Number(key.slice(8))}</span>
                 </button>
               ))}
@@ -267,7 +266,7 @@ export function WeekView({
                   key={key}
                   className={`px-2 py-2 text-center text-xs ${key === todayKey ? 'font-semibold text-accent' : 'text-stone-600'}`}
                 >
-                  {WEEKDAY_SHORT[i]} {Number(key.slice(8))}
+                  {WEEKDAY_LABELS[i]} {Number(key.slice(8))}
                 </div>
               ))}
             </div>

@@ -3,12 +3,11 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
 import { useCalendar, useUpdateTask } from '../hooks/queries';
 import { errorMessage } from '../lib/api';
-import { formatGrade } from '../lib/format';
+import { WEEKDAY_LABELS, formatGrade } from '../lib/format';
 import type { CalendarData } from '../lib/types';
 import { TaskList } from './TaskList';
 import { Button, DisciplineChip, ErrorState, IconButton } from './ui';
 
-const WEEKDAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const monthTitle = new Intl.DateTimeFormat('pt-PT', { month: 'long', year: 'numeric' });
 const longDay = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long' });
 
@@ -91,7 +90,7 @@ export function CalendarView() {
         className={`overflow-hidden rounded-lg border border-stone-200 transition-opacity ${isFetching ? 'opacity-70' : ''}`}
       >
         <div className="grid grid-cols-7 border-b border-stone-200 bg-stone-50 text-center text-xs font-medium text-stone-500">
-          {WEEKDAYS.map((w) => (
+          {WEEKDAY_LABELS.map((w) => (
             <div key={w} className="py-2">
               {w}
             </div>

@@ -64,6 +64,10 @@ export function isoToDateInput(iso: string | null): string {
 
 export const priorityLabels: Record<TaskPriority, string> = { LOW: 'Baixa', MEDIUM: 'Média', HIGH: 'Alta' };
 
+/** Dias da semana a começar na segunda (spec §3.1), abreviados e por extenso. */
+export const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+export const WEEKDAY_NAMES = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+
 export const assessmentTypeLabels: Record<AssessmentType, string> = {
   TEST: 'Teste',
   EXAM: 'Exame',

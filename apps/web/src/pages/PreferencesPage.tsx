@@ -5,9 +5,8 @@ import { Link } from 'react-router';
 import { Button, Card, ErrorState, FormError, IconButton, LoadingList, PageHeader, TextField } from '../components/ui';
 import { useSaveStudyPreferences, useStudyPreferences } from '../hooks/queries';
 import { ApiError, errorMessage } from '../lib/api';
+import { WEEKDAY_NAMES } from '../lib/format';
 import type { StudyPreferencesView } from '../lib/types';
-
-const WEEKDAYS = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
 
 const toTime = (minute: number) =>
   minute >= 1440
@@ -126,7 +125,7 @@ function PreferencesForm({ initial }: { initial: StudyPreferencesView }) {
               Fim de semana 10:00–13:00
             </Button>
           </div>
-          {WEEKDAYS.map((label, i) => {
+          {WEEKDAY_NAMES.map((label, i) => {
             const weekday = i + 1;
             const dayRows = rows.filter((r) => r.weekday === weekday);
             return (

@@ -71,9 +71,6 @@ export const STUDY_PERIODS: StudyPeriod[] = [
   { id: 'noite', label: 'Noite (21:00–23:00)', startMinute: 21 * 60, endMinute: 23 * 60 },
 ];
 
-export const WEEKDAY_LABELS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-export const WEEKDAY_NAMES = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
-
 /** Uma janela por dia × período escolhido (dias 1 = segunda … 7 = domingo), por ordem. */
 export function availabilityFromChoices(weekdays: number[], periodIds: string[]): AvailabilityWindowInput[] {
   const periods = STUDY_PERIODS.filter((p) => periodIds.includes(p.id));

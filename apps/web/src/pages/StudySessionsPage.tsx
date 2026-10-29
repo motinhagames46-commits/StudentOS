@@ -26,15 +26,10 @@ import {
 } from '../hooks/queries';
 import { useMe } from '../hooks/useAuth';
 import { errorMessage } from '../lib/api';
-import { formatClock, formatDateTime, formatDuration } from '../lib/format';
+import { formatClock, formatDateTime, formatDuration, formatTime } from '../lib/format';
 import type { StudySession } from '../lib/types';
 
 const DAY = 24 * 60 * 60 * 1000;
-
-const formatTime = (iso: string) =>
-  new Intl.DateTimeFormat('pt-PT', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Lisbon' }).format(
-    new Date(iso),
-  );
 
 /** Tempo de foco: duração total menos as pausas (terminadas e, se existir, a que está em curso). */
 const focusMs = (s: StudySession, now = Date.now()) => {

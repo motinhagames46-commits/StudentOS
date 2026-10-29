@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
-import { WEEKDAY_NAMES, type Commitment } from '../../lib/onboarding';
+import { WEEKDAY_NAMES } from '../../lib/format';
+import type { Commitment } from '../../lib/onboarding';
 import { Button, IconButton, SelectField, TextField } from '../ui';
 
 export interface CommitmentRow extends Commitment {

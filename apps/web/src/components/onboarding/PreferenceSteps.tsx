@@ -6,12 +6,11 @@ import { ApiError, api, errorMessage } from '../../lib/api';
 import {
   SESSION_PRESETS,
   STUDY_PERIODS,
-  WEEKDAY_LABELS,
   availabilityFromChoices,
   commitmentBlock,
   weeklyAvailableMinutes,
 } from '../../lib/onboarding';
-import { isoToDateOnly } from '../../lib/format';
+import { WEEKDAY_LABELS, isoToDateOnly } from '../../lib/format';
 import type { Semester } from '../../lib/types';
 import { CommitmentsField, commitmentErrors, type CommitmentRow } from './CommitmentsField';
 import { FormError, SelectField } from '../ui';
