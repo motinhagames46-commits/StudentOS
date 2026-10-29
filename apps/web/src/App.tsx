@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { Link, Route, Routes } from 'react-router';
 import { AppLayout } from './components/AppLayout';
 import { FullPageSpinner, RequireAuth } from './components/RequireAuth';
+import { NewVersionBanner } from './components/NewVersionBanner';
 import { ServerWakeBanner } from './components/ServerWakeBanner';
 import { lazyPage } from './lib/lazyPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
@@ -42,6 +43,7 @@ function NotFound() {
 export function App() {
   return (
     <>
+      <NewVersionBanner />
       <ServerWakeBanner />
       <Routes>
         <Route path="/login" element={<LoginPage />} />

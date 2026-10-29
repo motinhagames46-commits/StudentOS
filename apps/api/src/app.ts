@@ -43,6 +43,11 @@ export function createApp() {
   if (env.isProd) app.set('trust proxy', 1);
 
   app.use(requestId);
+  // Um separador aberto antes de um deploy continua com o código antigo: a versão vai em cada resposta.
+  app.use((_req, res, next) => {
+    if (env.APP_VERSION) res.setHeader('X-App-Version', env.APP_VERSION);
+    next();
+  });
   app.use(helmet());
   // Limite de 100 KB, exceto nas importações (ficheiro como texto, até 1 MB + envelope JSON). Os documentos
   // (até 15 MB) só são lidos depois da sessão e dos limites de pedidos, no próprio router.

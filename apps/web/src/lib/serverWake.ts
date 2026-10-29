@@ -1,5 +1,7 @@
 // O servidor gratuito adormece ao fim de ~15 minutos sem pedidos e demora até um minuto a acordar.
 // Pedidos lentos ativam um aviso honesto, e voltar a um separador escondido há muito tempo acorda-o cedo.
+import { noteServerVersion } from './appVersion';
+
 const SLOW_MS = 3000;
 const WAKE_AFTER_HIDDEN_MS = 10 * 60 * 1000;
 
@@ -44,7 +46,8 @@ export function wakeServerOnReturn(): () => void {
       return;
     }
     if (hiddenAt !== null && Date.now() - hiddenAt >= WAKE_AFTER_HIDDEN_MS) {
-      void trackSlow(fetch('/api/health').catch(() => undefined));
+      // Também diz se, entretanto, houve um deploy (aviso de versão nova).
+      void trackSlow(fetch('/api/health').then(noteServerVersion, () => undefined));
     }
     hiddenAt = null;
   };

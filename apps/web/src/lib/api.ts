@@ -1,4 +1,5 @@
 // Cliente HTTP da API. Usa o cookie de sessão httpOnly (credentials: 'include').
+import { noteServerVersion } from './appVersion';
 import { trackSlow } from './serverWake';
 
 export interface ApiErrorDetail {
@@ -41,6 +42,7 @@ export async function api<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     res = await (expectSlow ? request : trackSlow(request));
+    noteServerVersion(res);
   } catch {
     throw new ApiError(0, 'NETWORK_ERROR', 'Sem ligação ao servidor. Verifica a tua ligação.');
   }

@@ -24,6 +24,8 @@ export const env = {
   GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
   /** Emails (separados por vírgulas) das contas que podem usar a IA. Vazio: ninguém. */
   AI_ALLOWED_EMAILS: emailList(process.env.AI_ALLOWED_EMAILS),
+  /** Commit a correr (o Render define-o na build e em execução): a web compara-o e avisa se está desatualizada. */
+  APP_VERSION: process.env.RENDER_GIT_COMMIT ?? '',
 };
 
 /**

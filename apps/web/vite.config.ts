@@ -5,6 +5,8 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // O mesmo commit que o servidor anuncia em X-App-Version (vazio fora do Render: sem aviso).
+  define: { 'import.meta.env.VITE_APP_VERSION': JSON.stringify(process.env.RENDER_GIT_COMMIT ?? '') },
   resolve: {
     alias: {
       '@studentos/shared': fileURLToPath(new URL('../../packages/shared/src/index.ts', import.meta.url)),
