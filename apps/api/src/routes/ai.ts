@@ -47,8 +47,10 @@ aiRouter.delete('/consent', async (req, res) => {
 // Pedido real mínimo: só se diz «ligado» depois de o Gemini responder no formato pedido.
 aiRouter.post('/check', requireAi, async (_req, res) => {
   const ai = aiProvider()!;
-  const answer = await ai.generateJson(z.object({ ok: z.boolean() }), [
-    { text: 'Verificação de ligação. Responde só com o JSON {"ok": true}.' },
-  ]);
+  const answer = await ai.generateJson(
+    z.object({ ok: z.boolean() }),
+    [{ text: 'Verificação de ligação. Responde só com o JSON {"ok": true}.' }],
+    { thinking: 'low' },
+  );
   res.json({ ok: answer.ok, model: ai.model });
 });

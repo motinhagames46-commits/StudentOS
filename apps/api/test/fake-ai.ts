@@ -18,14 +18,20 @@ export class FakeAiProvider implements AiProvider {
   /** Para simular a Files API em baixo. */
   failUploads = false;
   readonly requests: AiPart[][] = [];
+  readonly options: ({ system?: string; thinking?: string } | undefined)[] = [];
   readonly searches: AiPart[][] = [];
   /** Vetor devolvido para perguntas (task 'query'), para os testes escolherem o que fica mais perto. */
   queryVector: number[] | null = null;
 
   constructor(private readonly responses: unknown[] = []) {}
 
-  async generateJson<T extends z.ZodType>(schema: T, parts: AiPart[]): Promise<z.output<T>> {
+  async generateJson<T extends z.ZodType>(
+    schema: T,
+    parts: AiPart[],
+    options?: { system?: string; thinking?: string },
+  ): Promise<z.output<T>> {
     this.requests.push(parts);
+    this.options.push(options);
     const result = schema.safeParse(this.responses.shift());
     if (!result.success) throw new AiError('AI_INVALID_RESPONSE', 'A resposta da IA não veio no formato esperado.');
     return result.data;

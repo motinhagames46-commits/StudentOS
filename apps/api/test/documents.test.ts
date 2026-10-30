@@ -48,8 +48,9 @@ afterEach(() => {
   setAiProviderForTests(undefined);
 });
 
+/** A leitura faz duas chamadas (transcrição e datas): cada resposta serve às duas (o Zod ignora o resto). */
 function upload(cookie: string[], responses: unknown[], body: Record<string, unknown> = {}) {
-  fake = new FakeAiProvider(responses);
+  fake = new FakeAiProvider(responses.flatMap((r) => [r, r]));
   setAiProviderForTests(fake);
   return request(app)
     .post('/api/documents')
@@ -111,6 +112,8 @@ describe('POST /api/documents', () => {
     });
     expect(doc.proposals.map((p: { title: string }) => p.title)).toEqual(['Teste 1', 'Entrega do projeto']);
     expect(fake.requests[0]![0]).toEqual({ inlineData: { mimeType: 'image/jpeg', data: jpeg } });
+    // Transcrição com raciocínio baixo (mais rápida); datas com o alto, por omissão.
+    expect(fake.options.map((o) => o?.thinking)).toEqual(['low', undefined]);
 
     const chunks = await prisma.documentChunk.findMany({ where: { documentId: res.body.id } });
     expect(chunks).toHaveLength(1);

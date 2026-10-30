@@ -7,6 +7,7 @@ import {
   normalize,
   type AiPart,
   type AiProvider,
+  type ThinkingLevel,
   type UploadedFile,
   type WebAnswer,
 } from './provider.js';
@@ -152,7 +153,7 @@ export class GeminiProvider implements AiProvider {
   private async generate(
     parts: AiPart[],
     system: string | undefined,
-    extra: { generationConfig?: Record<string, unknown>; tools?: unknown[] },
+    extra: { generationConfig?: Record<string, unknown>; tools?: unknown[]; thinking?: ThinkingLevel },
   ) {
     const data = generateResponse.safeParse(
       await this.call(`${encodeURIComponent(this.model)}:generateContent`, {
@@ -160,8 +161,8 @@ export class GeminiProvider implements AiProvider {
         ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
         ...(extra.tools ? { tools: extra.tools } : {}),
         // Raciocínio alto por escolha do dono (qualidade antes da rapidez); explícito porque nem todos os
-        // modelos Flash o têm por omissão.
-        generationConfig: { thinkingConfig: { thinkingLevel: 'high' }, ...extra.generationConfig },
+        // modelos Flash o têm por omissão. «low» existe em todos os modelos de texto («minimal» não).
+        generationConfig: { thinkingConfig: { thinkingLevel: extra.thinking ?? 'high' }, ...extra.generationConfig },
       }),
     );
     const candidate = data.success ? data.data.candidates?.[0] : undefined;
@@ -176,11 +177,16 @@ export class GeminiProvider implements AiProvider {
     return { text, grounding: candidate?.groundingMetadata };
   }
 
-  async generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options: { system?: string } = {}) {
+  async generateJson<T extends z.ZodType>(
+    schema: T,
+    parts: AiPart[],
+    options: { system?: string; thinking?: ThinkingLevel } = {},
+  ) {
     // O $schema (versão do JSON Schema) não faz parte do formato que a API aceita.
     const { $schema: _version, ...responseJsonSchema } = z.toJSONSchema(schema) as Record<string, unknown>;
     const { text } = await this.generate(parts, options.system, {
       generationConfig: { responseMimeType: 'application/json', responseJsonSchema },
+      thinking: options.thinking,
     });
 
     let json: unknown;

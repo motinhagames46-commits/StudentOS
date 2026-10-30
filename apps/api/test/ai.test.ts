@@ -95,6 +95,10 @@ describe('Gemini pela API REST', () => {
       properties: { nota: { type: 'number' } },
     });
     expect(body.generationConfig.responseJsonSchema).not.toHaveProperty('$schema');
+
+    await gemini.generateJson(z.object({ nota: z.number() }), [{ text: 'olá' }], { thinking: 'low' });
+    const low = JSON.parse(String(fetchMock.mock.calls[1]![1]?.body)) as { generationConfig: Record<string, unknown> };
+    expect(low.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' });
   });
 
   it('respostas fora do esquema, vazias ou com limite de pedidos dão erros claros', async () => {

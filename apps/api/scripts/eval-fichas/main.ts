@@ -4,7 +4,7 @@
 // durante o desenvolvimento estraga a medição (o extrator passaria a ser afinado contra elas).
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { aiProvider } from '../../src/ai/access.js';
-import { extractDocument } from '../../src/ai/documents.js';
+import { extractItems } from '../../src/ai/documents.js';
 import type { FichaExtractor } from '../../src/lib/fichas-uc/extractor.js';
 import { checkThreshold, scoreCase, tally, type CaseScore, type Dataset, type DatasetCase } from './score.js';
 
@@ -17,13 +17,13 @@ const extratorVazio: FichaExtractor = {
   extract: async () => ({ ok: false, reason: 'NAO_IMPLEMENTADO', message: 'Extrator vazio (linha de base)' }),
 };
 
-/** O extrator dos documentos (Gemini), com o texto da ficha: mede o mesmo pedido que a app faz. */
+/** O extrator das datas dos documentos (Gemini), com o texto da ficha: mede o mesmo pedido que a app faz. */
 const extratorGemini: FichaExtractor = {
   name: 'gemini',
   async extract(text) {
     const ai = aiProvider();
     if (!ai) return { ok: false, reason: 'NAO_IMPLEMENTADO', message: 'Falta GEMINI_API_KEY em apps/api/.env' };
-    const { proposals } = await extractDocument(ai, [{ text }], new Date().toISOString().slice(0, 10));
+    const proposals = await extractItems(ai, [{ text }], new Date().toISOString().slice(0, 10));
     const assessments = proposals
       .filter((p) => p.target === 'assessment' && p.weight !== null)
       .map((p) => ({ name: p.title, type: p.assessmentType, weight: p.weight!, minScore: p.minScore }));
