@@ -30,24 +30,69 @@
   }
 }
 
+/* Modo noite: as utilidades do Tailwind usam estas variáveis, por isso trocar os valores troca a app inteira.
+   Os papéis invertem-se: «white» é a superfície dos cartões e «stone-900» o texto principal; o texto «branco»
+   sobre o acento, o vermelho ou o stone-900 fica escuro, porque esses fundos passam a claros. Todos os pares de
+   texto ficam ≥ 4,5:1 (docs/research/interface-moderna.md). O tema escolhe-se em lib/theme.ts. */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-white: #1c1a19;
+  --color-page: #0e0d0c;
+  --color-panel-border: #2e2b29;
+  --color-stone-50: #211f1e;
+  --color-stone-100: #292624;
+  --color-stone-200: #383432;
+  --color-stone-300: #4d4845;
+  --color-stone-400: #8a837d;
+  --color-stone-500: #a39c96;
+  --color-stone-600: #b8b1ab;
+  --color-stone-700: #cfc9c4;
+  --color-stone-800: #e2ddd9;
+  --color-stone-900: #f2efec;
+  --color-stone-950: #faf8f6;
+  --color-accent: #3cc4a5;
+  --color-accent-hover: #5fd3bc;
+  --color-accent-soft: #12302a;
+  --color-accent-ink: #a6eadb;
+  --color-red-50: #2a1514;
+  --color-red-100: #3a1a18;
+  --color-red-200: #5c2522;
+  --color-red-400: #e0716a;
+  --color-red-500: #ef6b62;
+  --color-red-600: #f28b84;
+  --color-red-700: #f5a19b;
+  --color-red-800: #f8b7b2;
+  --color-red-900: #fbd0cc;
+  --color-amber-50: #2a2110;
+  --color-amber-200: #5a4518;
+  --color-amber-800: #f0c46a;
+  --color-amber-900: #f6d58e;
+  --color-green-50: #0f2417;
+  --color-green-600: #4ccf7e;
+  --color-green-700: #6fd896;
+  --color-green-800: #8fe0ab;
+  --color-green-900: #b4ebc7;
+}
+
 /* Liquid Glass só na camada de navegação, que flutua por cima do conteúdo (Apple HIG, Materials): nunca em
-   cartões nem no conteúdo. Base quase opaca sem suporte; sem transparência ou com mais contraste, fica sólido. */
+   cartões nem no conteúdo. Base quase opaca sem suporte; sem transparência ou com mais contraste, fica sólido.
+   Feito a partir da superfície e do texto, segue o modo noite sozinho. */
 @utility glass {
-  background-color: rgb(255 255 255 / 0.96);
-  border-color: rgb(0 0 0 / 0.07);
+  background-color: color-mix(in srgb, var(--color-white) 96%, transparent);
+  border-color: color-mix(in srgb, var(--color-stone-900) 7%, transparent);
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-    background-color: rgb(255 255 255 / 0.78);
+    background-color: color-mix(in srgb, var(--color-white) 78%, transparent);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     backdrop-filter: blur(20px) saturate(180%);
   }
   @media (prefers-reduced-transparency: reduce) {
-    background-color: #fff;
+    background-color: var(--color-white);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
   @media (prefers-contrast: more) {
-    background-color: #fff;
-    border-color: rgb(0 0 0 / 0.45);
+    background-color: var(--color-white);
+    border-color: color-mix(in srgb, var(--color-stone-900) 45%, transparent);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }

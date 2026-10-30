@@ -83,16 +83,16 @@ export function StatTiles({ data, studyMinutes }: { data: Dashboard; studyMinute
     <dl className="grid grid-cols-2 gap-y-4 rounded-2xl border border-panel-border bg-white py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] sm:grid-cols-3 lg:grid-cols-5">
       {tiles.map(({ icon: Icon, label, value, tone, hint }) => (
         <div key={label} className="px-4 lg:border-l lg:border-panel-border lg:first:border-l-0">
-          <dt className="flex items-center gap-1.5 text-[13px] text-[#566A80]">
-            <Icon aria-hidden="true" className="size-4 text-[#7B8794]" />
+          <dt className="flex items-center gap-1.5 text-[13px] text-stone-600">
+            <Icon aria-hidden="true" className="size-4 text-stone-500" />
             {label}
           </dt>
           <dd
-            className={`mt-1 text-3xl font-semibold tabular-nums ${tone === 'danger' ? 'text-[#C0392B]' : 'text-stone-800'}`}
+            className={`mt-1 text-3xl font-semibold tabular-nums ${tone === 'danger' ? 'text-red-700' : 'text-stone-800'}`}
           >
             {value}
           </dd>
-          <dd className="mt-0.5 text-xs text-[#566A80]">{hint}</dd>
+          <dd className="mt-0.5 text-xs text-stone-600">{hint}</dd>
         </div>
       ))}
     </dl>
@@ -127,7 +127,7 @@ export function SetupProgress({ data }: { data: Dashboard }) {
             {s.done ? (
               <CheckCircle2 aria-hidden="true" className="size-4 text-accent" />
             ) : (
-              <Circle aria-hidden="true" className="size-4 text-[#7B8794]" />
+              <Circle aria-hidden="true" className="size-4 text-stone-500" />
             )}
             <span className={s.done ? 'text-stone-500 line-through' : 'text-stone-800'}>{s.label}</span>
             <span className="sr-only">{s.done ? '(feito)' : '(por fazer)'}</span>

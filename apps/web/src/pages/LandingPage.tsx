@@ -232,7 +232,7 @@ export function LandingPage() {
           </ol>
         </section>
 
-        <section aria-labelledby="confianca" className="bg-[#2A3F54] text-white">
+        <section aria-labelledby="confianca" className="bg-stone-900 text-white">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 md:grid-cols-2">
             <div>
               <h2 id="confianca" className="text-3xl font-bold tracking-tight">
@@ -240,11 +240,11 @@ export function LandingPage() {
               </h2>
               <ul className="mt-6 space-y-4 text-stone-100">
                 <li className="flex gap-3">
-                  <Lock aria-hidden="true" className="mt-1 size-5 shrink-0 text-[#5FD3BC]" />
+                  <Lock aria-hidden="true" className="mt-1 size-5 shrink-0 text-brand" />
                   Os dados são teus: exportas tudo em JSON e eliminas a conta quando quiseres, na própria app.
                 </li>
                 <li className="flex gap-3">
-                  <ShieldCheck aria-hidden="true" className="mt-1 size-5 shrink-0 text-[#5FD3BC]" />
+                  <ShieldCheck aria-hidden="true" className="mt-1 size-5 shrink-0 text-brand" />
                   Sem anúncios e sem cookies de análise: só o cookie que mantém a sessão iniciada.
                 </li>
               </ul>

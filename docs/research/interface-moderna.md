@@ -45,4 +45,12 @@ Da interface web e móvel do Instagram retirou-se o tom geral, não elementos co
   - campos com cantos de 12 px;
   - etiquetas em pílula.
 - **Cor:** mantém-se o acento verde-azulado AA ([`cores.md`](cores.md)).
-- **Fora desta alteração:** o modo escuro, que obrigaria a rever o contraste de todos os ecrãs.
+
+## Modo noite (acrescentado a 2026-10-30)
+
+- **Como funciona:** no Tailwind 4 as utilidades usam as variáveis do tema (`bg-white` é `var(--color-white)`). O modo noite redefine essas variáveis em `:root[data-theme='dark']`, sem acrescentar `dark:` às centenas de classes.
+- **Papéis invertidos:** `white` passa a ser a superfície escura dos cartões e `stone-900` o texto claro. Os fundos que levavam texto branco (acento, vermelho, `stone-900`) passam a claros, e esse texto fica escuro.
+- **Contraste:** todos os pares de texto usados ficam ≥ 4,5:1. O mínimo é `stone-400` sobre a superfície (4,6:1); o texto secundário `stone-500` fica a 6,4:1. O axe corre também em modo noite (`e2e/accessibility.spec.ts`).
+- **Vidro:** o utilitário `glass` mistura a superfície e o texto com `color-mix`, por isso segue o tema sem regras próprias.
+- **Escolha do tema:** sem escolha guardada, a app segue o sistema, também quando este muda. O botão «Modo noite» (`aria-pressed`) guarda a escolha só neste browser (`localStorage`, chave `tema`).
+- **Sem piscar a branco:** `public/theme.js` aplica o tema antes da primeira pintura. É um ficheiro e não um script inline porque a CSP do servidor (`helmet`) não deixa correr scripts inline.

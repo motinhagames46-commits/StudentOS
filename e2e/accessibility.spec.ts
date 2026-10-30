@@ -58,6 +58,24 @@ test.describe('acessibilidade (axe)', () => {
     await expectNoSeriousViolations(page);
   });
 
+  test('modo noite: painel, tarefas e disciplina com contraste AA', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Modo noite' }).filter({ visible: true }).click();
+    // Recarregar: a escolha fica guardada e é aplicada antes da primeira pintura (public/theme.js), e o axe não
+    // mede cores a meio da transição do clique.
+    await page.reload();
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.getByText('Fichas de exercícios', { exact: true })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.goto('/tarefas');
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await expect(page.getByRole('checkbox', { name: /Fichas de exercícios/ })).toBeVisible();
+    await expectNoSeriousViolations(page);
+    await page.goto(`/disciplinas/${disciplineId}`);
+    await expect(page.getByText('Para passar precisas de 8,0')).toBeVisible();
+    await expectNoSeriousViolations(page);
+  });
+
   test('tarefas', async ({ page }) => {
     await page.goto('/tarefas');
     await expect(page.getByRole('checkbox', { name: /Fichas de exercícios/ })).toBeVisible();

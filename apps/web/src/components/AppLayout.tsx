@@ -13,16 +13,19 @@ import {
   Repeat,
   Wallet,
   MoreHorizontal,
+  Moon,
+  Sun,
   Timer,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
-import { Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router';
 import { useAiStatus } from '../hooks/queries';
 import { useLogout, useMe } from '../hooks/useAuth';
+import { theme } from '../lib/theme';
 import { AlertsBell } from './AlertsBell';
-import { LoadingList } from './ui';
+import { IconButton, LoadingList } from './ui';
 
 interface NavItem {
   to: string;
@@ -134,6 +137,7 @@ export function AppLayout() {
       <header className="glass sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2.5 md:hidden">
         <Logo />
         <div className="flex items-center gap-1">
+          <ThemeToggle />
           <AlertsBell align="right" />
           <button
             type="button"
@@ -149,6 +153,7 @@ export function AppLayout() {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Barra superior de vidro — desktop */}
         <header className="glass sticky top-0 z-20 hidden h-16 items-center justify-end gap-3 border-b px-6 md:flex">
+          <ThemeToggle />
           <AlertsBell align="right" />
           <span className="flex items-center gap-2.5">
             <Avatar name={data?.user.name ?? ''} className="size-9 bg-accent text-xs text-white" />
@@ -170,6 +175,15 @@ export function AppLayout() {
 
       <MobileNav />
     </div>
+  );
+}
+
+function ThemeToggle() {
+  const dark = useSyncExternalStore(theme.subscribe, theme.isDark);
+  return (
+    <IconButton label="Modo noite" aria-pressed={dark} onClick={theme.toggle}>
+      {dark ? <Sun aria-hidden="true" className="size-4" /> : <Moon aria-hidden="true" className="size-4" />}
+    </IconButton>
   );
 }
 
@@ -209,7 +223,7 @@ function MobileNav() {
   return (
     <>
       {open && (
-        <div className="fixed inset-0 z-20 bg-stone-900/20 md:hidden" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-20 bg-black/25 md:hidden" onClick={() => setOpen(false)}>
           <nav
             id="menu-mais"
             aria-label="Mais secções"
