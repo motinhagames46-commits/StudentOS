@@ -56,7 +56,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       <div
         role="status"
         aria-live="polite"
-        className="pointer-events-none fixed inset-x-0 bottom-32 z-50 flex flex-col items-center gap-2 px-4 md:bottom-16"
+        className="pointer-events-none fixed inset-x-0 bottom-[calc(8rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 px-4 md:bottom-16"
       >
         {toasts.map((t) => (
           <Toast key={t.id} toast={t} onClose={(reason) => close(t, reason)} />

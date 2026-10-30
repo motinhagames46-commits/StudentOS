@@ -64,10 +64,10 @@ const secondary: NavItem[] = [
 
 const MOBILE_PRIMARY = 4;
 
-function Logo({ dark = false }: { dark?: boolean }) {
+function Logo() {
   return (
-    <span className={`flex items-center gap-2 text-base font-semibold ${dark ? 'text-white' : 'text-stone-900'}`}>
-      <img src="/favicon.svg" alt="" className="size-6" />
+    <span className="flex items-center gap-2 text-lg font-bold tracking-tight text-stone-900">
+      <img src="/favicon.svg" alt="" className="size-7" />
       StudentOS
     </span>
   );
@@ -104,46 +104,34 @@ export function AppLayout() {
         Saltar para o conteúdo
       </a>
 
-      {/* Barra lateral escura (estilo Gentelella) — desktop */}
-      <aside className="hidden w-[230px] shrink-0 flex-col bg-sidebar text-sidebar-text md:sticky md:top-0 md:flex md:h-dvh">
-        <div className="flex h-[58px] items-center px-5">
-          <Logo dark />
+      {/* Barra lateral clara — desktop */}
+      <aside className="hidden w-[244px] shrink-0 flex-col border-r border-panel-border bg-white md:sticky md:top-0 md:flex md:h-dvh">
+        <div className="flex h-16 items-center px-6">
+          <Logo />
         </div>
-        <div className="flex items-center gap-3 px-5 py-4">
-          <Avatar
-            name={data?.user.name ?? ''}
-            className="size-12 bg-white/10 text-base text-white ring-2 ring-white/20"
-          />
-          <div className="min-w-0">
-            <p className="text-xs text-sidebar-muted">Bem-vindo,</p>
-            <p className="truncate text-sm font-medium text-white">{data?.user.name}</p>
-            <p className="truncate text-xs text-sidebar-muted">{data?.activeSemester?.label}</p>
-          </div>
-        </div>
-        <nav aria-label="Navegação principal" className="flex-1 overflow-y-auto pb-4">
-          <p className="px-5 pt-3 pb-2 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">Geral</p>
+        <nav aria-label="Navegação principal" className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
           {main.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
-          <p className="px-5 pt-5 pb-2 text-[11px] font-semibold tracking-wider text-sidebar-muted uppercase">
-            Definições
-          </p>
+          <p className="px-3 pt-6 pb-2 text-xs font-medium text-stone-500">Definições</p>
           {secondary.map((item) => (
             <SidebarLink key={item.to} item={item} />
           ))}
         </nav>
-        <button
-          type="button"
-          onClick={() => logout.mutate()}
-          className="flex items-center gap-3 border-t border-white/10 px-5 py-3 text-sm text-sidebar-text hover:bg-sidebar-hover hover:text-white focus-visible:outline-white focus-visible:-outline-offset-2"
-        >
-          <LogOut aria-hidden="true" className="size-4 text-sidebar-muted" />
-          Terminar sessão
-        </button>
+        <div className="px-3 pb-4">
+          <button
+            type="button"
+            onClick={() => logout.mutate()}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] text-stone-700 hover:bg-stone-100"
+          >
+            <LogOut aria-hidden="true" className="size-5 text-stone-500" />
+            Terminar sessão
+          </button>
+        </div>
       </aside>
 
-      {/* Barra superior — mobile */}
-      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-4 py-3 md:hidden">
+      {/* Barra superior de vidro — mobile */}
+      <header className="glass sticky top-0 z-20 flex items-center justify-between border-b px-4 py-2.5 md:hidden">
         <Logo />
         <div className="flex items-center gap-1">
           <AlertsBell align="right" />
@@ -151,7 +139,7 @@ export function AppLayout() {
             type="button"
             onClick={() => logout.mutate()}
             aria-label="Terminar sessão"
-            className="inline-flex size-9 items-center justify-center rounded-lg text-stone-500 hover:bg-stone-100"
+            className="inline-flex size-9 items-center justify-center rounded-full text-stone-600 hover:bg-stone-900/5"
           >
             <LogOut aria-hidden="true" className="size-4" />
           </button>
@@ -159,15 +147,21 @@ export function AppLayout() {
       </header>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Barra superior — desktop */}
-        <header className="hidden h-[58px] items-center justify-end gap-3 border-b border-panel-border bg-white px-6 md:flex">
+        {/* Barra superior de vidro — desktop */}
+        <header className="glass sticky top-0 z-20 hidden h-16 items-center justify-end gap-3 border-b px-6 md:flex">
           <AlertsBell align="right" />
-          <span className="flex items-center gap-2 text-sm text-stone-700">
-            <Avatar name={data?.user.name ?? ''} className="size-8 bg-sidebar text-xs text-white" />
-            {data?.user.name}
+          <span className="flex items-center gap-2.5">
+            <Avatar name={data?.user.name ?? ''} className="size-9 bg-accent text-xs text-white" />
+            <span className="leading-tight">
+              <span className="block text-sm font-semibold text-stone-900">{data?.user.name}</span>
+              <span className="block text-xs text-stone-600">{data?.activeSemester?.label}</span>
+            </span>
           </span>
         </header>
-        <main id="conteudo" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8 md:pb-10">
+        <main
+          id="conteudo"
+          className="mx-auto w-full max-w-6xl flex-1 px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:px-8 md:pt-8 md:pb-10"
+        >
           <Suspense fallback={<LoadingList rows={4} />}>
             <Outlet />
           </Suspense>
@@ -185,14 +179,12 @@ function SidebarLink({ item: { to, label, icon: Icon, end } }: { item: NavItem }
       to={to}
       end={end}
       className={({ isActive }) =>
-        `group flex items-center gap-3 border-r-[5px] px-5 py-2.5 text-sm transition-colors focus-visible:outline-white focus-visible:-outline-offset-2 ${
-          isActive
-            ? 'border-brand bg-linear-to-r from-sidebar-active-from to-sidebar-active-to font-medium text-white'
-            : 'border-transparent text-sidebar-text hover:bg-sidebar-hover hover:text-white'
+        `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
+          isActive ? 'bg-stone-100 font-semibold text-stone-900' : 'text-stone-700 hover:bg-stone-100'
         }`
       }
     >
-      <Icon aria-hidden="true" className="size-4 text-sidebar-muted group-aria-[current=page]:text-white" />
+      <Icon aria-hidden="true" className="size-5 text-stone-500 group-aria-[current=page]:text-accent" />
       {label}
     </NavLink>
   );
@@ -213,7 +205,7 @@ function MobileNav() {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const tab = 'flex flex-col items-center gap-1 py-2 text-xs font-medium';
+  const tab = 'flex flex-col items-center gap-0.5 rounded-[22px] py-1.5 text-[11px] font-medium';
   return (
     <>
       {open && (
@@ -221,7 +213,7 @@ function MobileNav() {
           <nav
             id="menu-mais"
             aria-label="Mais secções"
-            className="absolute inset-x-3 bottom-20 rounded-xl border border-stone-200 bg-white p-2 shadow-lg"
+            className="glass absolute inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] rounded-3xl border p-2 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
             {more.map(({ to, label, icon: Icon }) => (
@@ -230,26 +222,29 @@ function MobileNav() {
                 to={to}
                 onClick={() => setOpen(false)}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm ${isActive ? 'bg-stone-100 font-medium' : 'text-stone-700'}`
+                  `flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm ${isActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-800'}`
                 }
               >
-                <Icon aria-hidden="true" className="size-4" />
+                <Icon aria-hidden="true" className="size-5" />
                 {label}
               </NavLink>
             ))}
           </nav>
         </div>
       )}
+      {/* Barra de separadores flutuante, de vidro (como no iOS) */}
       <nav
         aria-label="Navegação principal"
-        className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] md:hidden"
+        className="glass fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-5 gap-1 rounded-[28px] border p-1.5 shadow-[0_8px_32px_rgb(0_0_0/0.12)] md:hidden"
       >
         {nav.slice(0, MOBILE_PRIMARY).map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) => `${tab} ${isActive ? 'text-accent' : 'text-stone-500'}`}
+            className={({ isActive }) =>
+              `${tab} ${isActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-700'}`
+            }
           >
             <Icon aria-hidden="true" className="size-5" />
             {label}
@@ -260,7 +255,7 @@ function MobileNav() {
           aria-expanded={open}
           aria-controls="menu-mais"
           onClick={() => setOpen((o) => !o)}
-          className={`${tab} ${open || moreActive ? 'text-accent' : 'text-stone-500'}`}
+          className={`${tab} ${open || moreActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-700'}`}
         >
           <MoreHorizontal aria-hidden="true" className="size-5" />
           Mais

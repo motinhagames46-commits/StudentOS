@@ -10,7 +10,7 @@ export function ServerWakeBanner() {
   return (
     <div
       role="status"
-      className="pointer-events-none fixed inset-x-0 bottom-20 z-40 flex justify-center px-4 md:bottom-4"
+      className="pointer-events-none fixed inset-x-0 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-40 flex justify-center px-4 md:bottom-4"
     >
       {slow > 0 && (
         <p className="rounded-lg bg-stone-900 px-4 py-2 text-sm text-white shadow-lg">

@@ -7,17 +7,10 @@
   --color-accent-hover: #0b6656;
   --color-accent-soft: #f0f9f6; /* texto accent por cima: 4,6:1 */
   --color-accent-ink: #0a4d41; /* texto escuro sobre accent-soft: 9,1:1 */
-  /* Estilo Gentelella (docs/research/gentelella.md), com os ajustes de contraste AA */
-  --color-sidebar: #2a3f54;
-  --color-sidebar-hover: #2f4a62;
-  --color-sidebar-active-from: #334556;
-  --color-sidebar-active-to: #2c4257;
-  --color-sidebar-text: #e7e7e7;
-  --color-sidebar-muted: #c4cfda;
-  --color-brand: #1abb9c; /* só decorativo (indicador ativo, barras): 2,4:1 sobre branco */
-  --color-page: #f7f7f7;
-  --color-panel-border: #e6e9ed;
-  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Neutros claros e limpos (docs/research/interface-moderna.md) */
+  --color-brand: #1abb9c; /* só decorativo (barras de progresso): 2,4:1 sobre branco */
+  --color-page: #f5f5f4;
+  --color-panel-border: #e7e5e4;
 }
 
 @layer base {
@@ -34,5 +27,28 @@
   input[type='checkbox'],
   input[type='radio'] {
     accent-color: var(--color-accent);
+  }
+}
+
+/* Liquid Glass só na camada de navegação, que flutua por cima do conteúdo (Apple HIG, Materials): nunca em
+   cartões nem no conteúdo. Base quase opaca sem suporte; sem transparência ou com mais contraste, fica sólido. */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.96);
+  border-color: rgb(0 0 0 / 0.07);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: rgb(255 255 255 / 0.78);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  @media (prefers-contrast: more) {
+    background-color: #fff;
+    border-color: rgb(0 0 0 / 0.45);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 }

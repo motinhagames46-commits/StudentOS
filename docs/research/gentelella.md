@@ -1,5 +1,7 @@
 # Referência visual: Gentelella (clássico)
 
+> Substituída a 2026-10-30 por [`interface-moderna.md`](interface-moderna.md). Fica como registo da decisão anterior.
+
 Recolhida a 2026-10-25. Gentelella ([ColorlibHQ/gentelella](https://github.com/ColorlibHQ/gentelella)) é um template de administração Bootstrap/jQuery, licença **MIT** ("Copyright (c) 2014–2026 Aigars Silkalns & Colorlib"). O demo ao vivo é hoje a v4 (sem `tile_count`/`x_panel`); o visual clássico foi medido na 1.4.0 (jsDelivr) e cruzado com `custom.scss` da branch Bootstrap-5. **Não usamos o código** (a app é React 19 + Tailwind 4): só a estrutura e valores de medida, sem o nome, logótipo nem imagens do demo.
 
 ## Estrutura

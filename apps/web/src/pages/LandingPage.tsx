@@ -17,9 +17,9 @@ import { LandingDemo } from '../components/landing/LandingDemo';
 // sem testemunhos, números de utilizadores, preços ou urgência inventados (docs/research/onboarding-e-landing.md).
 
 const primaryCta =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-accent-hover';
 const secondaryCta =
-  'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50';
+  'inline-flex min-h-11 items-center justify-center gap-2 rounded-full border border-stone-300 bg-white px-5 py-2.5 text-sm font-semibold text-stone-800 transition-colors hover:bg-stone-50';
 
 const PAINS = [
   'As datas estão espalhadas pelo Moodle, pelos emails e pelas fichas das unidades curriculares (UC).',
@@ -112,7 +112,7 @@ export function LandingPage() {
             </Link>
             <Link
               to="/registo"
-              className="ml-1 rounded-lg bg-accent px-3 py-2 font-semibold text-white hover:bg-accent-hover"
+              className="ml-1 rounded-full bg-accent px-4 py-2 font-semibold text-white hover:bg-accent-hover"
             >
               Criar conta
             </Link>

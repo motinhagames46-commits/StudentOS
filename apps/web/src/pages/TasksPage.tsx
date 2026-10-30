@@ -56,7 +56,7 @@ export function TasksPage() {
         action={
           <Link
             to="/calendario"
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-50"
+            className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
           >
             <CalendarDays aria-hidden="true" className="size-4" />
             Ver no calendário

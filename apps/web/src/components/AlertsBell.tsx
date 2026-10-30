@@ -37,7 +37,7 @@ export function AlertsBell({ align = 'left' }: { align?: 'left' | 'right' }) {
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((o) => !o)}
-        className="relative inline-flex size-9 items-center justify-center rounded-lg text-stone-500 hover:bg-stone-100 hover:text-stone-800"
+        className="relative inline-flex size-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-800"
       >
         <Bell aria-hidden="true" className="size-4" />
         {count > 0 && (
@@ -52,7 +52,7 @@ export function AlertsBell({ align = 'left' }: { align?: 'left' | 'right' }) {
           id={panelId}
           role="dialog"
           aria-label="Alertas"
-          className={`absolute top-full z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-xl border border-stone-200 bg-white p-3 shadow-lg ${
+          className={`absolute top-full z-30 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-stone-200 bg-white p-3 shadow-lg ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >

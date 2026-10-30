@@ -28,7 +28,7 @@ export function Button({
       {...props}
       disabled={disabled || loading}
       className={cx(
-        'inline-flex min-h-10 items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed',
+        'inline-flex min-h-10 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition motion-safe:active:scale-[0.97] disabled:cursor-not-allowed disabled:active:scale-100',
         variants[variant],
         className,
       )}
@@ -52,7 +52,7 @@ export function IconButton({
       title={label}
       {...props}
       className={cx(
-        'inline-flex size-9 items-center justify-center rounded-lg text-stone-500 hover:bg-stone-100 hover:text-stone-800',
+        'inline-flex size-9 items-center justify-center rounded-full text-stone-500 hover:bg-stone-100 hover:text-stone-800',
         className,
       )}
     >
@@ -62,7 +62,7 @@ export function IconButton({
 }
 
 const inputClass =
-  'block w-full min-h-10 rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20';
+  'block w-full min-h-10 rounded-xl border bg-white px-3 py-2 text-sm text-stone-900 placeholder:text-stone-400 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/20';
 
 interface FieldProps {
   label: string;
@@ -136,7 +136,7 @@ export function SelectField({
   );
 }
 
-/** Painel ao estilo x_panel do Gentelella. `collapsible` guarda o estado neste browser (só preferência visual). */
+/** Cartão de conteúdo (fundo sólido: o vidro fica só na navegação). `collapsible` guarda o estado neste browser (só preferência visual). */
 export function Card({
   title,
   action,
@@ -160,16 +160,11 @@ export function Card({
 
   return (
     <section
-      className={cx('rounded-lg border border-panel-border bg-white shadow-[0_1px_4px_rgba(42,63,84,0.06)]', className)}
+      className={cx('rounded-2xl border border-panel-border bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04)]', className)}
     >
       {title && (
-        <header
-          className={cx(
-            'flex items-center justify-between gap-2 px-4 py-3',
-            !collapsed && 'border-b-2 border-panel-border',
-          )}
-        >
-          <h2 className="text-base font-semibold text-stone-800">{title}</h2>
+        <header className="flex items-center justify-between gap-2 px-4 py-3.5">
+          <h2 className="text-base font-semibold text-stone-900">{title}</h2>
           <div className="flex items-center gap-1">
             {action}
             {storageKey && (
@@ -189,7 +184,7 @@ export function Card({
           </div>
         </header>
       )}
-      <div id={bodyId} hidden={collapsed} className="p-4">
+      <div id={bodyId} hidden={collapsed} className={cx('px-4 pb-4', !title && 'pt-4')}>
         {children}
       </div>
     </section>
@@ -218,7 +213,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-stone-900 md:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-sm text-stone-600">{subtitle}</p>}
       </div>
       {action}
@@ -228,7 +223,7 @@ export function PageHeader({ title, subtitle, action }: { title: string; subtitl
 
 export function EmptyState({ message, action }: { message: string; action?: ReactNode }) {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed border-stone-300 px-4 py-8 text-center">
+    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-stone-300 px-4 py-8 text-center">
       <p className="text-sm text-stone-500">{message}</p>
       {action}
     </div>
@@ -239,7 +234,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
   return (
     <div
       role="alert"
-      className="flex flex-col items-center gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-6 text-center"
+      className="flex flex-col items-center gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-6 text-center"
     >
       <p className="flex items-center gap-2 text-sm text-red-800">
         <AlertCircle aria-hidden="true" className="size-4" />
@@ -257,7 +252,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
 export function FormError({ message }: { message?: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="flex items-center gap-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">
+    <p role="alert" className="flex items-center gap-2 rounded-xl bg-red-50 px-3 py-2 text-sm text-red-800">
       <AlertCircle aria-hidden="true" className="size-4 shrink-0" />
       {message}
     </p>
@@ -265,7 +260,7 @@ export function FormError({ message }: { message?: string | null }) {
 }
 
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden="true" className={cx('animate-pulse rounded-lg bg-stone-200/70', className)} />;
+  return <div aria-hidden="true" className={cx('animate-pulse rounded-xl bg-stone-200/70', className)} />;
 }
 
 export function LoadingList({ rows = 3 }: { rows?: number }) {
@@ -295,7 +290,7 @@ export function Badge({
   return (
     <span
       className={cx(
-        'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap',
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
         tones[tone],
       )}
     >
@@ -307,7 +302,7 @@ export function Badge({
 export function DisciplineChip({ discipline }: { discipline: { code: string; color: string | null; name: string } }) {
   return (
     <span
-      className="inline-flex items-center gap-1.5 rounded-md bg-stone-100 px-2 py-0.5 text-xs font-medium text-stone-700"
+      className="inline-flex items-center gap-1.5 rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-700"
       title={discipline.name}
     >
       <span

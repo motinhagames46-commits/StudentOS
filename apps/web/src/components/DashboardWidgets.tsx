@@ -80,7 +80,7 @@ export function StatTiles({ data, studyMinutes }: { data: Dashboard; studyMinute
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-y-4 rounded-lg border border-panel-border bg-white py-4 shadow-[0_1px_4px_rgba(42,63,84,0.06)] sm:grid-cols-3 lg:grid-cols-5">
+    <dl className="grid grid-cols-2 gap-y-4 rounded-2xl border border-panel-border bg-white py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] sm:grid-cols-3 lg:grid-cols-5">
       {tiles.map(({ icon: Icon, label, value, tone, hint }) => (
         <div key={label} className="px-4 lg:border-l lg:border-panel-border lg:first:border-l-0">
           <dt className="flex items-center gap-1.5 text-[13px] text-[#566A80]">
@@ -136,7 +136,7 @@ export function SetupProgress({ data }: { data: Dashboard }) {
       </ul>
       <Link
         to="/boas-vindas"
-        className="mt-4 inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
+        className="mt-4 inline-flex min-h-10 items-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
       >
         Continuar configuração
       </Link>

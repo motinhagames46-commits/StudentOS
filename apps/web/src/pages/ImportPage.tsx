@@ -146,7 +146,7 @@ export function ImportPage() {
               <FileUp aria-hidden="true" className="size-8 text-stone-400" />
               <label
                 htmlFor={inputId}
-                className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
+                className="inline-flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent"
               >
                 Escolher ficheiro .ics ou .csv
                 <input
@@ -406,7 +406,7 @@ function ImportReview({
         </ul>
       )}
 
-      <div className="sticky bottom-20 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm md:bottom-4">
+      <div className="sticky bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm md:bottom-4">
         <p className="text-sm text-stone-700">
           <strong>{selected.length}</strong> de {items.length} selecionados para importar
         </p>
@@ -567,7 +567,7 @@ function ImportResult({ counts, onAnother }: { counts: ImportCounts; onAnother: 
         <div className="flex gap-2">
           <Link
             to="/calendario"
-            className="inline-flex min-h-10 items-center rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
+            className="inline-flex min-h-10 items-center rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
           >
             Ver no calendário
           </Link>

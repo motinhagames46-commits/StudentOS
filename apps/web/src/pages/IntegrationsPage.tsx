@@ -57,7 +57,7 @@ export function IntegrationsPage() {
                   <dd className="mt-2">
                     <Link
                       to="/importar"
-                      className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white hover:bg-accent-hover"
+                      className="inline-flex min-h-10 items-center gap-2 rounded-full bg-accent px-4 py-2 text-sm font-semibold text-white hover:bg-accent-hover"
                     >
                       <FileUp aria-hidden="true" className="size-4" />
                       Importar ficheiro .ics
