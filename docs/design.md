@@ -15,6 +15,12 @@ Estudantes do ensino superior, muitos sobretudo no telemóvel (ver [`PRODUCT.md`
 - Cores por disciplina só como acento (barra do cartão, ponto), nunca como único portador de informação. Estado "Em risco" com texto, não só cor.
 - Não há biblioteca de componentes externa (shadcn ou similar).
 
+- Ícones (conselho de 2026-11-02): um «S» geométrico branco sobre o verde-azulado da marca, sem fonte; as três linhas de antes liam-se como um menu. Saem todos de um só desenho em `scripts/icons.mjs` (`node scripts/icons.mjs`, com o Chromium do Playwright), e os ficheiros gerados ficam versionados em `apps/web/public`:
+  - `favicon.ico` (16, 32 e 48) e `favicon.svg`;
+  - `apple-touch-icon.png` (180, fundo opaco);
+  - `icon-192.png`, `icon-512.png` e `icon-maskable-512.png`.
+- `manifest.webmanifest` com `display: standalone`: adicionada ao ecrã principal, a app abre sem a barra do browser. Não há service worker. Sem o botão Voltar do browser, cada página de detalhe tem o seu «Voltar», e as outras chegam-se pelos separadores. No iOS, a app instalada tem cookies próprios: inicia-se sessão uma vez dentro dela.
+
 ## Interação
 
 - HTML semântico, navegação por teclado, foco visível global (`:focus-visible` com contorno na cor de destaque em `index.css`).
