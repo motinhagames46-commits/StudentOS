@@ -70,3 +70,37 @@ it('mostra a resposta com fontes, marca a da web e envia a conversa anterior', a
     ],
   });
 });
+
+it('«Pensar melhor» repete a última pergunta com raciocínio alto e troca a resposta', async () => {
+  const posted: { question: string; history?: unknown[]; deep?: boolean }[] = [];
+  const careful = { ...fromDocuments, answer: 'A 3FN exige a 2FN e elimina dependências transitivas [1].' };
+  const answers = [fromDocuments, careful];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        posted.push(JSON.parse(String(init.body)));
+        return Promise.resolve(json(answers.shift()));
+      }
+      return Promise.resolve(json(url === '/api/ai/status' ? { status: 'ENABLED' } : []));
+    }),
+  );
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <MemoryRouter>
+        <AssistantPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+
+  fireEvent.change(await screen.findByLabelText('Pergunta'), { target: { value: 'O que é a 3FN?' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Perguntar' }));
+  expect(await screen.findByText(fromDocuments.answer)).toBeInTheDocument();
+  expect(posted[0]!.deep).toBeUndefined(); // rápido por omissão
+
+  fireEvent.click(screen.getByRole('button', { name: 'Pensar melhor' }));
+  expect(await screen.findByText(careful.answer)).toBeInTheDocument();
+  expect(posted[1]).toMatchObject({ question: 'O que é a 3FN?', history: [], deep: true });
+  expect(screen.queryByText(fromDocuments.answer)).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: 'Pensar melhor' })).not.toBeInTheDocument();
+});

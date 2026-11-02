@@ -40,8 +40,9 @@ export class FakeAiProvider implements AiProvider {
     return { uri: `fake://files/${this.uploads.length}`, expiresAt: new Date(Date.now() + 48 * 3600_000) };
   }
 
-  async searchAnswer(parts: AiPart[]): Promise<WebAnswer> {
+  async searchAnswer(parts: AiPart[], options?: GenerateOptions): Promise<WebAnswer> {
     this.searches.push(parts);
+    this.options.push(options);
     const answer = this.responses.shift() as WebAnswer | undefined;
     if (!answer?.text) throw new AiError('AI_BLOCKED', 'O serviço de IA não devolveu resposta para este pedido.');
     return answer;

@@ -73,7 +73,8 @@ export async function generateQuiz(ai: AiProvider, parts: AiPart[], count: numbe
       ...parts,
       { text: `Cria ${count} perguntas sobre estes documentos, incluindo o que está em imagens, figuras e tabelas.` },
     ],
-    { system: QUIZ_PROMPT, task: 'quiz' },
+    // Raciocínio baixo: as perguntas saem dos documentos, e a validação do código descarta as incoerentes.
+    { system: QUIZ_PROMPT, thinking: 'low', task: 'quiz' },
   );
   return { topic: raw.topic.trim().slice(0, 120) || 'Quiz', questions: sanitizeQuestions(raw.questions, count) };
 }
@@ -112,6 +113,7 @@ export async function gradeShortAnswers(
     .join('\n');
   const { grades } = await ai.generateJson(gradeSchema, [{ text: listing }], {
     system: GRADE_PROMPT,
+    thinking: 'low', // comparar com a resposta esperada não pede raciocínio longo
     task: 'correção',
   });
   // Liga cada correção ao seu número: uma resposta reordenada, repetida ou em falta é recusada.

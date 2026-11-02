@@ -67,6 +67,8 @@ export async function answerQuestion(
   const previous = [...(input.history ?? [])].reverse().find((m) => m.role === 'user')?.text ?? '';
   const [vector] = await ai.embed([`${previous}\n${input.question}`.trim()], 'query');
   const chunks = await searchChunks(userId, vector!, ai.embeddingModel, input.disciplineId);
+  // Raciocínio baixo por omissão (resposta em segundos); alto só quando o estudante pede «Pensar melhor».
+  const thinking = input.deep ? 'high' : 'low';
 
   if (chunks.length > 0) {
     // Os documentos dos excertos mais próximos, pela ordem do melhor excerto de cada um.
@@ -93,7 +95,7 @@ export async function answerQuestion(
     const result = await ai.generateJson(
       answerSchema,
       [...parts, { text: `${conversation(input)}Pergunta: ${input.question}` }],
-      { system: DOCUMENTS_PROMPT, task: 'assistente' },
+      { system: DOCUMENTS_PROMPT, thinking, task: 'assistente' },
     );
     // Fontes: as citadas e as marcas [n] do texto que existem; marcas sem documento saem do texto.
     const valid = (n: number) => Number.isInteger(n) && n >= 1 && n <= docs.length;
@@ -114,6 +116,7 @@ export async function answerQuestion(
   // Para a pesquisa Google vai só a pergunta: nem a conversa nem respostas tiradas dos documentos.
   const web = await ai.searchAnswer([{ text: input.question }], {
     system: `És o assistente de estudo do StudentOS. ${STYLE}`,
+    thinking,
   });
   return {
     mode: 'web',

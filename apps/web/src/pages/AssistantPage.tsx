@@ -1,5 +1,5 @@
 import { assistantAskSchema, type AssistantAnswer } from '@studentos/shared';
-import { ExternalLink, FileText, Send } from 'lucide-react';
+import { ExternalLink, FileText, Send, Sparkles } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 import { AiUnavailable } from '../components/AiUnavailable';
@@ -11,7 +11,12 @@ interface Message {
   role: 'user' | 'assistant';
   text: string;
   answer?: AssistantAnswer;
+  /** Resposta do «Pensar melhor» (raciocínio alto). */
+  deep?: boolean;
 }
+
+const historyOf = (messages: Message[]) =>
+  messages.slice(-10).map((m) => ({ role: m.role, text: m.text.slice(0, 4000) }));
 
 /** Assistente sobre os documentos lidos, com fontes; a conversa vive só nesta página. */
 export function AssistantPage() {
@@ -48,7 +53,7 @@ function Chat() {
     const parsed = assistantAskSchema.safeParse({
       question,
       disciplineId: disciplineId ? Number(disciplineId) : null,
-      history: messages.slice(-10).map((m) => ({ role: m.role, text: m.text.slice(0, 4000) })),
+      history: historyOf(messages),
     });
     if (!parsed.success) {
       setError(parsed.error.issues[0]?.message ?? 'Pergunta inválida');
@@ -65,6 +70,27 @@ function Chat() {
       // A pergunta volta à caixa para se poder tentar outra vez (sem apagar o que entretanto se escreveu).
       setMessages((current) => current.slice(0, -1));
       setQuestion((typed) => typed || asked);
+      setError(errorMessage(err));
+    }
+  }
+
+  // «Pensar melhor»: a última pergunta outra vez, com raciocínio alto; a resposta nova substitui a anterior.
+  async function thinkHarder() {
+    if (ask.isPending) return;
+    const asked = messages.at(-2)!.text;
+    setError(null);
+    try {
+      const answer = await ask.mutateAsync({
+        question: asked,
+        disciplineId: disciplineId ? Number(disciplineId) : null,
+        history: historyOf(messages.slice(0, -2)),
+        deep: true,
+      });
+      setMessages((current) => [
+        ...current.slice(0, -1),
+        { role: 'assistant', text: answer.answer, answer, deep: true },
+      ]);
+    } catch (err) {
       setError(errorMessage(err));
     }
   }
@@ -86,12 +112,22 @@ function Chat() {
                 {m.text}
               </li>
             ) : (
-              <li key={i}>{m.answer && <AnswerCard answer={m.answer} />}</li>
+              <li key={i} className="space-y-2">
+                {m.answer && <AnswerCard answer={m.answer} />}
+                {i === messages.length - 1 && !m.deep && (
+                  <Button variant="secondary" disabled={ask.isPending} onClick={() => void thinkHarder()}>
+                    <Sparkles aria-hidden="true" className="size-4" />
+                    Pensar melhor
+                  </Button>
+                )}
+              </li>
             ),
           )}
           {ask.isPending && (
             <li className="text-sm text-stone-600" aria-live="polite">
-              A procurar nos teus documentos…
+              {ask.variables?.deep
+                ? 'A pensar com mais cuidado… pode demorar mais de um minuto.'
+                : 'A procurar nos teus documentos…'}
             </li>
           )}
         </ol>

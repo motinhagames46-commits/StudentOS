@@ -111,6 +111,7 @@ describe('POST /api/assistant/ask', () => {
     expect(prompt.indexOf('Apontamentos BD')).toBeLessThan(prompt.indexOf('Redes')); // o mais próximo primeiro
     expect(prompt).not.toContain('colega');
     expect(fake.searches).toHaveLength(0);
+    expect(fake.options[0]?.thinking).toBe('low'); // rápido por omissão
   });
 
   it('se os documentos não chegam (ou não há fontes válidas), procura na web e marca a resposta', async () => {
@@ -121,8 +122,10 @@ describe('POST /api/assistant/ask', () => {
         { sufficient: true, answer: 'Sem fontes.', citations: [] },
         { ...web, sources },
       ],
-      { question: 'O que é a 3FN?', history: [{ role: 'user', text: 'Fala-me de BD' }] },
+      { question: 'O que é a 3FN?', history: [{ role: 'user', text: 'Fala-me de BD' }], deep: true },
     );
+    // «Pensar melhor»: raciocínio alto nas duas chamadas (documentos e web).
+    expect(fake.options.map((o) => o?.thinking)).toEqual(['high', 'high']);
     expect(res.body).toEqual({
       mode: 'web',
       answer: web.text,

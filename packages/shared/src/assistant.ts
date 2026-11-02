@@ -14,6 +14,8 @@ export const assistantAskSchema = z.strictObject({
     .array(z.strictObject({ role: z.enum(['user', 'assistant']), text: z.string().max(4000) }))
     .max(10)
     .optional(),
+  /** «Pensar melhor»: a mesma pergunta com raciocínio alto (mais cuidadosa, mais lenta). */
+  deep: z.boolean().optional(),
 });
 
 export type AssistantAskInput = z.infer<typeof assistantAskSchema>;

@@ -83,6 +83,7 @@ describe('POST /api/quizzes', () => {
     expect(res.body.questions[0]).toEqual({ kind: 'MCQ', question: mcq().question, options: mcq().options });
     expect(JSON.stringify(res.body)).not.toContain('chave primária');
     expect(JSON.stringify(fake.requests[0])).toContain('A 3FN elimina');
+    expect(fake.options[0]?.thinking).toBe('low');
   });
 
   it('pela disciplina usa os documentos dela; sem texto lido dá 422; de outra conta dá 404', async () => {
@@ -142,6 +143,7 @@ describe('responder a um quiz', () => {
     expect(res.body.questions.map((q: { verdict: string }) => q.verdict)).toEqual(['correct', 'partial']);
     expect(res.body.questions[1].expectedAnswer).toBe(short.expectedAnswer);
     expect(JSON.stringify(fake.requests[0])).toContain('Um atributo que liga tabelas');
+    expect(fake.options[0]?.thinking).toBe('low');
 
     const cards = await prisma.studyCard.findMany({ orderBy: { id: 'asc' }, include: { reviews: true } });
     expect(cards.map((c) => c.reviews[0]!.rating)).toEqual([3, 2]); // bem, difícil
