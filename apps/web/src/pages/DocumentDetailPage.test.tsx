@@ -138,3 +138,34 @@ it('enquanto a IA lê mostra o estado e, se falhar, o motivo', async () => {
     'A leitura falhou: A resposta da IA não veio no formato esperado.',
   );
 });
+
+it('«Tentar de novo» volta a ler um documento que falhou, com o ficheiro guardado', async () => {
+  const failed = { ...doc, status: 'FAILED', failureReason: 'A leitura foi interrompida.', proposals: [] };
+  const posted: string[] = [];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        posted.push(url);
+        return Promise.resolve(json({ ...failed, status: 'PROCESSING', failureReason: null }));
+      }
+      return Promise.resolve(json(posted.length ? { ...failed, status: 'PROCESSING', failureReason: null } : failed));
+    }),
+  );
+  render(
+    <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+      <ToastProvider>
+        <ConfirmProvider>
+          <MemoryRouter initialEntries={['/documentos/1']}>
+            <Routes>
+              <Route path="/documentos/:id" element={<DocumentDetailPage />} />
+            </Routes>
+          </MemoryRouter>
+        </ConfirmProvider>
+      </ToastProvider>
+    </QueryClientProvider>,
+  );
+  fireEvent.click(await screen.findByRole('button', { name: 'Tentar de novo' }));
+  expect(await screen.findByText(/A IA está a ler o documento/)).toBeInTheDocument();
+  expect(posted).toEqual(['/api/documents/1/read']);
+});

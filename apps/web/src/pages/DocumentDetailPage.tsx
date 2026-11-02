@@ -1,10 +1,10 @@
-import { ArrowLeft, Loader2, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, RotateCcw, Trash2 } from 'lucide-react';
 import { Link, useNavigate, useParams } from 'react-router';
 import { useConfirm } from '../components/ConfirmDialog';
 import { DocumentReview } from '../components/DocumentReview';
 import { useToast } from '../components/Toast';
-import { Button, Card, ErrorState, LoadingList, PageHeader } from '../components/ui';
-import { useDeleteDocument, useDocument } from '../hooks/queries';
+import { Button, Card, ErrorState, FormError, LoadingList, PageHeader } from '../components/ui';
+import { useDeleteDocument, useDocument, useRetryDocument } from '../hooks/queries';
 import { errorMessage } from '../lib/api';
 import { formatDate } from '../lib/format';
 
@@ -16,6 +16,7 @@ export function DocumentDetailPage() {
   const toast = useToast();
   const doc = useDocument(id);
   const remove = useDeleteDocument();
+  const retry = useRetryDocument();
 
   if (!Number.isInteger(id) || id <= 0) return <ErrorState message="Documento não encontrado" />;
   if (doc.error) return <ErrorState message={errorMessage(doc.error)} onRetry={() => void doc.refetch()} />;
@@ -63,8 +64,8 @@ export function DocumentDetailPage() {
         <Card>
           <p role="status" className="flex items-start gap-2 text-sm text-stone-700">
             <Loader2 aria-hidden="true" className="mt-0.5 size-4 shrink-0 animate-spin text-accent" />A IA está a ler o
-            documento com raciocínio alto, o que pode levar alguns minutos. Esta página atualiza-se sozinha e podes sair
-            dela: a leitura continua.
+            documento, o que pode levar alguns minutos. Esta página atualiza-se sozinha e podes sair dela: a leitura
+            continua.
           </p>
         </Card>
       ) : d.status === 'FAILED' ? (
@@ -72,7 +73,14 @@ export function DocumentDetailPage() {
           <p role="alert" className="text-sm text-red-800">
             A leitura falhou: {d.failureReason ?? 'motivo desconhecido.'}
           </p>
-          <p className="mt-2 text-sm text-stone-600">Apaga este documento e envia-o outra vez.</p>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Button loading={retry.isPending} onClick={() => retry.mutate(d.id)}>
+              <RotateCcw aria-hidden="true" className="size-4" />
+              Tentar de novo
+            </Button>
+            <p className="text-sm text-stone-600">Usa o ficheiro que já enviaste.</p>
+          </div>
+          <FormError message={retry.error ? errorMessage(retry.error) : null} />
         </Card>
       ) : (
         <div className="space-y-4">

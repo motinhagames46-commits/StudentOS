@@ -86,6 +86,7 @@ export function createApp() {
         '/transfers',
         '/ai/check',
         '/documents',
+        '/documents/:id/read',
         '/assistant/ask',
         '/quizzes',
         '/quizzes/:id/answer',

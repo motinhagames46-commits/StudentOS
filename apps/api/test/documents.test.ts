@@ -6,6 +6,7 @@ import { EMBEDDING_DIMENSIONS } from '../src/ai/provider.js';
 import { app } from '../src/app.js';
 import { env } from '../src/lib/env.js';
 import { prisma } from '../src/lib/prisma.js';
+import { failInterruptedReadings } from '../src/routes/documents.js';
 import { FakeAiProvider } from './fake-ai.js';
 import { createUserAndLogin, resetDb } from './helpers.js';
 
@@ -156,6 +157,44 @@ describe('POST /api/documents', () => {
     await prisma.$executeRaw`UPDATE "StudyDocument" SET "updatedAt" = now() - interval '20 minutes' WHERE id = ${doc.id}`;
     const { body } = await request(app).get('/api/documents').set('Cookie', owner);
     expect(body[0]).toMatchObject({ status: 'FAILED', failureReason: expect.stringMatching(/interrompida/) });
+  });
+
+  it('no arranque, as leituras a meio (processo anterior) passam logo a FAILED', async () => {
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
+    const doc = await prisma.studyDocument.create({
+      data: { title: 'A meio', source: 'SCAN', status: 'PROCESSING', userId: user.id },
+    });
+    await failInterruptedReadings();
+    expect(await prisma.studyDocument.findUniqueOrThrow({ where: { id: doc.id } })).toMatchObject({
+      status: 'FAILED',
+      failureReason: expect.stringMatching(/Tentar de novo/),
+    });
+  });
+
+  it('«Tentar de novo» volta a ler um documento FAILED com o ficheiro guardado; só um pedido de cada vez', async () => {
+    const failed = await upload(owner, [{ nada: true }]);
+    expect((await readDone(failed.body.id)).status).toBe('FAILED');
+
+    fake = new FakeAiProvider([extraction(), extraction()]);
+    setAiProviderForTests(fake);
+    const again = () => request(app).post(`/api/documents/${failed.body.id}/read`).set('Cookie', owner);
+    const res = await again();
+    expect(res.status).toBe(202);
+    expect(res.body).toMatchObject({ status: 'PROCESSING', failureReason: null });
+    expect((await again()).status).toBe(409); // já está a ser lido
+    expect(await readDone(failed.body.id)).toMatchObject({ status: 'READY', title: 'Calendário de avaliação de PW' });
+    // A IA recebeu o ficheiro guardado, tal como foi enviado.
+    expect(fake.requests[0]![0]).toEqual({ inlineData: { mimeType: 'image/jpeg', data: jpeg } });
+    expect((await again()).body.error.code).toBe('DOCUMENT_NOT_FAILED');
+
+    // Sem ficheiro guardado (documentos antigos) não há o que reler; outra conta (sem IA) nem lá chega.
+    const user = await prisma.user.findUniqueOrThrow({ where: { email: 'dono@exemplo.pt' } });
+    const old = await prisma.studyDocument.create({
+      data: { title: 'Antigo', source: 'SCAN', status: 'FAILED', userId: user.id },
+    });
+    const noFile = await request(app).post(`/api/documents/${old.id}/read`).set('Cookie', owner);
+    expect(noFile.body.error.code).toBe('DOCUMENT_FILE_MISSING');
+    expect((await request(app).post(`/api/documents/${old.id}/read`).set('Cookie', other)).status).toBe(403);
   });
 });
 

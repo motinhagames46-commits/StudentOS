@@ -465,6 +465,18 @@ export function useConfirmDocument(id: number) {
   });
 }
 
+/** «Tentar de novo»: volta a ler um documento que falhou, com o ficheiro já guardado no servidor. */
+export function useRetryDocument() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api<StudyDocumentView>(`/documents/${id}/read`, { method: 'POST', expectSlow: true }),
+    onSuccess: (doc) => {
+      queryClient.setQueryData(['document', doc.id], doc);
+      return queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+  });
+}
+
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
   return useMutation({

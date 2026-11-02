@@ -130,11 +130,25 @@ async function view(userId: number, doc: StudyDocument): Promise<StudyDocumentVi
 /** Uma leitura parada há mais do que isto foi interrompida (o servidor reiniciou ou adormeceu a meio). */
 const STALE_PROCESSING_MS = 15 * 60 * 1000;
 
+const INTERRUPTED = 'A leitura foi interrompida (a app foi atualizada ou reiniciada). Carrega em «Tentar de novo».';
+
 /** Limpeza preguiçosa (o plano gratuito não tem tarefas agendadas), como nas importações. */
 async function failStaleReadings(userId: number) {
   await prisma.studyDocument.updateMany({
     where: { userId, status: 'PROCESSING', updatedAt: { lt: new Date(Date.now() - STALE_PROCESSING_MS) } },
-    data: { status: 'FAILED', failureReason: 'A leitura foi interrompida. Envia o documento outra vez.' },
+    data: { status: 'FAILED', failureReason: INTERRUPTED },
+  });
+}
+
+/**
+ * No arranque do servidor: as leituras correm em memória, por isso as que estavam a meio morreram com o processo
+ * anterior (um deploy, por exemplo). Ficam logo FAILED, em vez de esperarem 15 min. Se o processo antigo ainda as
+ * acabar durante a troca, o resultado dele (READY) prevalece.
+ */
+export function failInterruptedReadings() {
+  return prisma.studyDocument.updateMany({
+    where: { status: 'PROCESSING' },
+    data: { status: 'FAILED', failureReason: INTERRUPTED },
   });
 }
 
@@ -240,6 +254,43 @@ documentsRouter.post('/', requireAi, express.json({ limit: '15mb' }), async (req
   });
   void readDocument(doc.id, req.userId, input.files);
   res.status(202).json(await view(req.userId, doc));
+});
+
+// POST /api/documents/:id/read — «Tentar de novo»: lê outra vez um documento que falhou, com o ficheiro guardado.
+documentsRouter.post('/:id/read', requireAi, async (req, res) => {
+  await failStaleReadings(req.userId);
+  const doc = await findOwnedDocument(req.userId, parse(idParamSchema, req.params.id));
+  const notFailed = () =>
+    new HttpError(409, 'DOCUMENT_NOT_FAILED', 'Este documento já está a ser lido ou já foi lido.');
+  if (doc.status !== 'FAILED') throw notFailed();
+  const files = await prisma.documentFile.findMany({
+    where: { documentId: doc.id, userId: req.userId },
+    orderBy: { ordinal: 'asc' },
+    select: { filename: true, mimeType: true, data: true },
+  });
+  if (files.length === 0) {
+    throw new HttpError(
+      409,
+      'DOCUMENT_FILE_MISSING',
+      'Este documento não tem o ficheiro guardado: apaga-o e envia-o outra vez.',
+    );
+  }
+  // Só uma leitura de cada vez: um segundo pedido em simultâneo já não o encontra FAILED.
+  const claimed = await prisma.studyDocument.updateMany({
+    where: { id: doc.id, userId: req.userId, status: 'FAILED' },
+    data: { status: 'PROCESSING', failureReason: null },
+  });
+  if (claimed.count === 0) throw notFailed();
+  void readDocument(
+    doc.id,
+    req.userId,
+    files.map((f) => ({
+      filename: f.filename,
+      mimeType: f.mimeType as DocumentMimeType,
+      data: Buffer.from(f.data).toString('base64'),
+    })),
+  );
+  res.status(202).json(await view(req.userId, await findOwnedDocument(req.userId, doc.id)));
 });
 
 documentsRouter.get('/', async (req, res) => {
