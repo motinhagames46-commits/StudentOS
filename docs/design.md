@@ -27,7 +27,14 @@ Estudantes do ensino superior, muitos sobretudo no telemóvel (ver [`PRODUCT.md`
 - Campos com `<label>` associado; erros por campo junto ao campo (`TextField error`), erros gerais com `FormError` (`role="alert"`).
 - Operações assíncronas: botões com `loading` (evitam duplo envio); mensagens de sucesso com `role="status"`.
 - Avisos da app (`components/Toast.tsx`, nunca `alert`/`confirm` do browser): região `aria-live`, não roubam o foco e o tempo pára com o rato ou o foco em cima (WCAG 2.2.1). Marcar tarefas é otimista (aparece logo e volta atrás com aviso se falhar). Eliminar tarefas usa «Desfazer» durante 10 s: o pedido só sai quando o aviso fecha, por isso fechar a página não apaga nada. Pedidos com mais de 3 s mostram «A ligar ao servidor…». As restantes eliminações usam o diálogo da app (`components/ConfirmDialog.tsx`, `<dialog>` nativo): foco em «Cancelar», Esc cancela, e eliminar uma disciplina diz quantas avaliações, notas e faltas são apagadas.
-- Movimento reduzido: as poucas transições decorativas (seta de recolher, «+» das perguntas frequentes) usam `motion-safe:`; novas animações seguem a mesma regra.
+- Movimento (conselho de 2026-11-02): animam-se só as entradas do que aparece, com opacidade e uma deslocação curta, em CSS (`--animate-rise`, `--animate-fade` e `--animate-pop` em `index.css`):
+  - o diálogo e o fundo dele;
+  - os avisos e o popover dos alertas;
+  - o visto de uma tarefa marcada como feita.
+- Até 200 ms, com a curva `cubic-bezier(0.2, 0, 0, 1)`, sempre com `motion-safe:`. As saídas são imediatas, para nada ficar por cima a apanhar toques.
+- Não há transições entre páginas: a troca de separador é instantânea, como numa app nativa, e o código das páginas dos separadores descarrega em segundo plano (`lib/preloadTabs.ts`).
+- Não se animam listas, cartões, números, a passagem de skeleton a conteúdo, nem a barra de vidro.
+- Os E2E correm com «reduzir movimento» (`reducedMotion: 'reduce'`); `e2e/confirm-dialog.spec.ts` tem um teste com as animações ligadas.
 
 ## Layout e revisão
 

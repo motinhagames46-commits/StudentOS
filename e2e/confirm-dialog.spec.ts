@@ -44,3 +44,28 @@ test('eliminar uma disciplina pede confirmação com o que vai ser apagado', asy
   await expect(page).toHaveURL(/\/disciplinas$/);
   await expect(page.getByText('Redes de Computadores')).toBeHidden();
 });
+
+test.describe('com as animações ligadas', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  test('o diálogo entra a animar sem atrasar os toques: cancelar e editar logo a seguir', async ({ page }) => {
+    await register(page, 'Rui');
+    const id = await page.evaluate(async () => {
+      const res = await fetch('/api/disciplines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Bases de Dados', code: 'BD' }),
+      });
+      return ((await res.json()) as { id: number }).id;
+    });
+    await page.goto(`/disciplinas/${id}`);
+    await page.getByRole('button', { name: 'Eliminar', exact: true }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toHaveCSS('animation-name', 'rise');
+    await page.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(dialog).toBeHidden();
+    // A saída é imediata: nada fica por cima da página a apanhar o toque seguinte.
+    await page.getByRole('button', { name: 'Editar' }).click({ timeout: 1000 });
+    await expect(page.getByLabel('Nome')).toBeVisible();
+  });
+});

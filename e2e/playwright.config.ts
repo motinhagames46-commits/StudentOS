@@ -24,6 +24,9 @@ export default defineConfig({
     baseURL: BASE_URL,
     locale: 'pt-PT',
     timezoneId: 'Europe/Lisbon',
+    // As animações ficam desligadas nos testes (o axe não mede cores a meio de um fade); confirm-dialog.spec
+    // corre um teste com elas ligadas.
+    reducedMotion: 'reduce',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

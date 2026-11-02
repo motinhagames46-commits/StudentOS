@@ -63,7 +63,7 @@ function TaskItem({
             done ? 'border-accent bg-accent text-white' : 'border-stone-300 bg-white hover:border-accent'
           }`}
         >
-          {done && <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />}
+          {done && <Check aria-hidden="true" className="size-3.5 motion-safe:animate-pop" strokeWidth={3} />}
         </button>
       )}
 

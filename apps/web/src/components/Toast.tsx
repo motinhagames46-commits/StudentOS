@@ -91,7 +91,7 @@ function Toast({ toast, onClose }: { toast: ToastItem; onClose: (reason: CloseRe
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget)) setPaused(false);
       }}
-      className={`pointer-events-auto flex max-w-md items-center gap-3 rounded-lg py-2 pr-2 pl-4 text-sm text-white shadow-lg ${
+      className={`pointer-events-auto flex max-w-md items-center gap-3 rounded-lg py-2 pr-2 pl-4 text-sm text-white shadow-lg motion-safe:animate-rise ${
         toast.tone === 'error' ? 'bg-red-700' : 'bg-stone-900'
       }`}
     >

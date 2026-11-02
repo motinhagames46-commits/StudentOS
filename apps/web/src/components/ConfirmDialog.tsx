@@ -60,7 +60,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
           e.preventDefault();
           finish(false);
         }}
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-panel-border bg-white p-0 shadow-xl backdrop:bg-black/40 backdrop:backdrop-blur-sm"
+        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-panel-border bg-white p-0 shadow-xl backdrop:bg-black/40 backdrop:backdrop-blur-sm motion-safe:open:animate-rise motion-safe:backdrop:animate-fade"
       >
         {request && (
           <div className="p-5">

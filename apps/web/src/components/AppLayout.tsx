@@ -18,6 +18,7 @@ import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { useAiAllowed } from '../hooks/queries';
 import { useLogout, useMe } from '../hooks/useAuth';
+import { preloadTabs } from '../lib/preloadTabs';
 import { theme } from '../lib/theme';
 import { AlertsBell } from './AlertsBell';
 import { IconButton, LoadingList } from './ui';
@@ -103,6 +104,7 @@ export function AppLayout() {
   const logout = useLogout();
   const main = useNav();
   const secondary = useSecondary();
+  useEffect(() => preloadTabs(), []);
 
   return (
     <div className="min-h-dvh md:flex">
@@ -226,7 +228,7 @@ function MobileNav() {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  const tab = 'flex flex-col items-center gap-0.5 rounded-[22px] py-1.5 text-[11px] font-medium';
+  const tab = 'flex flex-col items-center gap-0.5 rounded-[22px] py-1.5 text-[11px] font-medium transition-colors';
   return (
     <>
       {open && (
