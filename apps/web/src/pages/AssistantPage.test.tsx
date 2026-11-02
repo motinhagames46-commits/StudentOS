@@ -15,6 +15,7 @@ const fromDocuments = {
   sources: [{ kind: 'document', n: 1, documentId: 4, title: 'Apontamentos BD', excerpt: 'A 3FN…' }],
   searchSuggestionsHtml: null,
 };
+const insufficient = { mode: 'insufficient', answer: '', sources: [], searchSuggestionsHtml: null };
 const fromWeb = {
   mode: 'web',
   answer: 'O TCP garante a entrega ordenada.',
@@ -23,9 +24,9 @@ const fromWeb = {
     '<style>.chip{color:red}</style><a class="chip" href="https://www.google.com/search?q=tcp">tcp</a>',
 };
 
-it('mostra a resposta com fontes, marca a da web e envia a conversa anterior', async () => {
-  const posted: { question: string; history?: unknown[] }[] = [];
-  const answers = [fromDocuments, fromWeb];
+it('mostra a resposta com fontes; sem resposta nos documentos, procura na web só a pedido', async () => {
+  const posted: { question: string; history?: unknown[]; web?: boolean }[] = [];
+  const answers = [fromDocuments, insufficient, fromWeb];
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string, init?: RequestInit) => {
@@ -53,7 +54,11 @@ it('mostra a resposta com fontes, marca a da web e envia a conversa anterior', a
 
   fireEvent.change(box, { target: { value: 'E o TCP?' } });
   fireEvent.keyDown(box, { key: 'Enter' });
+  expect(await screen.findByText(/Não encontrei a resposta nos teus documentos/)).toBeInTheDocument();
+  expect(posted[1]!.web).toBeUndefined(); // a web nunca é automática
+  fireEvent.click(screen.getByRole('button', { name: 'Procurar na web' }));
   expect(await screen.findByText(fromWeb.answer)).toBeInTheDocument();
+  expect(posted[2]).toMatchObject({ question: 'E o TCP?', web: true, history: posted[1]!.history });
   expect(screen.getByText('Fonte web')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /exemplo\.pt/ })).toHaveAttribute('rel', 'noopener noreferrer');
   // Sugestões da Google tal como vêm, isoladas num shadow DOM (sem iframe); a ligação abre noutro separador.

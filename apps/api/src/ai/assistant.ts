@@ -1,13 +1,13 @@
 // Assistente (passo 3 da IA): busca exata nos excertos do estudante para escolher os documentos certos → a IA
 // lê esses documentos originais (com imagens, figuras e tabelas) e responde só com eles, citando-os. Se não
-// chegarem, a pergunta segue para o Gemini com pesquisa Google, marcada como «fonte web». Nada da conversa fica
-// guardado no StudentOS.
+// chegarem, a resposta diz isso; a pesquisa Google só corre quando o estudante a pede («Procurar na web»), e a
+// resposta fica marcada como «fonte web». Nada da conversa fica guardado no StudentOS.
 import type { AssistantAnswer, AssistantAskInput, AssistantSource } from '@studentos/shared';
 import { z } from 'zod';
 import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
 import { documentParts } from './document-parts.js';
-import type { AiProvider } from './provider.js';
+import type { AiProvider, ThinkingLevel } from './provider.js';
 
 const TOP_K = 6;
 /** Documentos lidos por inteiro em cada pergunta (os mais próximos). */
@@ -63,12 +63,14 @@ export async function answerQuestion(
   userId: number,
   input: AssistantAskInput,
 ): Promise<AssistantAnswer> {
+  // Raciocínio baixo por omissão (resposta em segundos); alto só quando o estudante pede «Pensar melhor».
+  const thinking = input.deep ? 'high' : 'low';
+  if (input.web) return searchWeb(ai, input.question, thinking);
+
   // A pergunta anterior ajuda a encontrar excertos para perguntas de seguimento («e o segundo?»).
   const previous = [...(input.history ?? [])].reverse().find((m) => m.role === 'user')?.text ?? '';
   const [vector] = await ai.embed([`${previous}\n${input.question}`.trim()], 'query');
   const chunks = await searchChunks(userId, vector!, ai.embeddingModel, input.disciplineId);
-  // Raciocínio baixo por omissão (resposta em segundos); alto só quando o estudante pede «Pensar melhor».
-  const thinking = input.deep ? 'high' : 'low';
 
   if (chunks.length > 0) {
     // Os documentos dos excertos mais próximos, pela ordem do melhor excerto de cada um.
@@ -113,8 +115,13 @@ export async function answerQuestion(
     }
   }
 
+  // Sem segunda chamada automática: a pesquisa web fica a um clique, e a resposta chega mais depressa.
+  return { mode: 'insufficient', answer: '', sources: [], searchSuggestionsHtml: null };
+}
+
+async function searchWeb(ai: AiProvider, question: string, thinking: ThinkingLevel): Promise<AssistantAnswer> {
   // Para a pesquisa Google vai só a pergunta: nem a conversa nem respostas tiradas dos documentos.
-  const web = await ai.searchAnswer([{ text: input.question }], {
+  const web = await ai.searchAnswer([{ text: question }], {
     system: `És o assistente de estudo do StudentOS. ${STYLE}`,
     thinking,
   });

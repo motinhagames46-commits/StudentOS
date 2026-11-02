@@ -114,33 +114,38 @@ describe('POST /api/assistant/ask', () => {
     expect(fake.options[0]?.thinking).toBe('low'); // rápido por omissão
   });
 
-  it('se os documentos não chegam (ou não há fontes válidas), procura na web e marca a resposta', async () => {
+  it('se os documentos não chegam (ou não há fontes válidas), diz isso sem pesquisar; a web só a pedido', async () => {
     await addChunk('dono@exemplo.pt', 'Redes', 'O TCP garante a entrega ordenada.', 1);
+    const history = [{ role: 'user', text: 'Fala-me de BD' }];
+    const res = await ask([{ sufficient: true, answer: 'Sem fontes.', citations: [] }], {
+      question: 'O que é a 3FN?',
+      history,
+      deep: true,
+    });
+    expect(res.body).toEqual({ mode: 'insufficient', answer: '', sources: [], searchSuggestionsHtml: null });
+    expect(fake.searches).toHaveLength(0);
+    expect(fake.options.map((o) => o?.thinking)).toEqual(['high']); // «Pensar melhor»: raciocínio alto
+
     const sources = [{ title: 'exemplo.pt', url: 'https://exemplo.pt/3fn' }];
-    const res = await ask(
-      [
-        { sufficient: true, answer: 'Sem fontes.', citations: [] },
-        { ...web, sources },
-      ],
-      { question: 'O que é a 3FN?', history: [{ role: 'user', text: 'Fala-me de BD' }], deep: true },
-    );
-    // «Pensar melhor»: raciocínio alto nas duas chamadas (documentos e web).
-    expect(fake.options.map((o) => o?.thinking)).toEqual(['high', 'high']);
-    expect(res.body).toEqual({
+    const fromWeb = await ask([{ ...web, sources }], { question: 'O que é a 3FN?', history, web: true });
+    expect(fromWeb.body).toEqual({
       mode: 'web',
       answer: web.text,
       sources: [{ kind: 'web', n: 1, title: 'exemplo.pt', url: 'https://exemplo.pt/3fn' }],
       searchSuggestionsHtml: '<div>chips</div>',
     });
-    // Para a pesquisa Google vai só a pergunta, sem a conversa.
+    // Para a pesquisa Google vai só a pergunta, sem a conversa; os documentos nem são lidos.
     expect(fake.searches[0]).toEqual([{ text: 'O que é a 3FN?' }]);
+    expect(fake.requests).toHaveLength(0);
+    expect(fake.options[0]?.thinking).toBe('low');
   });
 
-  it('sem documentos vai direto à web; excertos de outro modelo de vetores não contam', async () => {
+  it('sem documentos (ou só com vetores de outro modelo) não responde nem pesquisa sozinho', async () => {
     await addChunk('dono@exemplo.pt', 'Antigo', 'Vetor de outro modelo.', 0, { model: 'modelo-antigo' });
-    const res = await ask([web], { question: 'O que é a 3FN?' });
-    expect(res.body.mode).toBe('web');
+    const res = await ask([], { question: 'O que é a 3FN?' });
+    expect(res.body.mode).toBe('insufficient');
     expect(fake.requests).toHaveLength(0);
+    expect(fake.searches).toHaveLength(0);
   });
 
   it('filtra por disciplina da conta; disciplina de outra conta dá 404', async () => {

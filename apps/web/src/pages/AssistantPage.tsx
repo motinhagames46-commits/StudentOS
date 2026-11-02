@@ -1,5 +1,5 @@
 import { assistantAskSchema, type AssistantAnswer } from '@studentos/shared';
-import { ExternalLink, FileText, Send, Sparkles } from 'lucide-react';
+import { ExternalLink, FileText, Globe, Send, Sparkles } from 'lucide-react';
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import { Link } from 'react-router';
 import { AiUnavailable } from '../components/AiUnavailable';
@@ -13,7 +13,18 @@ interface Message {
   answer?: AssistantAnswer;
   /** Resposta do «Pensar melhor» (raciocínio alto). */
   deep?: boolean;
+  /** Resposta do «Procurar na web». */
+  web?: boolean;
 }
+
+const NOT_FOUND = 'Não encontrei a resposta nos teus documentos.';
+
+const toMessage = (answer: AssistantAnswer, flags: { deep?: boolean; web?: boolean }): Message => ({
+  role: 'assistant',
+  text: answer.answer || NOT_FOUND,
+  answer,
+  ...flags,
+});
 
 const historyOf = (messages: Message[]) =>
   messages.slice(-10).map((m) => ({ role: m.role, text: m.text.slice(0, 4000) }));
@@ -25,7 +36,7 @@ export function AssistantPage() {
     <>
       <PageHeader
         title="Assistente"
-        subtitle="Pergunta sobre os teus documentos. Quando não chegam, a resposta vem da web e fica marcada como tal."
+        subtitle="Pergunta sobre os teus documentos. Quando não chegam, podes procurar na web; essa resposta fica marcada."
       />
       {ai.isPending ? (
         <Skeleton className="h-40" />
@@ -65,7 +76,7 @@ function Chat() {
     setMessages((current) => [...current, { role: 'user', text: asked }]);
     try {
       const answer = await ask.mutateAsync(parsed.data);
-      setMessages((current) => [...current, { role: 'assistant', text: answer.answer, answer }]);
+      setMessages((current) => [...current, toMessage(answer, {})]);
     } catch (err) {
       // A pergunta volta à caixa para se poder tentar outra vez (sem apagar o que entretanto se escreveu).
       setMessages((current) => current.slice(0, -1));
@@ -74,8 +85,9 @@ function Chat() {
     }
   }
 
-  // «Pensar melhor»: a última pergunta outra vez, com raciocínio alto; a resposta nova substitui a anterior.
-  async function thinkHarder() {
+  // A última pergunta outra vez, com «Pensar melhor» (raciocínio alto) ou «Procurar na web»; a resposta nova
+  // substitui a anterior.
+  async function askAgain(flags: { deep?: boolean; web?: boolean }) {
     if (ask.isPending) return;
     const asked = messages.at(-2)!.text;
     setError(null);
@@ -84,12 +96,9 @@ function Chat() {
         question: asked,
         disciplineId: disciplineId ? Number(disciplineId) : null,
         history: historyOf(messages.slice(0, -2)),
-        deep: true,
+        ...flags,
       });
-      setMessages((current) => [
-        ...current.slice(0, -1),
-        { role: 'assistant', text: answer.answer, answer, deep: true },
-      ]);
+      setMessages((current) => [...current.slice(0, -1), toMessage(answer, flags)]);
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -114,11 +123,25 @@ function Chat() {
             ) : (
               <li key={i} className="space-y-2">
                 {m.answer && <AnswerCard answer={m.answer} />}
-                {i === messages.length - 1 && !m.deep && (
-                  <Button variant="secondary" disabled={ask.isPending} onClick={() => void thinkHarder()}>
-                    <Sparkles aria-hidden="true" className="size-4" />
-                    Pensar melhor
-                  </Button>
+                {i === messages.length - 1 && (
+                  <div className="flex flex-wrap gap-2">
+                    {m.answer?.mode === 'insufficient' && (
+                      <Button disabled={ask.isPending} onClick={() => void askAgain({ web: true })}>
+                        <Globe aria-hidden="true" className="size-4" />
+                        Procurar na web
+                      </Button>
+                    )}
+                    {!m.deep && (
+                      <Button
+                        variant="secondary"
+                        disabled={ask.isPending}
+                        onClick={() => void askAgain({ deep: true, web: m.web })}
+                      >
+                        <Sparkles aria-hidden="true" className="size-4" />
+                        Pensar melhor
+                      </Button>
+                    )}
+                  </div>
                 )}
               </li>
             ),
@@ -127,7 +150,9 @@ function Chat() {
             <li className="text-sm text-stone-600" aria-live="polite">
               {ask.variables?.deep
                 ? 'A pensar com mais cuidado… pode demorar mais de um minuto.'
-                : 'A procurar nos teus documentos…'}
+                : ask.variables?.web
+                  ? 'A procurar na web…'
+                  : 'A procurar nos teus documentos…'}
             </li>
           )}
         </ol>
@@ -171,8 +196,8 @@ function Chat() {
             )}
           </div>
           <p className="text-xs text-stone-600">
-            A IA pode enganar-se: confirma nas fontes. As perguntas vão para a Google (Gemini) e, quando os teus
-            documentos não chegam, para a Pesquisa Google. A conversa não fica guardada.
+            A IA pode enganar-se: confirma nas fontes. As perguntas vão para a Google (Gemini) e, se carregares em
+            «Procurar na web», para a Pesquisa Google. A conversa não fica guardada.
           </p>
         </form>
       </Card>
@@ -181,6 +206,13 @@ function Chat() {
 }
 
 function AnswerCard({ answer }: { answer: AssistantAnswer }) {
+  if (answer.mode === 'insufficient') {
+    return (
+      <p className="max-w-[95%] rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm text-stone-700">
+        {NOT_FOUND} Podes procurar na web: só a pergunta vai para a Pesquisa Google.
+      </p>
+    );
+  }
   return (
     <div className="max-w-[95%] space-y-3 rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm">
       {answer.mode === 'documents' ? (

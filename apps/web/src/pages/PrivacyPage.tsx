@@ -86,8 +86,8 @@ export function PrivacyPage() {
           (fotografias e PDF) ficam guardados para a IA os voltar a ler nas perguntas e nos quizzes, até a pessoa apagar
           o documento; para não os enviar em cada pergunta, a Google guarda uma cópia de cada ficheiro durante 48 horas.
           Guarda-se também a data e a versão do consentimento. Se os documentos não chegarem para responder a uma
-          pergunta ao assistente, a pergunta segue para a Pesquisa Google, que a guarda com a resposta durante 30 dias;
-          a conversa não fica guardada no StudentOS.
+          pergunta ao assistente e a pessoa carregar em «Procurar na web», a pergunta segue para a Pesquisa Google, que
+          a guarda com a resposta durante 30 dias; a conversa não fica guardada no StudentOS.
         </p>
 
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os teus direitos</h2>

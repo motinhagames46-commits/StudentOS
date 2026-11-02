@@ -1,5 +1,5 @@
 // Assistente sobre os documentos do estudante: pergunta → excertos mais próximos → resposta com fontes.
-// Quando os documentos não chegam, a resposta vem da web (Google Search) e é marcada como tal.
+// Quando os documentos não chegam, a web (Google Search) só é usada a pedido, e a resposta é marcada como tal.
 import { z } from 'zod';
 
 export const assistantAskSchema = z.strictObject({
@@ -16,6 +16,8 @@ export const assistantAskSchema = z.strictObject({
     .optional(),
   /** «Pensar melhor»: a mesma pergunta com raciocínio alto (mais cuidadosa, mais lenta). */
   deep: z.boolean().optional(),
+  /** «Procurar na web»: a pergunta vai para a Pesquisa Google em vez dos documentos (só a pedido). */
+  web: z.boolean().optional(),
 });
 
 export type AssistantAskInput = z.infer<typeof assistantAskSchema>;
@@ -25,7 +27,8 @@ export type AssistantSource =
   | { kind: 'web'; n: number; title: string; url: string };
 
 export interface AssistantAnswer {
-  mode: 'documents' | 'web';
+  /** `insufficient`: os documentos não chegam; a página oferece «Procurar na web». */
+  mode: 'documents' | 'web' | 'insufficient';
   answer: string;
   sources: AssistantSource[];
   /** Sugestões de pesquisa da Google: os termos obrigam a mostrá-las, sem alterar, com a resposta da web. */

@@ -67,8 +67,8 @@ export function AiCard() {
                 cada pergunta, a Google guarda uma cópia de cada ficheiro durante 48 horas.
               </li>
               <li>
-                Quando os teus documentos não chegam para responder, o assistente pesquisa a pergunta na Pesquisa
-                Google; nesse caso a Google guarda a pergunta e a resposta durante 30 dias.
+                Se carregares em «Procurar na web» (quando os teus documentos não chegam), o assistente pesquisa a
+                pergunta na Pesquisa Google; nesse caso a Google guarda a pergunta e a resposta durante 30 dias.
               </li>
               <li>
                 No Espaço Económico Europeu, os termos da API Gemini não deixam a Google usar este conteúdo para
