@@ -34,7 +34,6 @@ test('conta nova: questionário até ao plano da semana confirmado', async ({ pa
   );
   await page.getByLabel('Nome da disciplina').fill('Programação Web');
   await page.getByLabel('Sigla').fill('PW');
-  await page.getByLabel('ECTS').fill('6');
   await expectNoSeriousViolations(page);
   await page.getByRole('button', { name: 'Continuar' }).click();
 

@@ -250,7 +250,7 @@ plannerRouter.get('/sessions', async (req, res) => {
 plannerRouter.get('/suggestion', async (req, res) => {
   const now = new Date();
   const soon = new Date(now.getTime() + 30 * 60 * 1000);
-  // Mesmo período que «Gerar plano», para a urgência e a quota pelos ECTS coincidirem com as do plano.
+  // Mesmo período que «Gerar plano», para a urgência e a quota do ritmo predefinido coincidirem com as do plano.
   const end = startOfZonedDay(addDaysToKey(zonedDayKey(now, DEFAULT_TIMEZONE), DEFAULT_DAYS), DEFAULT_TIMEZONE);
   const [current, { input }] = await Promise.all([
     prisma.plannedSession.findFirst({

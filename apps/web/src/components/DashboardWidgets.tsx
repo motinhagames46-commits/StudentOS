@@ -1,18 +1,9 @@
 import { isAtRisk } from '@studentos/shared';
-import {
-  AlarmClock,
-  AlertTriangle,
-  CheckCircle2,
-  Circle,
-  ClipboardList,
-  GraduationCap,
-  Timer,
-  type LucideIcon,
-} from 'lucide-react';
+import { AlarmClock, AlertTriangle, CheckCircle2, Circle, ClipboardList, Timer, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { useStudyPreferences } from '../hooks/queries';
-import { formatDuration, formatGrade } from '../lib/format';
+import { formatDuration } from '../lib/format';
 import type { Dashboard } from '../lib/types';
 import { Card } from './ui';
 
@@ -26,9 +17,8 @@ interface Tile {
 
 const hintLink = 'font-medium text-accent hover:underline';
 
-/** Linha de estatísticas ao estilo tile_count do Gentelella. Sem setas ▲/▼: não há período de comparação. */
+/** Linha de estatísticas. Sem setas ▲/▼: não há período de comparação. Sem média do curso (conselho de 2026-11-02). */
 export function StatTiles({ data, studyMinutes }: { data: Dashboard; studyMinutes: number | null }) {
-  const { average, credits } = data.globalAverage;
   // Mesma regra do selo «Em risco» das disciplinas.
   const risky = data.disciplines.filter((d) => isAtRisk(d.grades, d.passingGrade)).length;
   const tiles: Tile[] = [
@@ -50,12 +40,6 @@ export function StatTiles({ data, studyMinutes }: { data: Dashboard; studyMinute
       ) : (
         'Tudo em dia'
       ),
-    },
-    {
-      icon: GraduationCap,
-      label: 'Média (aprovadas)',
-      value: formatGrade(average, 1),
-      hint: credits ? `${credits} ECTS aprovados` : 'Sem disciplinas concluídas',
     },
     {
       icon: Timer,
@@ -80,7 +64,7 @@ export function StatTiles({ data, studyMinutes }: { data: Dashboard; studyMinute
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-y-4 rounded-2xl border border-panel-border bg-white py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] sm:grid-cols-3 lg:grid-cols-5">
+    <dl className="grid grid-cols-2 gap-y-4 rounded-2xl border border-panel-border bg-white py-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] lg:grid-cols-4">
       {tiles.map(({ icon: Icon, label, value, tone, hint }) => (
         <div key={label} className="px-4 lg:border-l lg:border-panel-border lg:first:border-l-0">
           <dt className="flex items-center gap-1.5 text-[13px] text-stone-600">
@@ -106,7 +90,6 @@ export function SetupProgress({ data }: { data: Dashboard }) {
   const ds = data.disciplines;
   const steps = [
     { label: 'Disciplinas do semestre', done: ds.length > 0 },
-    { label: 'ECTS de cada disciplina', done: ds.length > 0 && ds.every((d) => d.ects) },
     { label: 'Avaliações com pesos a 100 %', done: ds.length > 0 && ds.every((d) => d.grades.weightSum === 100) },
     { label: 'Horas livres para estudar', done: prefs.data.availability.length > 0 },
   ];

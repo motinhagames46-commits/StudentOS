@@ -102,7 +102,6 @@ export function DisciplinesPage() {
                     <p className="truncate text-base font-medium text-stone-900">{d.name}</p>
                     <p className="mt-2 flex flex-wrap items-center gap-2 text-xs text-stone-500">
                       <GradeStatusBadge grades={d.grades} passingGrade={d.passingGrade} />
-                      {d.ects && <span>{d.ects} ECTS</span>}
                       <span>
                         {d.pendingTasks} {d.pendingTasks === 1 ? 'tarefa pendente' : 'tarefas pendentes'}
                       </span>

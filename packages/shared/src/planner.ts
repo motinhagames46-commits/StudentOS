@@ -62,11 +62,11 @@ export interface WorkItem {
   /** "tarefa", "teste", "exame", "trabalho"… (para as explicações). */
   label: string;
   /**
-   * De onde vem `remainingMinutes`: indicado pelo estudante (omissão) ou calculado pelo ritmo dos ECTS
+   * De onde vem `remainingMinutes`: indicado pelo estudante (omissão) ou calculado pelo ritmo predefinido
    * (ver workload.ts). Um valor calculado é a quota do período e nunca é gravado.
    */
-  estimateSource?: 'user' | 'ects';
-  /** Conta do ritmo pelos ECTS, para a explicação (só com números do sistema). */
+  estimateSource?: 'user' | 'pace';
+  /** Conta do ritmo predefinido, para a explicação (só com números do sistema). */
   estimateNote?: string | null;
   /** O que falta para o poder planear (quando `remainingMinutes` é null), dito ao estudante. */
   missingInfo?: string | null;
@@ -96,7 +96,7 @@ export interface ProposedSession {
   disciplineId: number | null;
   disciplineCode: string | null;
   reason: string;
-  estimateSource?: 'user' | 'ects';
+  estimateSource?: 'user' | 'pace';
 }
 
 export type UnplannedReason = 'NO_ESTIMATE' | 'NO_SPACE' | 'PAST_DEADLINE' | 'BEYOND_HORIZON';
@@ -182,7 +182,7 @@ export function explain(item: WorkItem, p: PriorityBreakdown, now: Date, timeZon
   if (item.deadline) parts.push(`${what} ${relativeDays(item.deadline, now, timeZone)}`);
   else parts.push(`${what} sem prazo definido`);
   if (item.weightPercent !== null) parts.push(`vale ${item.weightPercent}% da nota`);
-  if (item.estimateSource === 'ects' && item.estimateNote) parts.push(`ritmo pelos ECTS: ${item.estimateNote}`);
+  if (item.estimateSource === 'pace' && item.estimateNote) parts.push(`ritmo predefinido: ${item.estimateNote}`);
   else if (item.remainingMinutes !== null) parts.push(`faltam cerca de ${item.remainingMinutes} min`);
   if (item.missedCount > 0) parts.push(`${item.missedCount} sessão(ões) falhada(s)`);
   return `${level}: ${parts.join('; ')}.`;
@@ -306,7 +306,7 @@ export function planStudy(input: PlannerInput): PlanResult {
   const slots = freeSlots(input);
   // Fração útil de uma janela livre (descontando as pausas entre sessões).
   const efficiency = prefs.sessionMinutes / (prefs.sessionMinutes + prefs.breakMinutes);
-  const ectsDemand = work.filter((w) => w.item.estimateSource === 'ects').reduce((sum, w) => sum + w.remaining, 0);
+  const paceDemand = work.filter((w) => w.item.estimateSource === 'pace').reduce((sum, w) => sum + w.remaining, 0);
 
   /** Minutos de estudo ainda possíveis entre dois instantes (janelas livres, pausas e limite diário). */
   const capacityBetween = (fromMs: number, toMs: number): number => {
@@ -410,13 +410,13 @@ export function planStudy(input: PlannerInput): PlanResult {
   }
 
   const shortDate = new Intl.DateTimeFormat('pt-PT', { day: '2-digit', month: '2-digit', timeZone: input.timeZone });
-  let ectsShortfall = 0;
+  let paceShortfall = 0;
   let outOfSpace = false;
   for (const w of work) {
     if (w.remaining <= 0) continue;
-    if (w.item.estimateSource === 'ects') {
-      // A quota pelos ECTS é só deste período: o que não coube é falta de espaço, não «fica para depois».
-      ectsShortfall += w.remaining;
+    if (w.item.estimateSource === 'pace') {
+      // A quota do ritmo é só deste período: o que não coube é falta de espaço, não «fica para depois».
+      paceShortfall += w.remaining;
       unplanned.push({
         type: w.item.type,
         itemId: w.item.id,
@@ -449,10 +449,10 @@ export function planStudy(input: PlannerInput): PlanResult {
       'Não há tempo suficiente para todo o trabalho. Podes aumentar a disponibilidade ou o limite diário, reduzir as estimativas, ou aceitar que algumas tarefas fiquem sem sessão.',
     );
   }
-  if (ectsShortfall > 0) {
+  if (paceShortfall > 0) {
     warnings.push(
-      `O ritmo pelos ECTS pede cerca de ${formatStudyMinutes(ectsDemand)} de estudo neste período e só cabem ` +
-        `${formatStudyMinutes(ectsDemand - ectsShortfall)}. Podes aumentar a disponibilidade ou o limite diário, ` +
+      `O ritmo predefinido pede cerca de ${formatStudyMinutes(paceDemand)} de estudo neste período e só cabem ` +
+        `${formatStudyMinutes(paceDemand - paceShortfall)}. Podes aumentar a disponibilidade ou o limite diário, ` +
         'ou indicar o tempo de estudo de cada avaliação.',
     );
   }

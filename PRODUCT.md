@@ -18,7 +18,7 @@ Estudantes de TPSI do IPVC (o modelo de avaliação serve outros cursos). Person
 
 ## Fluxos essenciais
 
-- Página de entrada (visitante) → criar conta → questionário de boas-vindas opcional (disciplinas e ECTS, avaliações, horas livres, sessões) → plano da primeira semana, confirmado pelo estudante.
+- Página de entrada (visitante) → criar conta → questionário de boas-vindas opcional (disciplinas, avaliações, horas livres, sessões) → plano da primeira semana, confirmado pelo estudante.
 - Criar conta → semestre ativo criado → disciplinas e avaliações com pesos → médias e "quanto preciso no exame".
 - Tarefas com prazo e prioridade → painel com próximos 7 dias, em atraso e alertas.
 - Importar horário (`.ics`/`.csv`) com pré-visualização editável, duplicados e confirmação.
@@ -27,7 +27,7 @@ Estudantes de TPSI do IPVC (o modelo de avaliação serve outros cursos). Person
 
 ## MVP e estado
 
-Implementado e publicado (detalhe na tabela §19 do [README](README.md#estado-da-entrega-spec-19)): autenticação com sessões no servidor, semestres, disciplinas, avaliações e médias, tarefas, painel, estatísticas, calendário, alertas, horário e importação, planeador (com ritmo pelos ECTS quando falta o tempo de estudo), modo foco, exportação `.ics`, exportação/eliminação de conta, transferência entre contas.
+Implementado e publicado (detalhe na tabela §19 do [README](README.md#estado-da-entrega-spec-19)): autenticação com sessões no servidor, semestres, disciplinas, avaliações e médias, tarefas, painel, estatísticas, calendário, alertas, horário e importação, planeador (com um ritmo predefinido quando falta o tempo de estudo), modo foco, exportação `.ics`, exportação/eliminação de conta, transferência entre contas.
 
 ## Fora de âmbito (nesta versão)
 
@@ -48,7 +48,7 @@ Projeto académico (cerca de 110 h, custo de alojamento 0 €, planos gratuitos)
 
 - Assistente de IA: decidido a 2026-10-26 — só a conta do dono, com consentimento, em cinco passos (fundação, documentos, assistente com fontes, quizzes com FSRS, finanças). Feitos todos: fundação, documentos, assistente, quizzes com revisões e finanças.
 - Página de entrada, questionário e painel Gentelella (ramo `feat/primeira-impressao`): monetização, público, «Quem fez», arranque a frio e outras perguntas em [`docs/decisoes-pendentes.md`](docs/decisoes-pendentes.md), cada uma com a suposição usada.
-- Datas das avaliações chegam durante o semestre; até lá o plano usa o ritmo pelos ECTS.
+- Datas das avaliações chegam durante o semestre; até lá o plano usa um ritmo predefinido (60 h por disciplina × peso). Os ECTS deixaram de ser pedidos e usados (decisão de 2026-11-02).
 - CI do GitHub não corre enquanto a faturação da conta estiver bloqueada; a bateria local é a barreira antes de cada push.
 
 ## Critérios de aceitação

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { DEFAULT_TIMEZONE, globalAverage, startOfZonedDay, zonedDayKey } from '@studentos/shared';
+import { DEFAULT_TIMEZONE, startOfZonedDay, zonedDayKey } from '@studentos/shared';
 import { gradeSummary } from '../lib/grades.js';
 import { prisma } from '../lib/prisma.js';
 
@@ -19,7 +19,7 @@ dashboardRouter.get('/', async (req, res) => {
     where: { userId: req.userId, isActive: true },
   });
 
-  const [upcomingTasks, overdueTasks, upcomingAssessments, disciplines, allDisciplines] = await Promise.all([
+  const [upcomingTasks, overdueTasks, upcomingAssessments, disciplines] = await Promise.all([
     prisma.task.findMany({
       where: { userId: req.userId, status: 'TODO', dueDate: { gte: now, lte: in7Days } },
       include: { discipline: disciplineSelect },
@@ -45,18 +45,7 @@ dashboardRouter.get('/', async (req, res) => {
       include: { assessments: true },
       orderBy: { name: 'asc' },
     }),
-    prisma.discipline.findMany({
-      where: { userId: req.userId },
-      include: { assessments: true },
-    }),
   ]);
-
-  const global = globalAverage(
-    allDisciplines.map((d) => {
-      const g = gradeSummary(d);
-      return { finalGrade: g.finalGrade, ects: d.ects, approved: g.status === 'approved' };
-    }),
-  );
 
   res.json({
     activeSemester,
@@ -67,6 +56,5 @@ dashboardRouter.get('/', async (req, res) => {
       ...d,
       grades: gradeSummary({ ...d, assessments }),
     })),
-    globalAverage: global,
   });
 });

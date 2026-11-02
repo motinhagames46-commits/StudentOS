@@ -236,7 +236,7 @@ function AssessmentForm({
         value={prep}
         onChange={(e) => setPrep(e.target.value)}
         error={errors.prepMinutes}
-        hint="Opcional. Se ficar vazio, o plano usa o ritmo pelos ECTS da disciplina."
+        hint="Opcional. Se ficar vazio, o plano usa um ritmo predefinido (60 h por disciplina, repartidas pelo peso)."
         className="sm:max-w-xs"
       />
       <FormError message={formError} />

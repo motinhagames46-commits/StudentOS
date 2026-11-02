@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeGrades, requiredScore, globalAverage, roundFinal, exceedsWeightLimit, isAtRisk } from './grades.js';
+import { computeGrades, requiredScore, roundFinal, exceedsWeightLimit, isAtRisk } from './grades.js';
 
 // Exemplo da secção 4.1 da especificação — Programação Web
 const pw = [
@@ -100,21 +100,6 @@ describe('requiredScore (RN07)', () => {
 
   it('rejeita notas-alvo fora da escala', () => {
     expect(() => requiredScore(pw, 21)).toThrow(RangeError);
-  });
-});
-
-describe('globalAverage (RN08)', () => {
-  it('pondera por ECTS só as disciplinas aprovadas', () => {
-    const r = globalAverage([
-      { finalGrade: 14, ects: 6, approved: true },
-      { finalGrade: 12, ects: 3, approved: true },
-      { finalGrade: 8, ects: 6, approved: false },
-    ]);
-    expect(r).toEqual({ average: 13.33, credits: 9, missingEcts: false });
-  });
-
-  it('assinala disciplinas sem ECTS', () => {
-    expect(globalAverage([{ finalGrade: 15, ects: null, approved: true }]).missingEcts).toBe(true);
   });
 });
 

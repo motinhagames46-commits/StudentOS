@@ -40,8 +40,8 @@ const BENEFITS: { icon: LucideIcon; title: string; text: string }[] = [
   },
   {
     icon: Gauge,
-    title: 'O ritmo certo, pelos ECTS',
-    text: 'Os ECTS são os créditos de cada disciplina (estão na ficha da UC): cada um corresponde a 25–28 horas de trabalho. O StudentOS reparte esse tempo até à avaliação, para não ficar tudo para a última semana.',
+    title: 'Estudo repartido, sem última semana',
+    text: 'Mesmo sem saberes quanto tempo uma avaliação pede, o StudentOS reparte o estudo até à data dela, conforme o peso que tem na nota. Se souberes, indicas tu o tempo.',
   },
   {
     icon: CalendarRange,
@@ -76,7 +76,7 @@ const FAQ = [
   },
   {
     q: 'Funciona com outras escalas de notas?',
-    a: 'Por agora só com a escala portuguesa de 0 a 20 e os créditos ECTS. Outras escalas e línguas ficam para quando houver estudantes de outros países a usar a app.',
+    a: 'Por agora só com a escala portuguesa de 0 a 20. Outras escalas e línguas ficam para quando houver estudantes de outros países a usar a app.',
   },
   {
     q: 'O que acontece aos meus dados?',

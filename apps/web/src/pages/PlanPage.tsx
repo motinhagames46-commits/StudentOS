@@ -194,7 +194,7 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
     byDay.set(key, [...(byDay.get(key) ?? []), s]);
   }
   const noEstimate = p.unplanned.filter((u) => u.reason === 'NO_ESTIMATE');
-  const ectsItems = new Set(p.sessions.filter((s) => s.estimateSource === 'ects').map((s) => `${s.type}${s.itemId}`));
+  const pacedItems = new Set(p.sessions.filter((s) => s.estimateSource === 'pace').map((s) => `${s.type}${s.itemId}`));
   const later = p.unplanned.filter((u) => u.reason === 'BEYOND_HORIZON');
   const other = p.unplanned.filter((u) => u.reason === 'NO_SPACE' || u.reason === 'PAST_DEADLINE');
 
@@ -209,7 +209,7 @@ function DraftPanel({ draft, onDone }: { draft: PlanView; onDone: () => void }) 
             {p.sessions.length} sessões novas · {total} min
           </Badge>
           {p.removals.length > 0 && <Badge tone="amber">{p.removals.length} sessões futuras substituídas</Badge>}
-          {ectsItems.size > 0 && <Badge>{ectsItems.size} com tempo estimado pelos ECTS</Badge>}
+          {pacedItems.size > 0 && <Badge>{pacedItems.size} com tempo predefinido</Badge>}
           <Badge>Válida até {formatTime(draft.expiresAt)}</Badge>
         </div>
         <p className="text-xs text-stone-500">

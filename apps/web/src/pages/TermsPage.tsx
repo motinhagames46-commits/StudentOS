@@ -33,7 +33,7 @@ export function TermsPage() {
 
         <h2 className="pt-2 text-base font-semibold text-stone-900">Os cálculos e o plano são indicativos</h2>
         <p>
-          As médias, a «nota de que precisas», o ritmo pelos ECTS e o plano de estudo são calculados a partir dos dados
+          As médias, a «nota de que precisas», o ritmo de estudo e o plano de estudo são calculados a partir dos dados
           que introduzes, com as regras explicadas na app. Podem não refletir o regulamento da tua instituição, que é
           sempre o que conta: confirma prazos, pesos e notas oficiais com a tua escola e os teus docentes.
         </p>

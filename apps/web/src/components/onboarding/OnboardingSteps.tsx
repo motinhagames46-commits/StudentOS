@@ -16,7 +16,7 @@ export function WelcomeStep({ name, onStart }: { name: string; onStart: () => vo
   const items: { icon: ReactNode; text: string }[] = [
     {
       icon: <BookOpen aria-hidden="true" className="size-5" />,
-      text: 'As tuas disciplinas e os créditos ECTS de cada uma — para saber quanto tempo pedem.',
+      text: 'As tuas disciplinas — para organizar avaliações, tarefas e estudo por cadeira.',
     },
     {
       icon: <ClipboardList aria-hidden="true" className="size-5" />,
@@ -60,10 +60,9 @@ interface DisciplineRow {
   key: number;
   name: string;
   code: string;
-  ects: string;
 }
 let rowKey = 0;
-const emptyRow = (): DisciplineRow => ({ key: rowKey++, name: '', code: '', ects: '' });
+const emptyRow = (): DisciplineRow => ({ key: rowKey++, name: '', code: '' });
 
 export function DisciplinesStep({
   headingRef,
@@ -88,13 +87,11 @@ export function DisciplinesStep({
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const filled = rows.filter((r) => r.name.trim() || r.code.trim() || r.ects.trim());
+    const filled = rows.filter((r) => r.name.trim() || r.code.trim());
     const errs: Record<string, string> = {};
     for (const r of filled) {
       if (!r.name.trim()) errs[`${r.key}.name`] = 'Indica o nome';
       if (!r.code.trim()) errs[`${r.key}.code`] = 'Indica a sigla';
-      if (r.ects.trim() && !(Number.isInteger(Number(r.ects)) && Number(r.ects) >= 1 && Number(r.ects) <= 60))
-        errs[`${r.key}.ects`] = 'Entre 1 e 60';
     }
     if (semester && start && end && end <= start) errs.end = 'O fim tem de ser depois do início';
     setErrors(errs);
@@ -116,7 +113,7 @@ export function DisciplinesStep({
       for (const r of filled) {
         await api('/disciplines', {
           method: 'POST',
-          body: { name: r.name.trim(), code: r.code.trim(), ...(r.ects.trim() ? { ects: Number(r.ects) } : {}) },
+          body: { name: r.name.trim(), code: r.code.trim() },
         });
         // Já gravada: sai da lista, para tentar de novo não a duplicar se uma seguinte falhar.
         setRows((rs) => (rs.length > 1 ? rs.filter((x) => x.key !== r.key) : [emptyRow()]));
@@ -136,7 +133,7 @@ export function DisciplinesStep({
       <StepHeader
         headingRef={headingRef}
         title="Que disciplinas tens este semestre?"
-        why="Os ECTS são os créditos de cada unidade curricular (UC): 1 ECTS corresponde a 25–28 horas de trabalho. Encontra-los na ficha da UC ou no plano de estudos do curso; se não souberes, deixa em branco."
+        why="Cada disciplina junta as suas avaliações, tarefas e sessões de estudo. A sigla é o nome curto que aparece no calendário e no plano."
       />
       {semester && (
         <fieldset className="mb-6 grid gap-3 sm:grid-cols-2">
@@ -153,13 +150,12 @@ export function DisciplinesStep({
       )}
       {existing.data && existing.data.length > 0 && (
         <p className="mb-4 rounded-lg bg-stone-50 px-3 py-2 text-sm text-stone-700">
-          Já tens: {existing.data.map((d) => `${d.code}${d.ects ? ` (${d.ects} ECTS)` : ''}`).join(', ')}. Acrescenta só
-          as que faltam.
+          Já tens: {existing.data.map((d) => d.code).join(', ')}. Acrescenta só as que faltam.
         </p>
       )}
       <ul className="space-y-3">
         {rows.map((r, i) => (
-          <li key={r.key} className="grid grid-cols-[1fr_6rem_5rem_auto] items-end gap-2">
+          <li key={r.key} className="grid grid-cols-[1fr_6rem_auto] items-end gap-2">
             <TextField
               label={i === 0 ? 'Nome da disciplina' : `Nome da disciplina ${i + 1}`}
               placeholder="ex.: Programação Web"
@@ -173,14 +169,6 @@ export function DisciplinesStep({
               value={r.code}
               onChange={(e) => update(r.key, 'code', e.target.value)}
               error={errors[`${r.key}.code`]}
-            />
-            <TextField
-              label={i === 0 ? 'ECTS' : `ECTS ${i + 1}`}
-              inputMode="numeric"
-              placeholder="6"
-              value={r.ects}
-              onChange={(e) => update(r.key, 'ects', e.target.value)}
-              error={errors[`${r.key}.ects`]}
             />
             <IconButton
               label={`Remover a linha ${i + 1}`}
@@ -266,7 +254,7 @@ export function AssessmentsStep({ headingRef, onDone }: { headingRef: HeadingRef
             </SelectField>
           ))}
           <p className="text-xs text-stone-600">
-            Sem data marcada, o plano reparte o estudo até ao fim do semestre, ao ritmo dos ECTS da disciplina.
+            Sem data marcada, o plano reparte o estudo até ao fim do semestre, a um ritmo predefinido.
           </p>
         </div>
       )}

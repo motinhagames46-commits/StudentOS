@@ -125,7 +125,7 @@ export function WeekResultStep({
               <li key={`${u.type}${u.itemId}`}>{u.message}</li>
             ))}
             {p.warnings.length === 0 && p.unplanned.length === 0 && (
-              <li>Não há disciplinas com ECTS, tarefas nem avaliações para estudar nesta semana.</li>
+              <li>Não há tarefas nem avaliações para estudar nesta semana.</li>
             )}
           </ul>
         </div>

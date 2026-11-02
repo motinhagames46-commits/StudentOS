@@ -102,7 +102,6 @@ export function DisciplineDetailPage() {
             <div>
               <p className="text-xs font-semibold tracking-wide text-stone-600">
                 {d.code}
-                {d.ects ? ` · ${d.ects} ECTS` : ''}
                 {d.semester ? ` · ${d.semester.label}` : ''}
               </p>
               <h1 className="text-2xl font-semibold tracking-tight text-stone-900">{d.name}</h1>

@@ -521,11 +521,10 @@ it('a exportação inclui preferências, disponibilidade e sessões planeadas', 
 
 // Queixa real: «não é possível criar plano de estudo automático». A conta tem 6 UC com as avaliações das
 // fichas (pesos a 100 %, sem datas nem tempo de estudo) e o horário importado sem ligação às disciplinas.
-describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)', () => {
-  const UCS: { code: string; ects: number; assessments: [string, string, number][] }[] = [
+describe('plano com avaliações sem data nem tempo de estudo (ritmo predefinido, sem ECTS)', () => {
+  const UCS: { code: string; assessments: [string, string, number][] }[] = [
     {
       code: 'TDM',
-      ects: 6,
       assessments: [
         ['Frequência 1', 'TEST', 25],
         ['Frequência 2', 'TEST', 25],
@@ -534,7 +533,6 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     },
     {
       code: 'IT',
-      ects: 6,
       assessments: [
         ['Exame', 'EXAM', 60],
         ['Trabalhos práticos', 'ASSIGNMENT', 40],
@@ -542,7 +540,6 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     },
     {
       code: 'RDC',
-      ects: 6,
       assessments: [
         ['Teste', 'TEST', 50],
         ['Laboratórios', 'ASSIGNMENT', 50],
@@ -550,16 +547,14 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     },
     {
       code: 'AEP',
-      ects: 3,
       assessments: [
         ['Teste', 'TEST', 70],
         ['Relatório', 'ASSIGNMENT', 30],
       ],
     },
-    { code: 'FDSI', ects: 3, assessments: [['Exame', 'EXAM', 100]] },
+    { code: 'FDSI', assessments: [['Exame', 'EXAM', 100]] },
     {
       code: 'TDE',
-      ects: 3,
       assessments: [
         ['Participação', 'OTHER', 10],
         ['Exame', 'EXAM', 90],
@@ -567,13 +562,13 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     },
   ];
 
-  async function setupRealAccount(withEcts: boolean) {
+  async function setupRealAccount() {
     const ids: Record<string, number> = {};
     for (const uc of UCS) {
       const { body: d } = await request(app)
         .post('/api/disciplines')
         .set('Cookie', ines)
-        .send({ name: `UC ${uc.code}`, code: uc.code, ...(withEcts ? { ects: uc.ects } : {}) });
+        .send({ name: `UC ${uc.code}`, code: uc.code });
       for (const [name, type, weight] of uc.assessments) {
         const { body: a } = await request(app)
           .post(`/api/disciplines/${d.id}/assessments`)
@@ -607,7 +602,7 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
   }
 
   it('gera sessões para todas as avaliações de estudo, dentro do ritmo, sem inventar prazos', async () => {
-    const { ids, semester } = await setupRealAccount(true);
+    const { ids, semester } = await setupRealAccount();
     const { body: plan } = await preview(ines);
     const { sessions, unplanned } = plan.proposal as {
       sessions: { itemId: number; type: string; minutes: number; reason: string }[];
@@ -627,11 +622,11 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
           continue;
         }
         expect(mine.length, `${uc.code} ${name} sem sessões`).toBeGreaterThan(0);
-        // Nunca mais do que o ritmo pelos ECTS (limite superior: sem descontar as aulas) para ~8 dias.
-        const bound = Math.ceil(((uc.ects * 25 * 60 * weight) / 100 / semesterDays) * 8);
+        // Nunca mais do que o ritmo predefinido (60 h por disciplina × peso) para ~8 dias.
+        const bound = Math.ceil(((60 * 60 * weight) / 100 / semesterDays) * 8);
         expect(mine.reduce((sum, s) => sum + s.minutes, 0)).toBeLessThanOrEqual(bound);
         for (const s of mine) {
-          expect(s.reason).toMatch(/ECTS/);
+          expect(s.reason).toMatch(new RegExp(`ritmo predefinido: ${weight} % de 60 h`));
           expect(s.reason).not.toMatch(/daqui a|é amanhã|é hoje/);
         }
       }
@@ -640,15 +635,30 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     expect(suggestion.body.kind).not.toBe('missing');
   });
 
-  it('sem ECTS não inventa: diz o que falta, sem sessões nem «Não há trabalho pendente»', async () => {
-    await setupRealAccount(false);
+  it('os ECTS gravados deixam de contar: a mesma avaliação dá o mesmo tempo com e sem ECTS', async () => {
+    await setAvailability(ines);
+    const totals: number[] = [];
+    for (const [code, ects] of [
+      ['COM', 6],
+      ['SEM', null],
+    ] as const) {
+      const { body: d } = await request(app)
+        .post('/api/disciplines')
+        .set('Cookie', ines)
+        .send({ name: `UC ${code}`, code, ...(ects ? { ects } : {}) });
+      await request(app)
+        .post(`/api/disciplines/${d.id}/assessments`)
+        .set('Cookie', ines)
+        .send({ name: `Teste ${code}`, type: 'TEST', weight: 50 });
+    }
     const { body: plan } = await preview(ines);
-    expect(plan.proposal.sessions).toHaveLength(0);
-    const messages = plan.proposal.unplanned.map((u: { message: string }) => u.message).join('\n');
-    expect(messages).toMatch(/Falta o ECTS de TDM/);
-    const suggestion = await request(app).get('/api/planner/suggestion').set('Cookie', ines);
-    expect(suggestion.body.message).not.toMatch(/Não há trabalho pendente/);
-    expect(suggestion.body.message).toMatch(/ECTS/);
+    for (const code of ['COM', 'SEM']) {
+      const mine = plan.proposal.sessions.filter((s: { title: string }) => s.title.includes(`Teste ${code}`));
+      expect(mine.length, `Teste ${code} sem sessões`).toBeGreaterThan(0);
+      totals.push(mine.reduce((sum: number, s: { minutes: number }) => sum + s.minutes, 0));
+    }
+    expect(totals[0]).toBe(totals[1]);
+    expect(JSON.stringify(plan.proposal)).not.toMatch(/ECTS/);
   });
 
   it('regressão: um tempo de estudo indicado pelo estudante continua a ser usado tal como está', async () => {
@@ -661,6 +671,6 @@ describe('plano com avaliações sem data nem tempo de estudo (ritmo pelos ECTS)
     const { body: plan } = await preview(ines);
     const mine = plan.proposal.sessions.filter((s: { itemId: number }) => s.itemId === a.id);
     expect(mine.reduce((sum: number, s: { minutes: number }) => sum + s.minutes, 0)).toBe(240);
-    expect(mine.every((s: { reason: string }) => !/ECTS/.test(s.reason))).toBe(true);
+    expect(mine.every((s: { reason: string }) => !/ritmo predefinido/.test(s.reason))).toBe(true);
   });
 });

@@ -4,13 +4,13 @@ import {
   DEFAULT_PLANNER_PREFERENCES,
   DEFAULT_TIMEZONE,
   addDaysToKey,
-  ectsPace,
-  ectsPaceNote,
   minutesByDay,
+  paceNote,
   startOfZonedDay,
+  studyPace,
   zonedDayKey,
-  type EctsPaceMissing,
   type Interval,
+  type PaceMissing,
   type PlannerInput,
   type PlannerPreferences,
   type WorkItem,
@@ -87,7 +87,7 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
     }),
     prisma.assessment.findMany({
       where: { discipline: { userId, archivedAt: null }, score: null, OR: [{ date: null }, { date: { gt: now } }] },
-      include: { discipline: { select: { id: true, code: true, ects: true, semesterId: true } } },
+      include: { discipline: { select: { id: true, code: true, semesterId: true } } },
     }),
     prisma.studyCard.count({ where: { userId, due: { lt: endOfToday } } }),
   ]);
@@ -113,9 +113,9 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       if (inRange(s)) doneInRange.set(key, (doneInRange.get(key) ?? 0) + minutes);
     }
   }
-  const pace = await ectsPaceContext(
+  const semesterOf = await semesterResolver(
     userId,
-    assessments.filter((a) => a.prepMinutes === null && a.type !== 'OTHER').map((a) => a.discipline),
+    assessments.some((a) => a.prepMinutes === null && a.type !== 'OTHER'),
   );
   const remaining = (key: string, estimate: number | null) =>
     estimate === null ? null : Math.max(0, estimate - (doneMinutes.get(key) ?? 0));
@@ -158,14 +158,10 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
           missingInfo: `Indica o tempo de estudo de «${a.name}» (${a.discipline.code}) se precisar de preparação.`,
         };
       }
-      // Sem tempo indicado: quota deste período pelo ritmo dos ECTS (spec §11.2, valor predefinido documentado).
-      const semester = pace.semesterOf(a.discipline);
-      const contact = pace.contactOf(a.discipline, semester);
-      const result = ectsPace({
-        ects: a.discipline.ects,
-        contactMinutes: contact.minutes,
+      // Sem tempo indicado: quota deste período pelo ritmo predefinido (spec §11.2, valor predefinido documentado).
+      const result = studyPace({
         weightPercent: a.weight,
-        semester,
+        semester: semesterOf(a.discipline),
         assessmentDate: a.date,
         window: { from, to },
         now,
@@ -176,17 +172,8 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
       return {
         ...item,
         remainingMinutes: result.quotaMinutes,
-        estimateSource: 'ects',
-        estimateNote: ectsPaceNote(
-          {
-            ects: a.discipline.ects,
-            contactMinutes: contact.minutes,
-            weightPercent: a.weight,
-            contactEstimated: contact.estimated,
-          },
-          result,
-          DEFAULT_TIMEZONE,
-        ),
+        estimateSource: 'pace',
+        estimateNote: paceNote(a.weight, result, DEFAULT_TIMEZONE),
       };
     }),
   ];
@@ -235,10 +222,8 @@ export async function buildPlannerContext(userId: number, from: Date, to: Date, 
   };
 }
 
-function missingMessage(missing: EctsPaceMissing, name: string, code: string): string {
+function missingMessage(missing: PaceMissing, name: string, code: string): string {
   switch (missing) {
-    case 'ECTS':
-      return `Falta o ECTS de ${code} — indica-o na disciplina, ou indica o tempo de estudo de «${name}».`;
     case 'SEMESTER':
       return `A disciplina ${code} não tem semestre com datas: escolhe o semestre, ou indica o tempo de estudo de «${name}».`;
     case 'SEMESTER_OVER':
@@ -246,59 +231,13 @@ function missingMessage(missing: EctsPaceMissing, name: string, code: string): s
   }
 }
 
-type SemesterDates = { start: Date; end: Date };
-
-/**
- * Dados para o ritmo pelos ECTS: o semestre de cada disciplina (o ativo, se não tiver) e os minutos de aula
- * de cada disciplina nesse semestre. Aulas sem disciplina associada (a importação nem sempre as liga)
- * repartem-se pela fração de ECTS de cada disciplina do semestre — e a explicação assinala-o com «~».
- */
-async function ectsPaceContext(userId: number, needed: { id: number; semesterId: number | null }[]) {
-  const [semesters, disciplines] = needed.length
-    ? await Promise.all([
-        prisma.semester.findMany({ where: { userId } }),
-        prisma.discipline.findMany({
-          where: { userId, archivedAt: null },
-          select: { id: true, ects: true, semesterId: true },
-        }),
-      ])
-    : [[], []];
+/** O semestre de cada disciplina (o ativo, se não tiver), com as datas para o ritmo predefinido. */
+async function semesterResolver(userId: number, needed: boolean) {
+  const semesters = needed ? await prisma.semester.findMany({ where: { userId } }) : [];
   const active = semesters.find((s) => s.isActive) ?? null;
   const byId = new Map(semesters.map((s) => [s.id, s]));
-  const semesterRow = (d: { semesterId: number | null }) => (d.semesterId ? byId.get(d.semesterId) : active) ?? null;
-  const semesterOf = (d: { semesterId: number | null }): SemesterDates | null => {
-    const s = semesterRow(d);
+  return (d: { semesterId: number | null }) => {
+    const s = (d.semesterId ? byId.get(d.semesterId) : active) ?? null;
     return s ? { start: s.startDate, end: s.endDate } : null;
   };
-
-  // Minutos de aula por disciplina, por semestre (calculado uma vez por semestre).
-  const contact = new Map<number, { linked: Map<number, number>; unlinked: number; ectsTotal: number }>();
-  for (const s of new Set(needed.map((d) => semesterRow(d)).filter((s) => s !== null))) {
-    const occurrences = await blockOccurrences(
-      userId,
-      s.startDate,
-      new Date(s.endDate.getTime() + 24 * 60 * 60 * 1000),
-    );
-    const linked = new Map<number, number>();
-    let unlinked = 0;
-    for (const o of occurrences) {
-      if (o.kind !== 'CLASS' || !o.isBusy || o.allDay) continue;
-      const minutes = (o.end.getTime() - o.start.getTime()) / 60_000;
-      if (o.discipline) linked.set(o.discipline.id, (linked.get(o.discipline.id) ?? 0) + minutes);
-      else unlinked += minutes;
-    }
-    const ectsTotal = disciplines.filter((d) => semesterRow(d)?.id === s.id).reduce((sum, d) => sum + (d.ects ?? 0), 0);
-    contact.set(s.id, { linked, unlinked, ectsTotal });
-  }
-  const contactOf = (
-    d: { id: number; ects?: number | null; semesterId: number | null },
-    semester: SemesterDates | null,
-  ) => {
-    const row = semesterRow(d);
-    const c = row && semester ? contact.get(row.id) : undefined;
-    if (!c) return { minutes: 0, estimated: false };
-    const share = c.unlinked > 0 && c.ectsTotal > 0 && d.ects ? (c.unlinked * d.ects) / c.ectsTotal : 0;
-    return { minutes: Math.round((c.linked.get(d.id) ?? 0) + share), estimated: share > 0 };
-  };
-  return { semesterOf, contactOf };
 }

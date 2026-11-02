@@ -1,9 +1,10 @@
 // Queixa real: «não é possível criar plano de estudo automático» com as avaliações das fichas de UC
-// (sem datas nem tempo de estudo). O plano usa o ritmo pelos ECTS e diz o que falta quando não há ECTS.
+// (sem datas nem tempo de estudo). O plano usa o ritmo predefinido (60 h por disciplina × peso); os ECTS, mesmo
+// gravados, já não contam (conselho de 2026-11-02).
 import { expect, test } from '@playwright/test';
 import { register } from './helpers';
 
-test('avaliações sem data nem tempo de estudo: plano pelos ECTS e aviso do que falta', async ({ page }) => {
+test('avaliações sem data nem tempo de estudo: plano pelo ritmo predefinido, com ou sem ECTS', async ({ page }) => {
   await register(page, 'Tiago');
   const status = await page.evaluate(async () => {
     const post = (url: string, body: unknown, method = 'POST') =>
@@ -31,11 +32,8 @@ test('avaliações sem data nem tempo de estudo: plano pelos ECTS e aviso do que
   await page.goto('/plano');
   await page.getByRole('button', { name: 'Gerar plano (7 dias)' }).click();
   await expect(page.getByText(/Proposta de plano/)).toBeVisible();
-  await expect(page.getByText('2 com tempo estimado pelos ECTS')).toBeVisible();
-  await expect(page.getByText(/ritmo pelos ECTS: 6 ECTS × 25 h/).first()).toBeVisible();
-  await expect(page.getByText(/Falta o ECTS de IT/)).toBeVisible();
+  await expect(page.getByText('3 com tempo predefinido')).toBeVisible();
+  await expect(page.getByText(/ritmo predefinido: 100 % de 60 h/).first()).toBeVisible();
+  await expect(page.getByText(/ECTS/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Confirmar plano' })).toBeEnabled();
-
-  await page.getByRole('link', { name: 'Abrir disciplina' }).click();
-  await expect(page.getByRole('heading', { level: 1, name: 'Inglês Técnico' })).toBeVisible();
 });

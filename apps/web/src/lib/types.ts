@@ -51,7 +51,6 @@ export interface DisciplineRef {
 }
 
 export interface Discipline extends DisciplineRef {
-  ects: number | null;
   absences: number;
   absenceLimit: number | null;
   archivedAt: string | null;
@@ -82,8 +81,7 @@ export interface Dashboard {
   upcomingTasks: Task[];
   overdueTasks: Task[];
   upcomingAssessments: (Assessment & { discipline: DisciplineRef })[];
-  disciplines: (DisciplineRef & { ects: number | null; passingGrade: number; grades: GradeSummaryDto })[];
-  globalAverage: { average: number | null; credits: number; missingEcts: boolean };
+  disciplines: (DisciplineRef & { passingGrade: number; grades: GradeSummaryDto })[];
 }
 
 export interface StudySession {

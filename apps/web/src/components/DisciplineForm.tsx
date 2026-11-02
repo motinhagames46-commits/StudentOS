@@ -15,7 +15,6 @@ interface DisciplineFormProps {
 export function DisciplineForm({ initial, submitLabel = 'Criar disciplina', onSubmit, onCancel }: DisciplineFormProps) {
   const [name, setName] = useState(initial?.name ?? '');
   const [code, setCode] = useState(initial?.code ?? '');
-  const [ects, setEcts] = useState(initial?.ects ? String(initial.ects) : '');
   const [passingGrade, setPassingGrade] = useState(String(initial?.passingGrade ?? 10));
   const [color, setColor] = useState(initial?.color ?? disciplineColors[0]!);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -27,7 +26,6 @@ export function DisciplineForm({ initial, submitLabel = 'Criar disciplina', onSu
     const parsed = disciplineCreateSchema.safeParse({
       name,
       code,
-      ects: ects ? Number(ects) : null,
       passingGrade: Number(passingGrade.replace(',', '.')),
       color,
     });
@@ -71,17 +69,6 @@ export function DisciplineForm({ initial, submitLabel = 'Criar disciplina', onSu
         />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <TextField
-          label="ECTS"
-          type="number"
-          inputMode="numeric"
-          min={1}
-          max={60}
-          value={ects}
-          onChange={(e) => setEcts(e.target.value)}
-          error={errors.ects}
-          hint="Opcional — usado na média global"
-        />
         <TextField
           label="Nota mínima de aprovação"
           type="number"

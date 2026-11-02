@@ -27,7 +27,6 @@ test('registo, disciplina, avaliações, nota necessária e tarefa concluída', 
   await page.getByRole('button', { name: 'Nova disciplina' }).click();
   await page.getByLabel('Nome').fill('Programação Web');
   await page.getByLabel('Sigla').fill('PW');
-  await page.getByLabel('ECTS').fill('6');
   await page.getByRole('button', { name: 'Criar disciplina' }).click();
   await expect(page).toHaveURL(/\/disciplinas\/\d+$/);
   await expect(page.getByRole('heading', { level: 1, name: 'Programação Web' })).toBeVisible();

@@ -135,26 +135,3 @@ export function requiredScore(items: readonly GradeItem[], target: number): Requ
   if (x <= 0 && maxMin <= 0) return { status: 'secured' };
   return { status: 'needed', value: ceil2(Math.max(x, maxMin)) };
 }
-
-export interface DisciplineResult {
-  finalGrade: number | null;
-  ects: number | null;
-  approved: boolean;
-}
-
-/** Média global ponderada por ECTS das disciplinas aprovadas (RN08). Sem ECTS conta com peso 1. */
-export function globalAverage(rows: readonly DisciplineResult[]): {
-  average: number | null;
-  credits: number;
-  missingEcts: boolean;
-} {
-  const approved = rows.filter((r) => r.approved && r.finalGrade !== null);
-  const credits = approved.reduce((s, r) => s + (r.ects ?? 1), 0);
-  if (credits === 0) return { average: null, credits: 0, missingEcts: false };
-  const sum = approved.reduce((s, r) => s + r.finalGrade! * (r.ects ?? 1), 0);
-  return {
-    average: round2(sum / credits),
-    credits,
-    missingEcts: approved.some((r) => r.ects == null),
-  };
-}
