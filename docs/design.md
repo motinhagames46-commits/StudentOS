@@ -25,7 +25,14 @@ Estudantes do ensino superior, muitos sobretudo no telemóvel (ver [`PRODUCT.md`
 
 ## Layout e revisão
 
-- Mobile < 768 px (`md`): cabeçalho de vidro fixo no topo com sino e sair; barra de separadores de vidro a flutuar no fundo, com 4 itens + "Mais" (menu também de vidro). Desktop: barra lateral branca de 244 px (secções principais, «Definições» e «Terminar sessão»; item ativo a negrito com fundo claro), barra superior de vidro de 64 px com alertas, utilizador e semestre, e conteúdo com largura máxima. Avisos e barras fixas no telemóvel ficam acima da barra de separadores. Os separadores da linha de estatísticas só aparecem com 4 colunas.
+- Navegação (conselho de 2026-11-02): quatro separadores, cada um com as suas subpáginas. O separador fica ativo nelas, com `aria-current="true"`; na própria página é `"page"`.
+  - **Hoje** é o painel; Tarefas abre-se a partir dele.
+  - **Calendário** inclui o Plano de estudo (botão no cabeçalho).
+  - **Disciplinas** inclui os semestres e o simulador.
+  - **Estudar** (`/estudar`) junta o modo foco e, nas contas com IA, Revisões, Documentos e Assistente. Sem IA, o separador vai direto ao modo foco.
+  - As Definições ficam à parte: Finanças (só com IA), Preferências, Importar horário, Integrações e Conta.
+- Mobile < 768 px (`md`): cabeçalho de vidro fixo no topo com modo noite, sino e sair. Em baixo, uma barra de vidro flutuante com os 4 separadores e «Mais», que abre as Definições num menu também de vidro.
+- Desktop: barra lateral branca de 244 px (os 4 separadores, «Definições» e «Terminar sessão»; item ativo a negrito com fundo claro), barra superior de vidro de 64 px com alertas, utilizador e semestre, e conteúdo com largura máxima. Avisos e barras fixas no telemóvel ficam acima da barra de separadores. Os separadores da linha de estatísticas só aparecem com 4 colunas.
 - Página de entrada (`/` sem sessão): só afirmações verificáveis na app, sem testemunhos, números de utilizadores, preços nem urgência (regras e fontes em [`research/onboarding-e-landing.md`](research/onboarding-e-landing.md)). A captura `apps/web/public/landing/painel.jpg` usa uma conta de teste com dados de exemplo e regenera-se com `npm run build` seguido de `SCREENSHOTS=1 npx playwright test -c e2e/playwright.config.ts screenshots`.
 - Estados obrigatórios em cada ecrã: carregamento (skeleton), vazio (com ação sugerida), erro (com "Tentar novamente").
 - Revisões feitas: axe sem violações sérias/críticas em painel, tarefas, disciplinas, disciplina, calendário, plano, importar, preferências, integrações, modo foco e conta (`e2e/accessibility.spec.ts`), na página de entrada (`e2e/landing.spec.ts`) e nos passos do questionário (`e2e/onboarding.spec.ts`). Verificação visual manual no browser integrado em telemóvel (375 px) e desktop.

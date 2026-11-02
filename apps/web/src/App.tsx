@@ -26,6 +26,7 @@ const FinancesPage = lazyPage(() => import('./pages/FinancesPage'), 'FinancesPag
 const QuizPage = lazyPage(() => import('./pages/QuizPage'), 'QuizPage');
 const ReviewsPage = lazyPage(() => import('./pages/ReviewsPage'), 'ReviewsPage');
 const PreferencesPage = lazyPage(() => import('./pages/PreferencesPage'), 'PreferencesPage');
+const StudyHubPage = lazyPage(() => import('./pages/StudyHubPage'), 'StudyHubPage');
 const StudySessionsPage = lazyPage(() => import('./pages/StudySessionsPage'), 'StudySessionsPage');
 const TasksPage = lazyPage(() => import('./pages/TasksPage'), 'TasksPage');
 
@@ -69,6 +70,7 @@ export function App() {
             <Route path="tarefas" element={<TasksPage />} />
             <Route path="disciplinas" element={<DisciplinesPage />} />
             <Route path="disciplinas/:id" element={<DisciplineDetailPage />} />
+            <Route path="estudar" element={<StudyHubPage />} />
             <Route path="sessoes" element={<StudySessionsPage />} />
             <Route path="documentos" element={<DocumentsPage />} />
             <Route path="documentos/:id" element={<DocumentDetailPage />} />

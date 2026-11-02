@@ -6,6 +6,12 @@ import { register } from './helpers';
 const aiCard = (page: Page) =>
   page.locator('section').filter({ has: page.getByRole('heading', { name: 'Assistente de IA (Gemini)' }) });
 
+/** As secções da IA abrem-se pelo separador «Estudar» (conselho de 2026-11-02). */
+async function openFromStudy(page: Page, name: string) {
+  await page.getByRole('link', { name: 'Estudar', exact: true }).click();
+  await page.getByRole('link', { name: new RegExp(`^${name}`) }).click();
+}
+
 test('conta autorizada: ativar e desligar a IA com consentimento registado', async ({ page }) => {
   await register(page, 'Dono', process.env.E2E_AI_EMAIL);
   await page.goto('/integracoes');
@@ -28,7 +34,7 @@ test('conta autorizada: ativar e desligar a IA com consentimento registado', asy
 
   // Documentos: a secção aparece a esta conta, mas sem IA ativa não deixa enviar nada.
   await page.setViewportSize({ width: 1280, height: 800 });
-  await page.getByRole('link', { name: 'Documentos' }).click();
+  await openFromStudy(page, 'Documentos');
   await expect(page.getByRole('heading', { name: 'Documentos', level: 1 })).toBeVisible();
   await expect(page.getByText('Para ler documentos, ativa primeiro o assistente de IA.')).toBeVisible();
   await expect(page.getByText('Ainda não tens documentos.')).toBeVisible();
@@ -36,13 +42,13 @@ test('conta autorizada: ativar e desligar a IA com consentimento registado', asy
   const docs = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze();
   expect(docs.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical').map((v) => v.id)).toEqual([]);
 
-  await page.getByRole('link', { name: 'Assistente', exact: true }).click();
+  await openFromStudy(page, 'Assistente');
   await expect(page.getByRole('heading', { name: 'Assistente', level: 1 })).toBeVisible();
   await expect(page.getByText('Para usar o assistente, ativa primeiro o assistente de IA.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Perguntar' })).toHaveCount(0);
 
   // Revisões: sem perguntas ainda, e sem IA ativa não se criam quizzes.
-  await page.getByRole('link', { name: 'Revisões', exact: true }).click();
+  await openFromStudy(page, 'Revisões');
   await expect(page.getByRole('heading', { name: 'Revisões', level: 1 })).toBeVisible();
   await expect(page.getByText('Não tens revisões para agora.')).toBeVisible();
   await expect(page.getByText('Para criar quizzes, ativa primeiro o assistente de IA.')).toBeVisible();
@@ -71,8 +77,10 @@ test('outra conta: IA indisponível e sem botão para a ativar', async ({ page }
   const card = aiCard(page);
   await expect(card).toContainText('Não disponível nesta conta');
   await expect(card.getByRole('button')).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Documentos' })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Assistente', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('link', { name: 'Revisões', exact: true })).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Finanças', exact: true })).toHaveCount(0);
+  // Sem IA, «Estudar» vai direto ao modo foco, e a página «Estudar» só tem o modo foco.
+  await expect(page.getByRole('link', { name: 'Estudar', exact: true })).toHaveAttribute('href', '/sessoes');
+  await page.goto('/estudar');
+  await expect(page.getByRole('link', { name: /^Modo foco/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /^(Documentos|Assistente|Revisões)/ })).toHaveCount(0);
 });

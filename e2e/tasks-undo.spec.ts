@@ -27,5 +27,7 @@ test('eliminar tarefa: «Desfazer» devolve-a; fechar o aviso apaga-a mesmo', as
   await page.waitForResponse((r) => r.url().includes('/api/tasks/') && r.request().method() === 'DELETE');
   await page.reload();
   await expect(page.getByRole('heading', { level: 1, name: 'Tarefas' })).toBeVisible();
+  // Tarefas vive dentro de «Hoje»: o separador fica marcado como a secção atual.
+  await expect(page.getByRole('link', { name: 'Hoje', exact: true })).toHaveAttribute('aria-current', 'true');
   await expect(task).toBeHidden();
 });

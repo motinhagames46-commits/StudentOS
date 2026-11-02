@@ -418,6 +418,12 @@ export function usePlannedSessionAction() {
 /** Estado da IA nesta conta (a navegação esconde os Documentos a quem não a pode usar). */
 export const useAiStatus = () => useQuery({ queryKey: ['ai-status'], queryFn: () => api<AiStatusView>('/ai/status') });
 
+/** Contas com acesso à IA (as outras nem veem as secções dela). */
+export function useAiAllowed(): boolean {
+  const ai = useAiStatus();
+  return !!ai.data && ai.data.status !== 'NOT_ALLOWED';
+}
+
 /** A IA lê em segundo plano: enquanto houver documentos a ler, a vista atualiza-se sozinha. */
 const READING_POLL_MS = 3000;
 

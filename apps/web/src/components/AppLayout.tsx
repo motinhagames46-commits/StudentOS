@@ -1,27 +1,22 @@
 import {
   BookOpen,
-  CalendarCheck,
   CalendarDays,
   SlidersHorizontal,
-  CheckSquare,
   FileUp,
-  ScanText,
+  GraduationCap,
+  House,
   Link2,
-  LayoutDashboard,
   LogOut,
-  MessagesSquare,
-  Repeat,
   Wallet,
   MoreHorizontal,
   Moon,
   Sun,
-  Timer,
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
 import { Suspense, useEffect, useState, useSyncExternalStore } from 'react';
-import { NavLink, Outlet, useLocation } from 'react-router';
-import { useAiStatus } from '../hooks/queries';
+import { Link, Outlet, useLocation } from 'react-router';
+import { useAiAllowed } from '../hooks/queries';
 import { useLogout, useMe } from '../hooks/useAuth';
 import { theme } from '../lib/theme';
 import { AlertsBell } from './AlertsBell';
@@ -31,41 +26,51 @@ interface NavItem {
   to: string;
   label: string;
   icon: LucideIcon;
-  end: boolean;
+  /** Subpáginas que também acendem este separador. */
+  also?: string[];
 }
 
-/** Secções principais (barra lateral; as quatro primeiras também na barra inferior do telemóvel). */
+/** Os quatro separadores (conselho de 2026-11-02): cada um junta as suas subpáginas. */
 const nav: NavItem[] = [
-  { to: '/', label: 'Painel', icon: LayoutDashboard, end: true },
-  { to: '/calendario', label: 'Calendário', icon: CalendarDays, end: false },
-  { to: '/plano', label: 'Plano', icon: CalendarCheck, end: false },
-  { to: '/tarefas', label: 'Tarefas', icon: CheckSquare, end: false },
-  { to: '/disciplinas', label: 'Disciplinas', icon: BookOpen, end: false },
-  { to: '/sessoes', label: 'Foco', icon: Timer, end: false },
+  { to: '/', label: 'Hoje', icon: House, also: ['/tarefas'] },
+  { to: '/calendario', label: 'Calendário', icon: CalendarDays, also: ['/plano'] },
+  { to: '/disciplinas', label: 'Disciplinas', icon: BookOpen },
+  {
+    to: '/estudar',
+    label: 'Estudar',
+    icon: GraduationCap,
+    also: ['/sessoes', '/documentos', '/assistente', '/revisoes'],
+  },
 ];
 
-/** Só para contas com acesso à IA (as outras nem sabem que existe). */
-const aiItems: NavItem[] = [
-  { to: '/documentos', label: 'Documentos', icon: ScanText, end: false },
-  { to: '/assistente', label: 'Assistente', icon: MessagesSquare, end: false },
-  { to: '/revisoes', label: 'Revisões', icon: Repeat, end: false },
-  { to: '/financas', label: 'Finanças', icon: Wallet, end: false },
-];
-
+/** Sem IA, «Estudar» é só o modo foco: o separador vai direto para lá. */
 function useNav(): NavItem[] {
-  const ai = useAiStatus();
-  return ai.data && ai.data.status !== 'NOT_ALLOWED' ? [...nav, ...aiItems] : nav;
+  const ai = useAiAllowed();
+  return ai ? nav : nav.map((i) => (i.to === '/estudar' ? { ...i, to: '/sessoes' } : i));
 }
 
-/** Definições e ferramentas. */
-const secondary: NavItem[] = [
-  { to: '/preferencias', label: 'Preferências de estudo', icon: SlidersHorizontal, end: false },
-  { to: '/importar', label: 'Importar horário', icon: FileUp, end: false },
-  { to: '/integracoes', label: 'Integrações', icon: Link2, end: false },
-  { to: '/conta', label: 'Conta', icon: UserRound, end: false },
-];
+/** Definições e ferramentas; as Finanças só nas contas com acesso à IA. */
+function useSecondary(): NavItem[] {
+  const secondary: NavItem[] = [
+    { to: '/preferencias', label: 'Preferências de estudo', icon: SlidersHorizontal },
+    { to: '/importar', label: 'Importar horário', icon: FileUp },
+    { to: '/integracoes', label: 'Integrações', icon: Link2 },
+    { to: '/conta', label: 'Conta', icon: UserRound },
+  ];
+  return useAiAllowed() ? [{ to: '/financas', label: 'Finanças', icon: Wallet }, ...secondary] : secondary;
+}
 
-const MOBILE_PRIMARY = 4;
+/** «page» na própria página; «true» nas subpáginas (o separador é a secção atual). */
+function ariaCurrent(item: NavItem, path: string) {
+  return path === item.to ? 'page' : isActive(item, path) ? 'true' : undefined;
+}
+
+/** O separador está ativo na própria página e nas subpáginas dele. */
+function isActive(item: NavItem, path: string): boolean {
+  return [item.to, ...(item.also ?? [])].some((p) =>
+    p === '/' ? path === '/' : path === p || path.startsWith(`${p}/`),
+  );
+}
 
 function Logo() {
   return (
@@ -97,6 +102,7 @@ export function AppLayout() {
   const { data } = useMe();
   const logout = useLogout();
   const main = useNav();
+  const secondary = useSecondary();
 
   return (
     <div className="min-h-dvh md:flex">
@@ -187,30 +193,31 @@ function ThemeToggle() {
   );
 }
 
-function SidebarLink({ item: { to, label, icon: Icon, end } }: { item: NavItem }) {
+function SidebarLink({ item }: { item: NavItem }) {
+  const path = useLocation().pathname;
+  const active = isActive(item, path);
+  const Icon = item.icon;
   return (
-    <NavLink
-      to={to}
-      end={end}
-      className={({ isActive }) =>
-        `group flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
-          isActive ? 'bg-stone-100 font-semibold text-stone-900' : 'text-stone-700 hover:bg-stone-100'
-        }`
-      }
+    <Link
+      to={item.to}
+      aria-current={ariaCurrent(item, path)}
+      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] transition-colors ${
+        active ? 'bg-stone-100 font-semibold text-stone-900' : 'text-stone-700 hover:bg-stone-100'
+      }`}
     >
-      <Icon aria-hidden="true" className="size-5 text-stone-500 group-aria-[current=page]:text-accent" />
-      {label}
-    </NavLink>
+      <Icon aria-hidden="true" className={`size-5 ${active ? 'text-accent' : 'text-stone-500'}`} />
+      {item.label}
+    </Link>
   );
 }
 
-/** Barra inferior no telemóvel: quatro atalhos e um menu "Mais" com as restantes secções. */
+/** Barra inferior no telemóvel: os quatro separadores e um menu "Mais" com as definições. */
 function MobileNav() {
-  const nav = useNav();
+  const main = useNav();
+  const more = useSecondary();
   const [open, setOpen] = useState(false);
-  const location = useLocation();
-  const more = [...nav.slice(MOBILE_PRIMARY), ...secondary];
-  const moreActive = more.some((i) => location.pathname.startsWith(i.to));
+  const path = useLocation().pathname;
+  const moreActive = more.some((i) => isActive(i, path));
 
   useEffect(() => {
     if (!open) return;
@@ -230,18 +237,17 @@ function MobileNav() {
             className="glass absolute inset-x-3 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] rounded-3xl border p-2 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {more.map(({ to, label, icon: Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
+            {more.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
                 onClick={() => setOpen(false)}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm ${isActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-800'}`
-                }
+                aria-current={ariaCurrent(item, path)}
+                className={`flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm ${isActive(item, path) ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-800'}`}
               >
-                <Icon aria-hidden="true" className="size-5" />
-                {label}
-              </NavLink>
+                <item.icon aria-hidden="true" className="size-5" />
+                {item.label}
+              </Link>
             ))}
           </nav>
         </div>
@@ -251,18 +257,16 @@ function MobileNav() {
         aria-label="Navegação principal"
         className="glass fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 grid grid-cols-5 gap-1 rounded-[28px] border p-1.5 shadow-[0_8px_32px_rgb(0_0_0/0.12)] md:hidden"
       >
-        {nav.slice(0, MOBILE_PRIMARY).map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) =>
-              `${tab} ${isActive ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-700'}`
-            }
+        {main.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            aria-current={ariaCurrent(item, path)}
+            className={`${tab} ${isActive(item, path) ? 'bg-accent-soft font-semibold text-accent-ink' : 'text-stone-700'}`}
           >
-            <Icon aria-hidden="true" className="size-5" />
-            {label}
-          </NavLink>
+            <item.icon aria-hidden="true" className="size-5" />
+            {item.label}
+          </Link>
         ))}
         <button
           type="button"

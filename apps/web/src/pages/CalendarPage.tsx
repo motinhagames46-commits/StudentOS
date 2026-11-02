@@ -1,5 +1,5 @@
 import { DEFAULT_TIMEZONE, zonedDayKey } from '@studentos/shared';
-import { CalendarArrowDown, CalendarDays, FileUp, Plus, Repeat, Rows3 } from 'lucide-react';
+import { CalendarArrowDown, CalendarCheck, CalendarDays, FileUp, Plus, Repeat, Rows3 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import { BlockForm } from '../components/BlockForm';
@@ -29,6 +29,13 @@ export function CalendarPage() {
         title="Calendário"
         action={
           <div className="flex flex-wrap gap-2">
+            <Link
+              to="/plano"
+              className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+            >
+              <CalendarCheck aria-hidden="true" className="size-4" />
+              Plano de estudo
+            </Link>
             <Link
               to="/importar"
               className="inline-flex min-h-10 items-center gap-2 rounded-full border border-stone-300 bg-white px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
