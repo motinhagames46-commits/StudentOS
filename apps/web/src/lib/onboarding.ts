@@ -84,19 +84,6 @@ export function weeklyAvailableMinutes(weekdays: number[], periodIds: string[]):
   return availabilityFromChoices(weekdays, periodIds).reduce((s, w) => s + (w.endMinute - w.startMinute), 0);
 }
 
-export interface SessionPreset {
-  id: string;
-  label: string;
-  sessionMinutes: number;
-  breakMinutes: number;
-}
-
-export const SESSION_PRESETS: SessionPreset[] = [
-  { id: '25-5', label: '25 min + 5 de pausa', sessionMinutes: 25, breakMinutes: 5 },
-  { id: '50-10', label: '50 min + 10 de pausa', sessionMinutes: 50, breakMinutes: 10 },
-  { id: '90-15', label: '90 min + 15 de pausa', sessionMinutes: 90, breakMinutes: 15 },
-];
-
 /** Resumo do plano: minutos e sessões por disciplina (ordem decrescente de minutos). */
 export function summarizeByDiscipline(
   sessions: Pick<ProposedSession, 'disciplineCode' | 'minutes'>[],

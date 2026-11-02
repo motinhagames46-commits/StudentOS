@@ -53,8 +53,8 @@ const BENEFITS: { icon: LucideIcon; title: string; text: string }[] = [
 const STEPS = [
   { title: 'Cria a conta', text: 'Nome, email e palavra-passe. Mais nada.' },
   {
-    title: 'Responde a 4 perguntas',
-    text: 'Disciplinas, como são avaliadas, quando podes estudar e como gostas de estudar.',
+    title: 'Responde a 3 perguntas',
+    text: 'Que disciplinas tens, como são avaliadas e quando podes estudar.',
   },
   { title: 'Recebe a tua semana', text: 'Um plano de estudo real, que vês e confirmas antes de ficar gravado.' },
 ];
@@ -145,7 +145,7 @@ export function LandingPage() {
                 </a>
               </div>
               <p className="mt-4 text-sm text-stone-600">
-                Grátis, sem anúncios. 4 perguntas e tens a tua primeira semana planeada.
+                Grátis, sem anúncios. 3 perguntas e tens a tua primeira semana planeada.
               </p>
             </div>
             <LandingDemo />

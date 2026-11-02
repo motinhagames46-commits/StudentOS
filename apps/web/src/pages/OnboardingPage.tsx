@@ -1,24 +1,22 @@
 import { useQueryClient } from '@tanstack/react-query';
-import type { AvailabilityWindowInput } from '@studentos/shared';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   AssessmentsStep,
   AvailabilityStep,
   DisciplinesStep,
-  SessionsStep,
   WelcomeStep,
 } from '../components/onboarding/OnboardingSteps';
 import { WeekResultStep } from '../components/onboarding/WeekResultStep';
 import { FullPageSpinner } from '../components/RequireAuth';
 import { useMe } from '../hooks/useAuth';
 
-const STEP_TITLES = ['Bem-vindo', 'Disciplinas', 'Avaliações', 'Horas livres', 'Sessões', 'A tua semana'];
-const QUESTION_STEPS = 4;
+const STEP_TITLES = ['Bem-vindo', 'Disciplinas', 'Avaliações', 'Horas livres', 'A tua semana'];
+const QUESTION_STEPS = 3;
 
 /**
- * Boas-vindas (spec §3.2, percurso A): quatro perguntas que alimentam modelos reais (disciplinas,
- * avaliações, disponibilidade, preferências) e terminam no plano da semana gerado pelo planeador.
+ * Boas-vindas (spec §3.2, percurso A): três perguntas que alimentam modelos reais (disciplinas, avaliações e
+ * disponibilidade) e terminam no plano da semana gerado pelo planeador, confirmado pelo estudante.
  * Cada passo grava logo pelos endpoints autenticados; qualquer passo pode ser saltado.
  */
 export function OnboardingPage() {
@@ -26,7 +24,6 @@ export function OnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
-  const [availability, setAvailability] = useState<AvailabilityWindowInput[] | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   // Ao mudar de passo, o foco vai para o título (leitores de ecrã anunciam o novo passo).
@@ -82,18 +79,8 @@ export function OnboardingPage() {
           {step === 0 && <WelcomeStep name={me.user.name.split(' ')[0] ?? me.user.name} onStart={next} />}
           {step === 1 && <DisciplinesStep headingRef={headingRef} semester={me.activeSemester} onDone={next} />}
           {step === 2 && <AssessmentsStep headingRef={headingRef} onDone={next} />}
-          {step === 3 && (
-            <AvailabilityStep
-              headingRef={headingRef}
-              semester={me.activeSemester}
-              onDone={(windows) => {
-                setAvailability(windows);
-                next();
-              }}
-            />
-          )}
-          {step === 4 && <SessionsStep headingRef={headingRef} availability={availability} onDone={next} />}
-          {step === 5 && <WeekResultStep headingRef={headingRef} onFinish={finish} onBack={() => setStep(3)} />}
+          {step === 3 && <AvailabilityStep headingRef={headingRef} semester={me.activeSemester} onDone={next} />}
+          {step === 4 && <WeekResultStep headingRef={headingRef} onFinish={finish} onBack={() => setStep(3)} />}
         </div>
 
         {step > 1 && step <= QUESTION_STEPS && (

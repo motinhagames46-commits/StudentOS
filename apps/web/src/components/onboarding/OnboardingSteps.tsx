@@ -9,7 +9,7 @@ import type { Semester } from '../../lib/types';
 import { Button, FormError, IconButton, LoadingList, SelectField, TextField } from '../ui';
 import { StepActions, StepHeader, type HeadingRef } from './StepParts';
 
-export { AvailabilityStep, SessionsStep } from './PreferenceSteps';
+export { AvailabilityStep } from './PreferenceSteps';
 // ---------------------------------------------------------------------------------------------------
 
 export function WelcomeStep({ name, onStart }: { name: string; onStart: () => void }) {

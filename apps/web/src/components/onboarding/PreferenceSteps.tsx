@@ -1,22 +1,17 @@
-import { DEFAULT_TIMEZONE, addDaysToKey, zonedDayKey, type AvailabilityWindowInput } from '@studentos/shared';
+import { DEFAULT_PLANNER_PREFERENCES, DEFAULT_TIMEZONE, addDaysToKey, zonedDayKey } from '@studentos/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState, type FormEvent } from 'react';
 import { useStudyPreferences } from '../../hooks/queries';
 import { ApiError, api, errorMessage } from '../../lib/api';
-import {
-  SESSION_PRESETS,
-  STUDY_PERIODS,
-  availabilityFromChoices,
-  commitmentBlock,
-  weeklyAvailableMinutes,
-} from '../../lib/onboarding';
+import { STUDY_PERIODS, availabilityFromChoices, commitmentBlock, weeklyAvailableMinutes } from '../../lib/onboarding';
 import { WEEKDAY_LABELS, isoToDateOnly } from '../../lib/format';
 import type { Semester } from '../../lib/types';
 import { CommitmentsField, commitmentErrors, type CommitmentRow } from './CommitmentsField';
-import { FormError, SelectField } from '../ui';
+import { FormError } from '../ui';
 import { StepActions, StepHeader, type HeadingRef } from './StepParts';
 
-// Passos 3 e 4 do questionário: disponibilidade e preferências de sessão (alimentam o planeador).
+// Passo 3 do questionário: disponibilidade (alimenta o planeador). A duração das sessões fica a predefinida, e
+// muda-se em Preferências (conselho de 2026-11-02: menos um ecrã antes do primeiro plano).
 export function AvailabilityStep({
   headingRef,
   semester,
@@ -24,7 +19,7 @@ export function AvailabilityStep({
 }: {
   headingRef: HeadingRef;
   semester: Semester | null;
-  onDone: (windows: AvailabilityWindowInput[] | null) => void;
+  onDone: () => void;
 }) {
   const queryClient = useQueryClient();
   const prefs = useStudyPreferences();
@@ -50,8 +45,6 @@ export function AvailabilityStep({
     const errs = commitmentErrors(commitments);
     setErrors(errs);
     if (Object.keys(errs).length) return;
-    if (commitments.length === 0) return onDone(windows);
-
     const today = zonedDayKey(new Date(), DEFAULT_TIMEZONE);
     const semesterEnd = semester ? isoToDateOnly(semester.endDate) : '';
     // Até ao fim do semestre; sem semestre (ou já terminado), meio ano.
@@ -64,8 +57,22 @@ export function AvailabilityStep({
         // Já gravado: sai da lista, para tentar de novo não o duplicar.
         setCommitments((rs) => rs.filter((x) => x.key !== c.key));
       }
-      void queryClient.invalidateQueries();
-      onDone(windows);
+      if (windows) {
+        // As horas livres gravam-se com as preferências de sessão que já existem (numa conta nova, as predefinidas).
+        const base = prefs.data ?? DEFAULT_PLANNER_PREFERENCES;
+        await api('/preferences/study', {
+          method: 'PUT',
+          body: {
+            sessionMinutes: base.sessionMinutes,
+            minSessionMinutes: base.minSessionMinutes,
+            breakMinutes: base.breakMinutes,
+            maxDailyMinutes: base.maxDailyMinutes,
+            availability: windows,
+          },
+        });
+      }
+      await queryClient.invalidateQueries();
+      onDone();
     } catch (err) {
       setFormError(err instanceof ApiError && err.details.length ? err.details[0]!.message : errorMessage(err));
     } finally {
@@ -131,98 +138,7 @@ export function AvailabilityStep({
       )}
       <CommitmentsField rows={commitments} onChange={setCommitments} errors={errors} />
       <FormError message={formError} />
-      <StepActions saving={saving} skip={() => onDone(null)} />
-    </form>
-  );
-}
-
-// ---------------------------------------------------------------------------------------------------
-
-const DAILY_OPTIONS = [60, 120, 180, 240];
-
-export function SessionsStep({
-  headingRef,
-  availability,
-  onDone,
-}: {
-  headingRef: HeadingRef;
-  availability: AvailabilityWindowInput[] | null;
-  onDone: () => void;
-}) {
-  const queryClient = useQueryClient();
-  const prefs = useStudyPreferences();
-  const [preset, setPreset] = useState('50-10');
-  const [daily, setDaily] = useState(120);
-  const [formError, setFormError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    const chosen = SESSION_PRESETS.find((p) => p.id === preset) ?? SESSION_PRESETS[1]!;
-    setSaving(true);
-    setFormError(null);
-    try {
-      await api('/preferences/study', {
-        method: 'PUT',
-        body: {
-          sessionMinutes: chosen.sessionMinutes,
-          minSessionMinutes: Math.min(25, chosen.sessionMinutes),
-          breakMinutes: chosen.breakMinutes,
-          maxDailyMinutes: daily,
-          availability: availability ?? prefs.data?.availability ?? [],
-        },
-      });
-      await queryClient.invalidateQueries();
-      onDone();
-    } catch (err) {
-      setFormError(err instanceof ApiError && err.details.length ? err.details[0]!.message : errorMessage(err));
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <form onSubmit={(e) => void submit(e)} noValidate>
-      <StepHeader
-        headingRef={headingRef}
-        title="Como gostas de estudar?"
-        why="Sessões com pausas rendem mais do que horas seguidas. O limite diário evita planos impossíveis."
-      />
-      <fieldset>
-        <legend className="mb-2 text-sm font-medium text-stone-700">Duração das sessões</legend>
-        <div className="grid gap-2 sm:grid-cols-3">
-          {SESSION_PRESETS.map((p) => (
-            <label
-              key={p.id}
-              className="flex items-center gap-2 rounded-lg border border-stone-300 px-3 py-2 text-sm has-checked:border-accent has-checked:bg-accent-soft"
-            >
-              <input
-                type="radio"
-                name="sessao"
-                value={p.id}
-                checked={preset === p.id}
-                onChange={() => setPreset(p.id)}
-              />
-              {p.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      <SelectField
-        className="mt-5 max-w-xs"
-        label="Máximo de estudo por dia"
-        value={String(daily)}
-        onChange={(e) => setDaily(Number(e.target.value))}
-      >
-        {DAILY_OPTIONS.map((m) => (
-          <option key={m} value={m}>
-            {m / 60} h
-          </option>
-        ))}
-      </SelectField>
-      <FormError message={formError} />
-      {/* Sem as preferências carregadas, «manter a disponibilidade» enviaria uma lista vazia. */}
-      <StepActions saving={saving || (availability === null && !prefs.data)} label="Ver a minha semana" />
+      <StepActions saving={saving} skip={onDone} label="Ver a minha semana" />
     </form>
   );
 }

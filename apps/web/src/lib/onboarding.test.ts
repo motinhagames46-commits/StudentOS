@@ -1,8 +1,7 @@
-import { scheduleBlockCreateSchema, studyPreferencesSchema } from '@studentos/shared';
+import { DEFAULT_PLANNER_PREFERENCES, scheduleBlockCreateSchema, studyPreferencesSchema } from '@studentos/shared';
 import { describe, expect, it } from 'vitest';
 import {
   ASSESSMENT_TEMPLATES,
-  SESSION_PRESETS,
   availabilityFromChoices,
   commitmentBlock,
   firstDateOnWeekday,
@@ -24,16 +23,16 @@ describe('questionário de boas-vindas', () => {
     const all = availabilityFromChoices([5, 1, 3, 1], ['manha', 'tarde', 'fim-tarde', 'noite']);
     expect(all).toHaveLength(12);
     expect(all[0]).toEqual({ weekday: 1, startMinute: 540, endMinute: 720 });
-    for (const preset of SESSION_PRESETS) {
-      const parsed = studyPreferencesSchema.safeParse({
-        sessionMinutes: preset.sessionMinutes,
-        minSessionMinutes: Math.min(25, preset.sessionMinutes),
-        breakMinutes: preset.breakMinutes,
-        maxDailyMinutes: 180,
-        availability: all,
-      });
-      expect(parsed.success, preset.id).toBe(true);
-    }
+    // O questionário grava-as com as preferências de sessão predefinidas.
+    const { sessionMinutes, minSessionMinutes, breakMinutes, maxDailyMinutes } = DEFAULT_PLANNER_PREFERENCES;
+    const parsed = studyPreferencesSchema.safeParse({
+      sessionMinutes,
+      minSessionMinutes,
+      breakMinutes,
+      maxDailyMinutes,
+      availability: all,
+    });
+    expect(parsed.success).toBe(true);
   });
 
   it('conta as horas disponíveis por semana', () => {

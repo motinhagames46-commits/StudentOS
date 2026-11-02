@@ -54,11 +54,7 @@ test('conta nova: questionário até ao plano da semana confirmado', async ({ pa
   await page.getByLabel('Das', { exact: true }).fill('18:00');
   await page.getByLabel('Às', { exact: true }).fill('22:00');
   await expectNoSeriousViolations(page);
-  await page.getByRole('button', { name: 'Continuar' }).click();
-
-  // 4. Sessões
-  await expect(page.getByRole('heading', { level: 1, name: 'Como gostas de estudar?' })).toBeFocused();
-  await expect(page.getByRole('radio', { name: '50 min + 10 de pausa' })).toBeChecked();
+  // Sem o ecrã das sessões (conselho de 2026-11-02): as horas livres levam direto à semana.
   await page.getByRole('button', { name: 'Ver a minha semana' }).click();
 
   // Resultado: plano real dos próximos 7 dias, nada gravado antes de confirmar
@@ -172,8 +168,7 @@ test('se a proposta deixar de valer, «Gerar de novo» faz outra e confirma-se',
   await page.getByRole('button', { name: 'Vamos a isso' }).click();
   await page.getByRole('button', { name: 'Saltar este passo' }).click();
   await page.getByRole('button', { name: 'Saltar este passo' }).click();
-  await page.getByRole('button', { name: 'Continuar' }).click(); // mantém a disponibilidade
-  await page.getByRole('button', { name: 'Ver a minha semana' }).click();
+  await page.getByRole('button', { name: 'Ver a minha semana' }).click(); // mantém a disponibilidade
   await expect(page.getByRole('button', { name: 'Confirmar plano' })).toBeVisible();
 
   // Entretanto o calendário muda: um evento ocupado em cima da primeira sessão proposta

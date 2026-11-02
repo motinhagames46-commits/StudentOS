@@ -18,7 +18,7 @@ Estudantes de TPSI do IPVC (o modelo de avaliação serve outros cursos). Person
 
 ## Fluxos essenciais
 
-- Página de entrada (visitante) → criar conta → questionário de boas-vindas opcional (disciplinas, avaliações, horas livres, sessões) → plano da primeira semana, confirmado pelo estudante.
+- Página de entrada (visitante) → criar conta → questionário de boas-vindas opcional (disciplinas, avaliações, horas livres) → plano da primeira semana, confirmado pelo estudante.
 - Criar conta → semestre ativo criado → disciplinas e avaliações com pesos → médias e "quanto preciso no exame".
 - Tarefas com prazo e prioridade → painel com próximos 7 dias, em atraso e alertas.
 - Importar horário (`.ics`/`.csv`) com pré-visualização editável, duplicados e confirmação.
