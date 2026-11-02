@@ -93,7 +93,7 @@ export async function answerQuestion(
     const result = await ai.generateJson(
       answerSchema,
       [...parts, { text: `${conversation(input)}Pergunta: ${input.question}` }],
-      { system: DOCUMENTS_PROMPT },
+      { system: DOCUMENTS_PROMPT, task: 'assistente' },
     );
     // Fontes: as citadas e as marcas [n] do texto que existem; marcas sem documento saem do texto.
     const valid = (n: number) => Number.isInteger(n) && n >= 1 && n <= docs.length;

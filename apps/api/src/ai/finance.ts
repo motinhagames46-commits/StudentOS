@@ -116,6 +116,7 @@ export function describeAggregates(a: FinanceAggregates): string {
 export async function savingsTips(ai: AiProvider, aggregates: FinanceAggregates): Promise<FinanceTip[]> {
   const { tips } = await ai.generateJson(tipsSchema, [{ text: describeAggregates(aggregates) }], {
     system: TIPS_PROMPT,
+    task: 'dicas',
   });
   return tips
     .map((t) => ({ title: t.title.trim().slice(0, 80), body: t.body.trim().slice(0, 500) }))

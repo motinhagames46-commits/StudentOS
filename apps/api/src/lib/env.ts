@@ -20,7 +20,8 @@ export const env = {
   RATE_LIMIT_REGISTER_PER_HOUR: positiveInt('RATE_LIMIT_REGISTER_PER_HOUR', 20),
   /** Chave do Gemini: só no servidor (.env local e variáveis do Render). Sem ela, a IA fica «Não configurada». */
   GEMINI_API_KEY: cleanSecret(process.env.GEMINI_API_KEY),
-  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-flash-latest',
+  // Versão fixa (estável, com plano gratuito): um alias «-latest» muda de modelo e de tempos sem aviso.
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   GEMINI_EMBEDDING_MODEL: process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001',
   /** Emails (separados por vírgulas) das contas que podem usar a IA. Vazio: ninguém. */
   AI_ALLOWED_EMAILS: emailList(process.env.AI_ALLOWED_EMAILS),

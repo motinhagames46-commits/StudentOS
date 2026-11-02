@@ -70,7 +70,7 @@ export function sanitizeProposals(items: z.output<typeof itemsSchema>['items']):
 
 /** Datas e avaliações propostas: aqui o raciocínio alto conta (anos implícitos, pesos, regimes). */
 export async function extractItems(ai: AiProvider, parts: AiPart[], today: string) {
-  const { items } = await ai.generateJson(itemsSchema, parts, { system: itemsPrompt(today) });
+  const { items } = await ai.generateJson(itemsSchema, parts, { system: itemsPrompt(today), task: 'datas' });
   return sanitizeProposals(items);
 }
 
@@ -78,7 +78,7 @@ export async function extractItems(ai: AiProvider, parts: AiPart[], today: strin
 // atrasava), e as datas ficam com raciocínio alto. A leitura demora o mesmo que a mais lenta, não a soma.
 export async function extractDocument(ai: AiProvider, parts: AiPart[], today: string) {
   const [raw, proposals] = await Promise.all([
-    ai.generateJson(transcriptionSchema, parts, { system: TRANSCRIBE_PROMPT, thinking: 'low' }),
+    ai.generateJson(transcriptionSchema, parts, { system: TRANSCRIBE_PROMPT, thinking: 'low', task: 'transcrição' }),
     extractItems(ai, parts, today),
   ]);
   return {

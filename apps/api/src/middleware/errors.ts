@@ -17,6 +17,12 @@ export function logServerError(context: string, err: unknown): void {
   console.error(context, err);
 }
 
+/** Registo informativo no servidor (Render), como os tempos das chamadas à IA: só nomes e números. */
+export function logServerInfo(message: string): void {
+  if (env.isTest) return;
+  console.info(message);
+}
+
 /** Identificador de pedido (spec §13.2): reutiliza o do proxy se for seguro, senão gera um. */
 export function requestId(req: Request, res: Response, next: NextFunction): void {
   const incoming = req.get('x-request-id');

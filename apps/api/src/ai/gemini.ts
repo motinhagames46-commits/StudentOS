@@ -1,13 +1,14 @@
 // Gemini pela API REST (sem SDK): a chave vai no cabeçalho x-goog-api-key, nunca no URL nem em logs.
 import { createHash } from 'node:crypto';
 import { z } from 'zod';
+import { logServerInfo } from '../middleware/errors.js';
 import {
   AiError,
   EMBEDDING_DIMENSIONS,
   normalize,
   type AiPart,
   type AiProvider,
-  type ThinkingLevel,
+  type GenerateOptions,
   type UploadedFile,
   type WebAnswer,
 } from './provider.js';
@@ -37,6 +38,14 @@ const generateResponse = z.object({
       }),
     )
     .optional(),
+  usageMetadata: z
+    .object({
+      promptTokenCount: z.number().optional(),
+      cachedContentTokenCount: z.number().optional(),
+      thoughtsTokenCount: z.number().optional(),
+      candidatesTokenCount: z.number().optional(),
+    })
+    .optional(),
 });
 const embedResponse = z.object({ embeddings: z.array(z.object({ values: z.array(z.number()) })) });
 const fileInfo = z.object({
@@ -45,6 +54,25 @@ const fileInfo = z.object({
   state: z.string().optional(),
   expirationTime: z.string(),
 });
+
+const mb = (chars: number) => `${(chars / 1_048_576).toFixed(1)}MB`;
+
+/**
+ * Uma linha por chamada no registo do servidor (procurar «[ia]» nos logs do Render): o que demorou e porquê.
+ * Só nomes e números, nunca o conteúdo nem a chave. `describe` corre no fim, já com os tokens da resposta.
+ */
+async function logged<T>(describe: () => string, call: () => Promise<T>): Promise<T> {
+  const started = Date.now();
+  let status = 'ok';
+  try {
+    return await call();
+  } catch (err) {
+    status = err instanceof AiError ? err.code : 'erro';
+    throw err;
+  } finally {
+    logServerInfo(`[ia] ${describe()} ms=${Date.now() - started} estado=${status}`);
+  }
+}
 
 /**
  * Pedido que nem chegou a ter resposta: diz qual foi a razão. Para o registo do servidor seguem só o nome e o
@@ -111,8 +139,15 @@ export class GeminiProvider implements AiProvider {
     return res;
   }
 
+  uploadFile(data: Uint8Array, mimeType: string, displayName: string): Promise<UploadedFile> {
+    return logged(
+      () => `envio-ficheiro tipo=${mimeType} tamanho=${mb(data.length)}`,
+      () => this.upload(data, mimeType, displayName),
+    );
+  }
+
   /** Envio retomável da Files API (início, depois conteúdo e fim); espera que o ficheiro fique ACTIVE. */
-  async uploadFile(data: Uint8Array, mimeType: string, displayName: string): Promise<UploadedFile> {
+  private async upload(data: Uint8Array, mimeType: string, displayName: string): Promise<UploadedFile> {
     const start = await this.request(`${ROOT_URL}/upload/v1beta/files`, {
       method: 'POST',
       headers: {
@@ -150,43 +185,54 @@ export class GeminiProvider implements AiProvider {
   }
 
   /** Primeiro candidato com texto; resposta cortada ou vazia viram erros da app. */
-  private async generate(
+  private generate(
     parts: AiPart[],
-    system: string | undefined,
-    extra: { generationConfig?: Record<string, unknown>; tools?: unknown[]; thinking?: ThinkingLevel },
+    options: GenerateOptions,
+    extra: { generationConfig?: Record<string, unknown>; tools?: unknown[] },
   ) {
-    const data = generateResponse.safeParse(
-      await this.call(`${encodeURIComponent(this.model)}:generateContent`, {
-        contents: [{ role: 'user', parts }],
-        ...(system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
-        ...(extra.tools ? { tools: extra.tools } : {}),
-        // Raciocínio alto por escolha do dono (qualidade antes da rapidez); explícito porque nem todos os
-        // modelos Flash o têm por omissão. «low» existe em todos os modelos de texto («minimal» não).
-        generationConfig: { thinkingConfig: { thinkingLevel: extra.thinking ?? 'high' }, ...extra.generationConfig },
-      }),
+    // Raciocínio alto por omissão, por escolha do dono (qualidade antes da rapidez); explícito porque nem todos
+    // os modelos Flash o têm por omissão. «low» existe em todos os modelos de texto («minimal» não).
+    const thinking = options.thinking ?? 'high';
+    const sent = parts.reduce(
+      (n, p) => n + ('inlineData' in p ? p.inlineData.data.length : 'text' in p ? p.text.length : 0),
+      0,
     );
-    const candidate = data.success ? data.data.candidates?.[0] : undefined;
-    if (candidate?.finishReason === 'MAX_TOKENS') {
-      throw new AiError(
-        'AI_INVALID_RESPONSE',
-        'A resposta da IA ficou cortada por ser demasiado longa. Divide o documento em partes mais pequenas.',
-      );
-    }
-    const text = candidate?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-    if (!text) throw new AiError('AI_BLOCKED', 'O serviço de IA não devolveu resposta para este pedido.');
-    return { text, grounding: candidate?.groundingMetadata };
+    const files = parts.filter((p) => !('text' in p)).length;
+    let usage: z.output<typeof generateResponse>['usageMetadata'];
+    return logged(
+      () =>
+        `${options.task ?? 'pedido'} modelo=${this.model} raciocínio=${thinking} envio=${mb(sent)} ficheiros=${files} ` +
+        `tokens=entrada:${usage?.promptTokenCount ?? '?'},cache:${usage?.cachedContentTokenCount ?? 0},` +
+        `pensamento:${usage?.thoughtsTokenCount ?? 0},saída:${usage?.candidatesTokenCount ?? '?'}`,
+      async () => {
+        const data = generateResponse.safeParse(
+          await this.call(`${encodeURIComponent(this.model)}:generateContent`, {
+            contents: [{ role: 'user', parts }],
+            ...(options.system ? { systemInstruction: { parts: [{ text: options.system }] } } : {}),
+            ...(extra.tools ? { tools: extra.tools } : {}),
+            generationConfig: { thinkingConfig: { thinkingLevel: thinking }, ...extra.generationConfig },
+          }),
+        );
+        usage = data.success ? data.data.usageMetadata : undefined;
+        const candidate = data.success ? data.data.candidates?.[0] : undefined;
+        if (candidate?.finishReason === 'MAX_TOKENS') {
+          throw new AiError(
+            'AI_INVALID_RESPONSE',
+            'A resposta da IA ficou cortada por ser demasiado longa. Divide o documento em partes mais pequenas.',
+          );
+        }
+        const text = candidate?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+        if (!text) throw new AiError('AI_BLOCKED', 'O serviço de IA não devolveu resposta para este pedido.');
+        return { text, grounding: candidate?.groundingMetadata };
+      },
+    );
   }
 
-  async generateJson<T extends z.ZodType>(
-    schema: T,
-    parts: AiPart[],
-    options: { system?: string; thinking?: ThinkingLevel } = {},
-  ) {
+  async generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options: GenerateOptions = {}) {
     // O $schema (versão do JSON Schema) não faz parte do formato que a API aceita.
     const { $schema: _version, ...responseJsonSchema } = z.toJSONSchema(schema) as Record<string, unknown>;
-    const { text } = await this.generate(parts, options.system, {
+    const { text } = await this.generate(parts, options, {
       generationConfig: { responseMimeType: 'application/json', responseJsonSchema },
-      thinking: options.thinking,
     });
 
     let json: unknown;
@@ -200,8 +246,12 @@ export class GeminiProvider implements AiProvider {
     return result.data;
   }
 
-  async searchAnswer(parts: AiPart[], options: { system?: string } = {}): Promise<WebAnswer> {
-    const { text, grounding } = await this.generate(parts, options.system, { tools: [{ google_search: {} }] });
+  async searchAnswer(parts: AiPart[], options: GenerateOptions = {}): Promise<WebAnswer> {
+    const { text, grounding } = await this.generate(
+      parts,
+      { task: 'pesquisa-web', ...options },
+      { tools: [{ google_search: {} }] },
+    );
     const sources = new Map<string, string>();
     for (const chunk of grounding?.groundingChunks ?? []) {
       // Só ligações https chegam a um <a href> na página.
@@ -216,7 +266,14 @@ export class GeminiProvider implements AiProvider {
     };
   }
 
-  async embed(texts: string[], task: 'document' | 'query'): Promise<number[][]> {
+  embed(texts: string[], task: 'document' | 'query'): Promise<number[][]> {
+    return logged(
+      () => `vetores textos=${texts.length}`,
+      () => this.embedTexts(texts, task),
+    );
+  }
+
+  private async embedTexts(texts: string[], task: 'document' | 'query'): Promise<number[][]> {
     if (texts.length === 0) return [];
     const model = `models/${this.embeddingModel}`;
     const data = embedResponse.safeParse(

@@ -50,7 +50,7 @@ aiRouter.post('/check', requireAi, async (_req, res) => {
   const answer = await ai.generateJson(
     z.object({ ok: z.boolean() }),
     [{ text: 'Verificação de ligação. Responde só com o JSON {"ok": true}.' }],
-    { thinking: 'low' },
+    { thinking: 'low', task: 'verificação' },
   );
   res.json({ ok: answer.ok, model: ai.model });
 });

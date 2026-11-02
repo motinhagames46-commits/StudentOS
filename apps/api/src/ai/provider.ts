@@ -17,6 +17,14 @@ export interface UploadedFile {
 /** Raciocínio do modelo: alto por omissão; baixo só onde não há nada para raciocinar (mais rápido). */
 export type ThinkingLevel = 'low' | 'high';
 
+/** Opções de um pedido de texto. */
+export interface GenerateOptions {
+  system?: string;
+  thinking?: ThinkingLevel;
+  /** Nome curto da tarefa (ex.: «quiz»), para o registo de tempos no servidor. */
+  task?: string;
+}
+
 /** Dimensão dos vetores dos excertos (o Gemini reduz para esta dimensão; normalizamos a seguir). */
 export const EMBEDDING_DIMENSIONS = 768;
 
@@ -28,15 +36,11 @@ export interface AiProvider {
   /** Envia um ficheiro para o fornecedor guardar uns dias e o reutilizar por endereço. */
   uploadFile(data: Uint8Array, mimeType: string, displayName: string): Promise<UploadedFile>;
   /** JSON que cumpre o esquema (enviado como JSON Schema) e validado com o mesmo Zod; senão, AiError. */
-  generateJson<T extends z.ZodType>(
-    schema: T,
-    parts: AiPart[],
-    options?: { system?: string; thinking?: ThinkingLevel },
-  ): Promise<z.output<T>>;
+  generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options?: GenerateOptions): Promise<z.output<T>>;
   /** Um vetor normalizado (comprimento 1) por texto, para a semelhança ser um produto interno. */
   embed(texts: string[], task: 'document' | 'query'): Promise<number[][]>;
   /** Resposta em texto com pesquisa Google: as fontes e as sugestões de pesquisa vêm do próprio Gemini. */
-  searchAnswer(parts: AiPart[], options?: { system?: string }): Promise<WebAnswer>;
+  searchAnswer(parts: AiPart[], options?: GenerateOptions): Promise<WebAnswer>;
 }
 
 export interface WebAnswer {

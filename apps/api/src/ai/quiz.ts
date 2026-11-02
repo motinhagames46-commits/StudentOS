@@ -73,7 +73,7 @@ export async function generateQuiz(ai: AiProvider, parts: AiPart[], count: numbe
       ...parts,
       { text: `Cria ${count} perguntas sobre estes documentos, incluindo o que está em imagens, figuras e tabelas.` },
     ],
-    { system: QUIZ_PROMPT },
+    { system: QUIZ_PROMPT, task: 'quiz' },
   );
   return { topic: raw.topic.trim().slice(0, 120) || 'Quiz', questions: sanitizeQuestions(raw.questions, count) };
 }
@@ -110,7 +110,10 @@ export async function gradeShortAnswers(
   const listing = toGrade
     .map((g, n) => JSON.stringify({ n: n + 1, pergunta: g.question, esperado: g.expectedAnswer, resposta: g.answer }))
     .join('\n');
-  const { grades } = await ai.generateJson(gradeSchema, [{ text: listing }], { system: GRADE_PROMPT });
+  const { grades } = await ai.generateJson(gradeSchema, [{ text: listing }], {
+    system: GRADE_PROMPT,
+    task: 'correção',
+  });
   // Liga cada correção ao seu número: uma resposta reordenada, repetida ou em falta é recusada.
   const byNumber = new Map(grades.map((g) => [g.n, g]));
   const invalid = () => new AiError('AI_INVALID_RESPONSE', 'A correção da IA não veio no formato esperado.');

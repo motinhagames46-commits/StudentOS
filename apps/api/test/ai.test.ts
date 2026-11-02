@@ -101,6 +101,32 @@ describe('Gemini pela API REST', () => {
     expect(low.generationConfig.thinkingConfig).toEqual({ thinkingLevel: 'low' });
   });
 
+  it('regista uma linha por chamada (tarefa, modelo, raciocínio, envio, tokens, tempo); nunca a chave nem o texto', async () => {
+    const usageMetadata = { promptTokenCount: 1200, thoughtsTokenCount: 300, candidatesTokenCount: 8 };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ ...answer('{"nota": 14}'), usageMetadata })))
+      .mockResolvedValueOnce(new Response('{}', { status: 429 }));
+    const gemini = new GeminiProvider('chave-secreta', 'modelo-x', 'emb-y', fetchMock as unknown as typeof fetch);
+    const info = vi.spyOn(console, 'info').mockImplementation(() => {});
+    env.isTest = false;
+    let lines: string[];
+    try {
+      const parts = [{ text: 'apontamentos privados do estudante' }];
+      await gemini.generateJson(z.object({ nota: z.number() }), parts, { task: 'quiz', thinking: 'low' });
+      await expect(gemini.generateJson(z.object({ nota: z.number() }), parts)).rejects.toBeInstanceOf(AiError);
+      lines = info.mock.calls.map((c) => String(c[0]));
+    } finally {
+      env.isTest = true;
+      info.mockRestore();
+    }
+    expect(lines[0]).toMatch(
+      /^\[ia\] quiz modelo=modelo-x raciocínio=low envio=0\.0MB ficheiros=0 tokens=entrada:1200,cache:0,pensamento:300,saída:8 ms=\d+ estado=ok$/,
+    );
+    expect(lines[1]).toMatch(/^\[ia\] pedido modelo=modelo-x raciocínio=high .* estado=AI_RATE_LIMITED$/);
+    expect(lines.join('\n')).not.toMatch(/chave-secreta|privados/);
+  });
+
   it('respostas fora do esquema, vazias ou com limite de pedidos dão erros claros', async () => {
     const schema = z.object({ nota: z.number() });
     const withResponse = (response: Promise<Response>) =>

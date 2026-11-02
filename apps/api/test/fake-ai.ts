@@ -6,6 +6,7 @@ import {
   normalize,
   type AiPart,
   type AiProvider,
+  type GenerateOptions,
   type UploadedFile,
   type WebAnswer,
 } from '../src/ai/provider.js';
@@ -18,18 +19,14 @@ export class FakeAiProvider implements AiProvider {
   /** Para simular a Files API em baixo. */
   failUploads = false;
   readonly requests: AiPart[][] = [];
-  readonly options: ({ system?: string; thinking?: string } | undefined)[] = [];
+  readonly options: (GenerateOptions | undefined)[] = [];
   readonly searches: AiPart[][] = [];
   /** Vetor devolvido para perguntas (task 'query'), para os testes escolherem o que fica mais perto. */
   queryVector: number[] | null = null;
 
   constructor(private readonly responses: unknown[] = []) {}
 
-  async generateJson<T extends z.ZodType>(
-    schema: T,
-    parts: AiPart[],
-    options?: { system?: string; thinking?: string },
-  ): Promise<z.output<T>> {
+  async generateJson<T extends z.ZodType>(schema: T, parts: AiPart[], options?: GenerateOptions): Promise<z.output<T>> {
     this.requests.push(parts);
     this.options.push(options);
     const result = schema.safeParse(this.responses.shift());
